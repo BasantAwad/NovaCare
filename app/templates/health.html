@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - NovaCare{% endblock %}
+
+{% block body %}
+<div class="dashboard-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand">
+                <i class="fas fa-heartbeat"></i>
+                <span>NovaCare</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/alerts" class="nav-item">
+                <i class="fas fa-bell"></i>
+                <span>Alerts</span>
+                <span class="badge bg-danger ms-auto">3</span>
+            </a>
+            <a href="/health" class="nav-item active">
+                <i class="fas fa-heartbeat"></i>
+                <span>System Health</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-video"></i>
+                <span>Live Stream</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <nav class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-dark me-3">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 fw-bold">System Health</h4>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-primary" onclick="refreshHealth()">
+                    <i class="fas fa-sync me-2"></i>Refresh
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-link text-dark dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle fa-lg"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/login">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Health Content -->
+        <div class="dashboard-content">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-video me-2 text-success"></i>Camera Status</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Connection</span>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Frame Rate</span>
+                                <span class="fw-bold">30 FPS</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Resolution</span>
+                                <span class="fw-bold">1920x1080</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Last Check</span>
+                                <span class="text-muted">2 min ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-microchip me-2 text-primary"></i>Raspberry Pi</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Status</span>
+                                <span class="badge bg-success">Online</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>CPU Temperature</span>
+                                <span class="fw-bold">45°C</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Memory Usage</span>
+                                <span class="fw-bold">62%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Uptime</span>
+                                <span class="text-muted">72 hours</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-wifi me-2 text-info"></i>MQTT Broker</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Connection</span>
+                                <span class="badge bg-success">Connected</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Broker Address</span>
+                                <span class="fw-bold">192.168.1.100</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Port</span>
+                                <span class="fw-bold">1883</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Last Message</span>
+                                <span class="text-muted">5 sec ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-brain me-2 text-warning"></i>AI Model</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Model Status</span>
+                                <span class="badge bg-success">Loaded</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Model Type</span>
+                                <span class="fw-bold">MediaPipe Pose</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Inference Time</span>
+                                <span class="fw-bold">45ms</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Accuracy</span>
+                                <span class="text-success fw-bold">95.2%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

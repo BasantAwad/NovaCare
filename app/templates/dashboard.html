@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - NovaCare{% endblock %}
+
+{% block body %}
+<div class="dashboard-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-brand">
+                <i class="fas fa-heartbeat"></i>
+                <span>NovaCare</span>
+            </a>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="nav-item active">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/alerts" class="nav-item">
+                <i class="fas fa-bell"></i>
+                <span>Alerts</span>
+                <span class="badge bg-danger ms-auto">3</span>
+            </a>
+            <a href="/health" class="nav-item">
+                <i class="fas fa-heartbeat"></i>
+                <span>System Health</span>
+            </a>
+            <a href="#" class="nav-item" onclick="openStreamModal(); return false;">
+                <i class="fas fa-video"></i>
+                <span>Live Stream</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <i class="fas fa-user-circle fa-2x text-primary"></i>
+                <div class="ms-2">
+                    <div class="fw-bold">Admin User</div>
+                    <small class="text-muted">System Admin</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <nav class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-dark me-3" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 fw-bold">Dashboard</h4>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="position-relative">
+                    <button class="btn btn-link text-dark position-relative">
+                        <i class="fas fa-bell fa-lg"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-link text-dark dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle fa-lg"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/login"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card bg-primary-gradient">
+                        <div class="kpi-content">
+                            <div class="kpi-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div>
+                                <h3 class="kpi-value">3</h3>
+                                <p class="kpi-label">New Alerts</p>
+                                <span class="kpi-change text-success">
+                                    <i class="fas fa-arrow-down"></i> 12% from yesterday
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card bg-success-gradient">
+                        <div class="kpi-content">
+                            <div class="kpi-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h3 class="kpi-value">99.8%</h3>
+                                <p class="kpi-label">Device Uptime</p>
+                                <span class="kpi-change text-success">
+                                    <i class="fas fa-arrow-up"></i> 0.3% increase
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card bg-warning-gradient">
+                        <div class="kpi-content">
+                            <div class="kpi-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div>
+                                <h3 class="kpi-value">Active</h3>
+                                <p class="kpi-label">Camera Health</p>
+                                <span class="kpi-change text-success">
+                                    <i class="fas fa-check-circle"></i> All systems normal
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card bg-info-gradient">
+                        <div class="kpi-content">
+                            <div class="kpi-icon">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <div>
+                                <h3 class="kpi-value">Connected</h3>
+                                <p class="kpi-label">MQTT Status</p>
+                                <span class="kpi-change text-success">
+                                    <i class="fas fa-signal"></i> Strong signal
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold">Detection Activity</h5>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary active">Day</button>
+                                    <button class="btn btn-outline-primary">Week</button>
+                                    <button class="btn btn-outline-primary">Month</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="trafficChart" height="80"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold">Alert Types</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="donutChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Widgets -->
+            <div class="row g-3">
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold">System Performance</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">CPU Usage</span>
+                                    <span class="fw-bold">45%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" style="width: 45%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Memory Usage</span>
+                                    <span class="fw-bold">62%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" style="width: 62%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Detection Rate</span>
+                                    <span class="fw-bold">95%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Network Latency</span>
+                                    <span class="fw-bold">23ms</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-info" style="width: 23%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="action-button mb-3" onclick="simulateAlert()">
+                                <i class="fas fa-bell"></i>
+                                <div>
+                                    <div class="fw-bold">Simulate Alert</div>
+                                    <small class="text-muted">Test fall detection alert</small>
+                                </div>
+                            </button>
+                            <button class="action-button mb-3" onclick="openStreamModal()">
+                                <i class="fas fa-video"></i>
+                                <div>
+                                    <div class="fw-bold">Open Live Stream</div>
+                                    <small class="text-muted">View camera feed</small>
+                                </div>
+                            </button>
+                            <button class="action-button mb-3" onclick="refreshDashboard()">
+                                <i class="fas fa-sync"></i>
+                                <div>
+                                    <div class="fw-bold">Refresh Data</div>
+                                    <small class="text-muted">Update dashboard</small>
+                                </div>
+                            </button>
+                            <button class="action-button" onclick="exportReport()">
+                                <i class="fas fa-download"></i>
+                                <div>
+                                    <div class="fw-bold">Export Report</div>
+                                    <small class="text-muted">Download analytics</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0 fw-bold">Recent Activity</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list">
+                                <div class="activity-item">
+                                    <div class="activity-icon bg-success-soft">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="fw-bold">System Online</div>
+                                        <small class="text-muted">2 minutes ago</small>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon bg-primary-soft">
+                                        <i class="fas fa-camera text-primary"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="fw-bold">Camera Connected</div>
+                                        <small class="text-muted">15 minutes ago</small>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon bg-warning-soft">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="fw-bold">Fall Detected</div>
+                                        <small class="text-muted">1 hour ago</small>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon bg-info-soft">
+                                        <i class="fas fa-wifi text-info"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="fw-bold">MQTT Connected</div>
+                                        <small class="text-muted">3 hours ago</small>
+                                    </div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-icon bg-success-soft">
+                                        <i class="fas fa-user text-success"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="fw-bold">Admin Login</div>
+                                        <small class="text-muted">5 hours ago</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stream Modal -->
+<div class="modal fade" id="streamModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-video me-2 text-primary"></i>Live Camera Stream
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="stream-placeholder">
+                    <i class="fas fa-video fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Live stream will appear here</h5>
+                    <p class="text-muted">Connect backend camera feed to enable streaming</p>
+                    <button class="btn btn-primary mt-3" disabled>
+                        <i class="fas fa-play me-2"></i>Start Stream
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Chat Widget -->
+<div id="chat-widget" class="chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <div id="chat-window" class="card shadow-lg" style="width: 350px; display: none; margin-bottom: 20px;">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-robot me-2"></i>NovaBot Chat</h6>
+            <button type="button" class="btn-close btn-close-white" onclick="toggleChat()"></button>
+        </div>
+        <div class="card-body p-0">
+            <div id="chat-messages" class="p-3" style="height: 300px; overflow-y: auto; background: #f8f9fa;">
+                <div class="d-flex flex-column gap-2">
+                    <div class="align-self-start bg-white p-2 rounded shadow-sm" style="max-width: 80%;">
+                        <small class="text-muted d-block mb-1">NovaBot</small>
+                        Hello! I am ready to assist you.
+                    </div>
+                </div>
+            </div>
+            <div class="p-2 border-top bg-white">
+                <div class="input-group">
+                    <input type="text" id="chat-input" class="form-control border-0" placeholder="Type a message..." onkeypress="handleEncrypt(event)">
+                    <button class="btn btn-primary" onclick="reqChat()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                    <!-- Simulated Voice Input -->
+                    <button class="btn btn-outline-secondary" onclick="simulateVoice()">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button id="chat-toggle-btn" class="btn btn-primary rounded-circle shadow-lg p-3" onclick="toggleChat()">
+        <i class="fas fa-comments fa-2x"></i>
+    </button>
+</div>
+
+<script>
+    function toggleChat() {
+        const window = document.getElementById('chat-window');
+        if (window.style.display === 'none') {
+            window.style.display = 'block';
+        } else {
+            window.style.display = 'none';
+        }
+    }
+
+    function handleEncrypt(e) {
+        if (e.key === 'Enter') reqChat();
+    }
+
+    async function reqChat() {
+        const input = document.getElementById('chat-input');
+        const text = input.value;
+        if (!text) return;
+
+        addMessage('User', text, 'end');
+        input.value = '';
+
+        try {
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: text})
+            });
+            const data = await res.json();
+            addMessage('NovaBot', data.response, 'start');
+        } catch (err) {
+            addMessage('System', 'Error connecting to NovaBrain.', 'start');
+            console.error(err);
+        }
+    }
+
+    function addMessage(sender, text, align) {
+        const container = document.getElementById('chat-messages').firstElementChild;
+        const div = document.createElement('div');
+        const isUser = sender === 'User';
+        
+        div.className = `p-2 rounded shadow-sm ${isUser ? 'align-self-end bg-primary text-white' : 'align-self-start bg-white text-dark'}`;
+        div.style.maxWidth = '80%';
+        div.innerHTML = `
+            <small class="${isUser ? 'text-white-50' : 'text-muted'} d-block mb-1">${sender}</small>
+            ${text}
+        `;
+        container.appendChild(div);
+        
+        const scrollArea = document.getElementById('chat-messages');
+        scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+
+    function simulateVoice() {
+        const input = document.getElementById('chat-input');
+        input.value = "Help! I have fallen!";
+        reqChat();
+    }
+</script>
+
+{% endblock %}
