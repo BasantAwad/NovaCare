@@ -9,6 +9,7 @@ import os
 # Also set up Kaggle API credentials: https://www.kaggle.com/docs/api
 
 DATASETS = [
+    # Emotion Detection - Face
     {
         "name": "ananthu017/emotion-detection-fer",
         "description": "FER Emotion Detection Dataset (Face images)",
@@ -20,14 +21,37 @@ DATASETS = [
         "use": "emotion_detector.py training"
     },
     {
+        "name": "tapakah68/facial-emotion-recognition",
+        "description": "Facial Emotion Recognition Dataset",
+        "use": "emotion_detector.py training"
+    },
+    # Emotion Detection - Text
+    {
         "name": "pashupatigupta/emotion-detection-from-text",
         "description": "Text-based Emotion Detection Dataset",
         "use": "text_emotion.py training"
     },
+    # Speech Recognition (STT)
     {
-        "name": "tapakah68/facial-emotion-recognition",
-        "description": "Facial Emotion Recognition Dataset",
-        "use": "emotion_detector.py training"
+        "name": "suso172/arabic-natural-audio-dataset",
+        "description": "Arabic Natural Audio Dataset",
+        "use": "speech_to_text.py training (Arabic)"
+    },
+    {
+        "name": "unidpro/british-english-speech-recognition-dataset",
+        "description": "British English Speech Recognition",
+        "use": "speech_to_text.py training (English)"
+    },
+    # Text-to-Speech (TTS)
+    {
+        "name": "mathurinache/the-lj-speech-dataset",
+        "description": "LJ Speech Dataset (English TTS)",
+        "use": "text_to_speech.py training"
+    },
+    {
+        "name": "haithemhermessi/arabic-speech-corpus",
+        "description": "Arabic Speech Corpus",
+        "use": "text_to_speech.py training (Arabic)"
     }
 ]
 
