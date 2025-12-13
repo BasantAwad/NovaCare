@@ -1,123 +1,187 @@
 """
-NovaCare - Model Training Script
-Train AI models using downloaded Kaggle datasets.
+NovaCare - Unified Model Training Script
+Train all AI models for the NovaCare system.
 """
 import os
 import sys
+import argparse
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def load_dataset_paths():
-    """Load dataset paths from config file"""
-    config_path = os.path.join(os.path.dirname(__file__), 'datasets', 'dataset_paths.txt')
-    paths = {}
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
-            for line in f:
-                if '=' in line:
-                    name, path = line.strip().split('=', 1)
-                    paths[name] = path if path != 'None' else None
-    return paths
+
+def train_medical_qa():
+    """Train the Medical QA model using HuggingFace Med_Dataset"""
+    print("\n" + "="*60)
+    print("TRAINING: Medical Question Answering Model")
+    print("="*60)
+    
+    try:
+        from ai.medical_qa import MedicalQA
+        qa = MedicalQA()
+        
+        # Train on Med_Dataset
+        success = qa.train(
+            dataset_name="Med-dataset/Med_Dataset",
+            epochs=3,
+            batch_size=8
+        )
+        
+        if success:
+            print("✓ Medical QA training complete!")
+        else:
+            print("✗ Medical QA training failed")
+            
+    except Exception as e:
+        print(f"✗ Error: {e}")
 
 
-def train_emotion_detector(dataset_path):
-    """Train facial emotion detection model"""
-    print("\n" + "=" * 60)
-    print("Training Emotion Detector (Face)")
-    print("=" * 60)
+def train_conversational_ai(dataset_path=None):
+    """Train the Conversational AI for emotional support"""
+    print("\n" + "="*60)
+    print("TRAINING: Conversational AI (Emotional Support)")
+    print("="*60)
+    
+    try:
+        from ai.conversational_ai import ConversationalAI
+        ai = ConversationalAI()
+        
+        success = ai.train(
+            dataset_path=dataset_path,
+            epochs=3,
+            batch_size=4
+        )
+        
+        if success:
+            print("✓ Conversational AI training complete!")
+        else:
+            print("✗ Conversational AI training failed")
+            
+    except Exception as e:
+        print(f"✗ Error: {e}")
+
+
+def train_emotion_detector(dataset_path=None):
+    """Train the facial emotion detection model"""
+    print("\n" + "="*60)
+    print("TRAINING: Facial Emotion Detection")
+    print("="*60)
     
     if not dataset_path:
-        print("ERROR: No dataset path provided. Run download_datasets.py first.")
-        return False
+        print("Please provide a dataset path using --emotion-dataset")
+        print("Expected format: Directory with subdirs for each emotion (angry, happy, sad, etc.)")
+        return
     
     try:
         from ai.emotion_detector import EmotionDetector
         detector = EmotionDetector()
         
-        # Look for train folder in dataset
-        train_path = dataset_path
-        if os.path.exists(os.path.join(dataset_path, 'train')):
-            train_path = os.path.join(dataset_path, 'train')
-        elif os.path.exists(os.path.join(dataset_path, 'images')):
-            train_path = os.path.join(dataset_path, 'images')
+        history = detector.train(
+            dataset_path=dataset_path,
+            epochs=25,
+            batch_size=64
+        )
         
-        print(f"Training on: {train_path}")
-        history = detector.train(train_path, epochs=25, batch_size=64)
-        print("✓ Training complete!")
-        return True
+        print("✓ Emotion detector training complete!")
+        
     except Exception as e:
-        print(f"✗ Training failed: {e}")
-        return False
+        print(f"✗ Error: {e}")
 
 
-def train_text_emotion(dataset_path):
-    """Train text emotion classifier"""
-    print("\n" + "=" * 60)
-    print("Training Text Emotion Analyzer")
-    print("=" * 60)
+def train_text_emotion(dataset_path=None):
+    """Train the text emotion classifier"""
+    print("\n" + "="*60)
+    print("TRAINING: Text Emotion Classifier")
+    print("="*60)
     
     if not dataset_path:
-        print("ERROR: No dataset path provided. Run download_datasets.py first.")
-        return False
+        print("Please provide a CSV dataset path using --text-emotion-dataset")
+        print("Expected format: CSV with 'text' and 'emotion' columns")
+        return
     
     try:
         from ai.text_emotion import TextEmotionAnalyzer
         analyzer = TextEmotionAnalyzer()
         
-        # Look for CSV file in dataset
-        csv_path = None
-        for root, dirs, files in os.walk(dataset_path):
-            for file in files:
-                if file.endswith('.csv'):
-                    csv_path = os.path.join(root, file)
-                    break
-            if csv_path:
-                break
+        accuracy = analyzer.train(dataset_path)
+        print(f"✓ Text emotion training complete! Accuracy: {accuracy:.2%}")
         
-        if not csv_path:
-            print("ERROR: No CSV file found in dataset")
-            return False
-        
-        print(f"Training on: {csv_path}")
-        accuracy = analyzer.train(csv_path)
-        print(f"✓ Training complete! Accuracy: {accuracy:.2%}")
-        return True
     except Exception as e:
-        print(f"✗ Training failed: {e}")
-        return False
+        print(f"✗ Error: {e}")
+
+
+def download_datasets():
+    """Download required datasets from Kaggle"""
+    print("\n" + "="*60)
+    print("DOWNLOADING: Kaggle Datasets")
+    print("="*60)
+    
+    try:
+        import kagglehub
+        
+        datasets = [
+            ("ananthu017/emotion-detection-fer", "Facial Emotion (FER)"),
+            ("pashupatigupta/emotion-detection-from-text", "Text Emotion"),
+        ]
+        
+        for dataset_name, desc in datasets:
+            print(f"\nDownloading: {desc}...")
+            try:
+                path = kagglehub.dataset_download(dataset_name)
+                print(f"✓ Downloaded to: {path}")
+            except Exception as e:
+                print(f"✗ Failed: {e}")
+                
+    except ImportError:
+        print("kagglehub not installed. Run: pip install kagglehub")
 
 
 def main():
-    print("=" * 60)
-    print("NovaCare Model Training")
-    print("=" * 60)
+    parser = argparse.ArgumentParser(description="NovaCare Model Training")
+    parser.add_argument("--all", action="store_true", help="Train all models")
+    parser.add_argument("--medical", action="store_true", help="Train Medical QA model")
+    parser.add_argument("--conversation", action="store_true", help="Train Conversational AI")
+    parser.add_argument("--emotion", action="store_true", help="Train Emotion Detector (face)")
+    parser.add_argument("--text-emotion", action="store_true", help="Train Text Emotion Classifier")
+    parser.add_argument("--download", action="store_true", help="Download Kaggle datasets")
     
-    paths = load_dataset_paths()
-    if not paths:
-        print("No dataset paths found. Run download_datasets.py first.")
+    parser.add_argument("--emotion-dataset", type=str, help="Path to facial emotion dataset")
+    parser.add_argument("--text-emotion-dataset", type=str, help="Path to text emotion CSV")
+    parser.add_argument("--conversation-dataset", type=str, help="Path to conversation JSON")
+    
+    args = parser.parse_args()
+    
+    print("="*60)
+    print("NovaCare AI Model Training System")
+    print("="*60)
+    
+    if args.download:
+        download_datasets()
         return
     
-    print(f"Found {len(paths)} dataset paths")
+    if args.all or args.medical:
+        train_medical_qa()
     
-    # Train emotion detector (face)
-    fer_path = paths.get('ananthu017/emotion-detection-fer') or paths.get('tapakah68/facial-emotion-recognition')
-    if fer_path:
-        train_emotion_detector(fer_path)
-    else:
-        print("Skipping face emotion training - no dataset available")
+    if args.all or args.conversation:
+        train_conversational_ai(args.conversation_dataset)
     
-    # Train text emotion
-    text_path = paths.get('pashupatigupta/emotion-detection-from-text')
-    if text_path:
-        train_text_emotion(text_path)
-    else:
-        print("Skipping text emotion training - no dataset available")
+    if args.emotion:
+        train_emotion_detector(args.emotion_dataset)
     
-    print("\n" + "=" * 60)
-    print("Training Complete!")
-    print("=" * 60)
-    print("\nTrained models saved to: ai/trained_models/")
+    if args.text_emotion:
+        train_text_emotion(args.text_emotion_dataset)
+    
+    if not any([args.all, args.medical, args.conversation, args.emotion, args.text_emotion]):
+        print("\nNo training option selected. Use --help to see options.")
+        print("\nExamples:")
+        print("  python train_models.py --all                    # Train medical + conversation")
+        print("  python train_models.py --medical                # Train medical QA only")
+        print("  python train_models.py --emotion --emotion-dataset /path/to/fer")
+        print("  python train_models.py --download               # Download Kaggle datasets")
+    
+    print("\n" + "="*60)
+    print("Training session complete!")
+    print("="*60)
 
 
 if __name__ == "__main__":

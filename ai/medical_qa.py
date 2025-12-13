@@ -1,128 +1,225 @@
 """
-NovaCare AI - Medical Question Answering Module
-Uses Retrieval-Augmented Generation (RAG) pattern for verified medical info.
-Future: Fine-tune on medical dataset for better accuracy.
+NovaCare AI - Medical Question Answering with Fine-Tuned Model
+Uses HuggingFace Med_Dataset for training a medical domain model.
 """
 import os
 import json
 from datetime import datetime
 
-# Placeholder path for medical knowledge base
+# Model paths
+MEDICAL_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'trained_models', 'medical_qa_model')
 MEDICAL_KB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'medical_kb.json')
 
 class MedicalQA:
-    def __init__(self, kb_path=None):
-        self.kb_path = kb_path or MEDICAL_KB_PATH
+    """
+    Medical Question Answering System
+    - Uses fine-tuned model when available
+    - Falls back to knowledge base for emergency/common queries
+    """
+    
+    def __init__(self):
+        self.model = None
+        self.tokenizer = None
         self.knowledge_base = {}
+        self._load_model()
         self._load_knowledge_base()
 
+    def _load_model(self):
+        """Load fine-tuned medical QA model"""
+        try:
+            if os.path.exists(MEDICAL_MODEL_PATH):
+                from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+                print(f"[MedicalQA] Loading fine-tuned model from {MEDICAL_MODEL_PATH}...")
+                self.tokenizer = AutoTokenizer.from_pretrained(MEDICAL_MODEL_PATH)
+                self.model = AutoModelForSeq2SeqLM.from_pretrained(MEDICAL_MODEL_PATH)
+                print("[MedicalQA] Model loaded successfully!")
+            else:
+                print(f"[MedicalQA] No trained model at {MEDICAL_MODEL_PATH}. Run train_medical_qa.py first.")
+        except Exception as e:
+            print(f"[MedicalQA] Model loading error: {e}")
+
     def _load_knowledge_base(self):
-        """Load medical knowledge base from JSON file"""
-        if os.path.exists(self.kb_path):
-            try:
-                with open(self.kb_path, 'r', encoding='utf-8') as f:
-                    self.knowledge_base = json.load(f)
-                print(f"[MedicalQA] Loaded {len(self.knowledge_base)} entries from KB")
-            except Exception as e:
-                print(f"[MedicalQA] Error loading KB: {e}")
-                self._init_default_kb()
+        """Load medical knowledge base for fallback"""
+        if os.path.exists(MEDICAL_KB_PATH):
+            with open(MEDICAL_KB_PATH, 'r', encoding='utf-8') as f:
+                self.knowledge_base = json.load(f)
         else:
-            print("[MedicalQA] No KB found, initializing default")
             self._init_default_kb()
 
     def _init_default_kb(self):
-        """Initialize with basic medical information"""
+        """Initialize default emergency/critical knowledge base"""
         self.knowledge_base = {
-            "symptoms": {
-                "headache": "A headache can have many causes including tension, dehydration, or illness. If persistent, consult a doctor.",
-                "chest_pain": "CRITICAL: Chest pain can indicate a heart attack. If severe, call emergency services immediately.",
-                "fever": "Fever is the body's response to infection. Rest, hydrate, and take acetaminophen if needed. Seek help if >103°F.",
-                "dizziness": "Dizziness may indicate low blood pressure, dehydration, or inner ear issues. Sit down and stay hydrated.",
-                "shortness_of_breath": "Difficulty breathing may be serious. If sudden onset, seek immediate medical attention."
+            "emergency_keywords": {
+                "heart attack": "EMERGENCY: Call 911 immediately. Symptoms include chest pain, shortness of breath.",
+                "stroke": "EMERGENCY: Call 911. Remember FAST: Face drooping, Arm weakness, Speech difficulty, Time to call.",
+                "choking": "EMERGENCY: Perform Heimlich maneuver. Call 911 if person becomes unconscious.",
+                "severe bleeding": "EMERGENCY: Apply pressure to wound, elevate if possible. Call 911.",
+                "can't breathe": "EMERGENCY: If severe, call 911. Check for airway obstruction."
             },
-            "medications": {
-                "acetaminophen": "Pain reliever and fever reducer. Max 4g/day. Avoid with liver conditions.",
-                "ibuprofen": "Anti-inflammatory. Take with food. Not for those with stomach ulcers or kidney issues.",
-                "aspirin": "Blood thinner and pain reliever. Do not give to children. May interact with other blood thinners."
-            },
-            "emergency_signs": [
-                "Difficulty breathing",
-                "Chest pain or pressure",
-                "Sudden confusion",
-                "Severe bleeding",
-                "Signs of stroke (FAST: Face drooping, Arm weakness, Speech difficulty, Time to call 911)"
-            ],
-            "wellness_tips": {
-                "hydration": "Drink 8 glasses (2L) of water daily. More if active or in hot weather.",
-                "sleep": "Adults need 7-9 hours of quality sleep per night.",
-                "exercise": "150 minutes of moderate exercise weekly is recommended.",
-                "mental_health": "Regular social interaction and stress management are vital."
+            "common_symptoms": {
+                "headache": "Headaches can be caused by tension, dehydration, or illness. Rest, hydrate, and take pain relievers if needed. Consult doctor if persistent.",
+                "fever": "Fever indicates your body is fighting infection. Rest, stay hydrated, and take acetaminophen if needed. Seek medical attention if temperature exceeds 103°F.",
+                "dizziness": "Dizziness can indicate low blood pressure, dehydration, or inner ear issues. Sit down, drink water, and avoid sudden movements.",
+                "fatigue": "Persistent fatigue may indicate sleep issues, stress, or underlying conditions. Ensure adequate sleep and consult a doctor if it persists.",
+                "nausea": "Nausea can be caused by food, motion, or illness. Stay hydrated with small sips. Seek help if accompanied by severe pain."
             }
         }
-        self._save_knowledge_base()
-
-    def _save_knowledge_base(self):
-        """Save knowledge base to file"""
-        os.makedirs(os.path.dirname(self.kb_path), exist_ok=True)
-        with open(self.kb_path, 'w', encoding='utf-8') as f:
+        os.makedirs(os.path.dirname(MEDICAL_KB_PATH), exist_ok=True)
+        with open(MEDICAL_KB_PATH, 'w', encoding='utf-8') as f:
             json.dump(self.knowledge_base, f, indent=2)
+
+    def train(self, dataset_name="Med-dataset/Med_Dataset", epochs=3, batch_size=8):
+        """
+        Fine-tune a medical QA model using HuggingFace datasets
+        :param dataset_name: HuggingFace dataset name
+        :param epochs: Number of training epochs
+        :param batch_size: Training batch size
+        """
+        try:
+            from datasets import load_dataset
+            from transformers import (
+                AutoModelForSeq2SeqLM, 
+                AutoTokenizer, 
+                Seq2SeqTrainingArguments, 
+                Seq2SeqTrainer,
+                DataCollatorForSeq2Seq
+            )
+            import torch
+
+            print(f"[MedicalQA] Loading dataset: {dataset_name}")
+            dataset = load_dataset(dataset_name)
+            
+            # Use a pretrained medical/biomedical model as base
+            base_model = "google/flan-t5-small"  # Small but capable
+            print(f"[MedicalQA] Loading base model: {base_model}")
+            
+            tokenizer = AutoTokenizer.from_pretrained(base_model)
+            model = AutoModelForSeq2SeqLM.from_pretrained(base_model)
+
+            # Preprocess function
+            def preprocess(examples):
+                # Assuming dataset has 'question' and 'answer' columns
+                # Adapt based on actual dataset structure
+                questions = examples.get('question', examples.get('input', []))
+                answers = examples.get('answer', examples.get('output', []))
+                
+                inputs = [f"Medical Question: {q}" for q in questions]
+                model_inputs = tokenizer(inputs, max_length=256, truncation=True, padding=True)
+                
+                labels = tokenizer(answers, max_length=256, truncation=True, padding=True)
+                model_inputs["labels"] = labels["input_ids"]
+                
+                return model_inputs
+
+            print("[MedicalQA] Preprocessing dataset...")
+            tokenized = dataset.map(preprocess, batched=True, remove_columns=dataset["train"].column_names)
+
+            # Training arguments
+            training_args = Seq2SeqTrainingArguments(
+                output_dir=MEDICAL_MODEL_PATH,
+                num_train_epochs=epochs,
+                per_device_train_batch_size=batch_size,
+                per_device_eval_batch_size=batch_size,
+                warmup_steps=100,
+                weight_decay=0.01,
+                logging_steps=50,
+                save_strategy="epoch",
+                evaluation_strategy="epoch" if "validation" in tokenized else "no",
+                predict_with_generate=True,
+                fp16=torch.cuda.is_available(),
+            )
+
+            data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+
+            trainer = Seq2SeqTrainer(
+                model=model,
+                args=training_args,
+                train_dataset=tokenized["train"],
+                eval_dataset=tokenized.get("validation", tokenized.get("test")),
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+            )
+
+            print("[MedicalQA] Starting training...")
+            trainer.train()
+
+            # Save
+            print(f"[MedicalQA] Saving model to {MEDICAL_MODEL_PATH}")
+            trainer.save_model(MEDICAL_MODEL_PATH)
+            tokenizer.save_pretrained(MEDICAL_MODEL_PATH)
+            
+            self.model = model
+            self.tokenizer = tokenizer
+            print("[MedicalQA] Training complete!")
+            
+            return True
+
+        except Exception as e:
+            print(f"[MedicalQA] Training error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def query(self, question: str) -> dict:
         """
-        Answer a medical question using the knowledge base
+        Answer a medical question
         :param question: User's medical question
-        :return: dict with answer, confidence, and source
+        :return: dict with answer, confidence, source
         """
         question_lower = question.lower()
-        response = {
+        result = {
             "answer": "",
             "confidence": 0.0,
-            "source": "NovaCare Medical KB",
+            "source": "NovaCare Medical AI",
             "is_emergency": False,
             "timestamp": datetime.now().isoformat()
         }
 
-        # Check for emergency keywords first
-        emergency_keywords = ['heart attack', 'stroke', 'cant breathe', "can't breathe", 'unconscious', 'severe bleeding', 'choking']
-        for keyword in emergency_keywords:
+        # Check emergency keywords first (always use KB for safety)
+        for keyword, response in self.knowledge_base.get("emergency_keywords", {}).items():
             if keyword in question_lower:
-                response["is_emergency"] = True
-                response["answer"] = "🚨 EMERGENCY: This sounds like a medical emergency. Please call emergency services (911) immediately or press the Emergency button."
-                response["confidence"] = 1.0
-                return response
+                result["is_emergency"] = True
+                result["answer"] = response
+                result["confidence"] = 1.0
+                result["source"] = "Emergency Protocol"
+                print(f"[MedicalQA] EMERGENCY query detected: {keyword}")
+                return result
 
-        # Search symptoms
-        for symptom, info in self.knowledge_base.get("symptoms", {}).items():
-            if symptom.replace('_', ' ') in question_lower or symptom in question_lower:
-                response["answer"] = info
-                response["confidence"] = 0.85
-                return response
+        # Try trained model
+        if self.model is not None and self.tokenizer is not None:
+            try:
+                input_text = f"Medical Question: {question}"
+                inputs = self.tokenizer(input_text, return_tensors="pt", max_length=256, truncation=True)
+                
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=150,
+                    num_beams=4,
+                    early_stopping=True
+                )
+                
+                answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                result["answer"] = answer
+                result["confidence"] = 0.85
+                result["source"] = "Fine-tuned Medical Model"
+                print(f"[MedicalQA] Model response: {answer[:50]}...")
+                return result
+                
+            except Exception as e:
+                print(f"[MedicalQA] Model inference error: {e}")
 
-        # Search medications
-        for med, info in self.knowledge_base.get("medications", {}).items():
-            if med in question_lower:
-                response["answer"] = f"About {med.capitalize()}: {info}"
-                response["confidence"] = 0.9
-                return response
+        # Fallback to knowledge base
+        for symptom, info in self.knowledge_base.get("common_symptoms", {}).items():
+            if symptom in question_lower:
+                result["answer"] = info
+                result["confidence"] = 0.7
+                result["source"] = "Medical Knowledge Base"
+                return result
 
-        # Wellness tips
-        for topic, tip in self.knowledge_base.get("wellness_tips", {}).items():
-            if topic in question_lower:
-                response["answer"] = tip
-                response["confidence"] = 0.8
-                return response
-
-        # Default response
-        response["answer"] = "I don't have specific information about that in my medical knowledge base. For medical concerns, please consult a healthcare professional."
-        response["confidence"] = 0.3
-        return response
-
-    def add_to_kb(self, category: str, key: str, value: str):
-        """Add new entry to knowledge base"""
-        if category not in self.knowledge_base:
-            self.knowledge_base[category] = {}
-        self.knowledge_base[category][key] = value
-        self._save_knowledge_base()
+        # Generic fallback
+        result["answer"] = "I can provide general health information, but for specific medical concerns, please consult a healthcare professional. Would you like me to help you find a doctor or medical resource?"
+        result["confidence"] = 0.3
+        return result
 
 
 # Singleton
@@ -133,3 +230,22 @@ def get_medical_qa():
     if _medical_qa_instance is None:
         _medical_qa_instance = MedicalQA()
     return _medical_qa_instance
+
+
+if __name__ == "__main__":
+    # Test training
+    qa = MedicalQA()
+    print("\nTo train the model, run: python train_medical_qa.py")
+    
+    # Test query
+    test_questions = [
+        "What should I do for a headache?",
+        "I think I'm having a heart attack",
+        "What is diabetes?"
+    ]
+    
+    for q in test_questions:
+        result = qa.query(q)
+        print(f"\nQ: {q}")
+        print(f"A: {result['answer'][:100]}...")
+        print(f"Confidence: {result['confidence']}")

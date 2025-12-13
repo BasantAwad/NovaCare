@@ -1,16 +1,21 @@
 """
 NovaCare - NovaBrain AI Core
 Central AI module integrating all capabilities:
-- Conversational AI (LLM)
+- Conversational AI (fine-tuned LLM for emotional support)
 - Emotion Detection (Face & Text)
-- Medical Question Answering
-- Health Monitoring & Support
+- Medical Question Answering (fine-tuned on Med_Dataset)
 """
-import random
 import json
 from datetime import datetime
 
-# Try importing AI modules (graceful degradation if not available)
+# Import AI modules with graceful fallbacks
+try:
+    from ai.conversational_ai import get_conversational_ai
+    CONVERSATION_AVAILABLE = True
+except ImportError:
+    CONVERSATION_AVAILABLE = False
+    print("[NovaBrain] Conversational AI not available")
+
 try:
     from ai.text_emotion import get_text_analyzer
     TEXT_EMOTION_AVAILABLE = True
@@ -36,45 +41,33 @@ except ImportError:
 class NovaBrain:
     """
     Main AI Brain for NovaBot.
-    Handles conversation, emotion, medical queries, and emotional support.
+    Integrates conversation, emotion, and medical modules.
     """
     
-    def __init__(self, model_name="distilgpt2", use_local=True):
-        self.use_local = use_local
-        self.model_name = model_name
-        self.generator = None
-        self.history = []
-        self.user_context = {}  # Store user emotional state, preferences
-
+    def __init__(self):
+        print("[NovaBrain] Initializing AI modules...")
+        
         # Initialize sub-modules
+        self.conversational_ai = get_conversational_ai() if CONVERSATION_AVAILABLE else None
         self.text_analyzer = get_text_analyzer() if TEXT_EMOTION_AVAILABLE else None
         self.medical_qa = get_medical_qa() if MEDICAL_QA_AVAILABLE else None
         self.face_detector = get_detector() if FACE_EMOTION_AVAILABLE else None
-
-        # Intent patterns
+        
+        self.history = []
+        
+        # Intent patterns for routing
         self.intent_patterns = {
-            'greeting': ['hello', 'hi', 'hey', 'good morning', 'good evening'],
-            'emergency': ['help', 'emergency', 'fallen', 'fall', 'cant breathe', 'heart attack'],
-            'medical': ['symptom', 'medication', 'medicine', 'pain', 'headache', 'fever', 'doctor'],
-            'emotional': ['sad', 'lonely', 'depressed', 'anxious', 'scared', 'worried', 'happy'],
-            'time': ['time', 'date', 'day'],
-            'reminder': ['remind', 'reminder', 'medication time', 'pills'],
-            'navigation': ['follow', 'come here', 'stop', 'go to']
+            'greeting': ['hello', 'hi', 'hey', 'good morning', 'good evening', 'good afternoon'],
+            'emergency': ['help me', 'emergency', 'fallen', 'fall', "can't breathe", 'heart attack', 'stroke'],
+            'medical': ['symptom', 'medication', 'medicine', 'pain', 'headache', 'fever', 'doctor', 'sick', 'disease'],
+            'emotional': ['sad', 'lonely', 'depressed', 'anxious', 'scared', 'worried', 'happy', 'angry', 'frustrated'],
+            'time': ['time', 'date', 'day', 'what time'],
+            'reminder': ['remind', 'reminder', 'medication time', 'pills', 'schedule'],
+            'gratitude': ['thank', 'thanks', 'appreciate'],
+            'farewell': ['bye', 'goodbye', 'see you', 'later']
         }
-
-        if self.use_local:
-            self._load_llm()
-
-    def _load_llm(self):
-        """Load local LLM for conversational AI"""
-        try:
-            from transformers import pipeline
-            print(f"[NovaBrain] Loading LLM: {self.model_name}...")
-            self.generator = pipeline('text-generation', model=self.model_name)
-            print("[NovaBrain] LLM loaded successfully")
-        except Exception as e:
-            print(f"[NovaBrain] LLM loading failed: {e}")
-            self.use_local = False
+        
+        print("[NovaBrain] Initialization complete")
 
     def detect_intent(self, text: str) -> str:
         """Detect user intent from text"""
@@ -85,65 +78,60 @@ class NovaBrain:
                     return intent
         return 'general'
 
-    def analyze_emotion_from_text(self, text: str) -> dict:
+    def analyze_text_emotion(self, text: str) -> dict:
         """Analyze emotion from text input"""
         if self.text_analyzer:
-            return self.text_analyzer.analyze(text)
-        return {'emotion': 'neutral', 'confidence': 0.5}
+            result = self.text_analyzer.analyze(text)
+            # Log to console
+            print(f"[NovaBrain] Text Emotion: {result.get('emotion', 'unknown').upper()} ({result.get('confidence', 0):.0%})")
+            return result
+        return {'emotion': 'neutral', 'confidence': 0.5, 'method': 'default'}
 
-    def analyze_emotion_from_face(self, face_image) -> dict:
+    def analyze_face_emotion(self, face_image) -> dict:
         """Analyze emotion from face image"""
         if self.face_detector:
-            return self.face_detector.detect(face_image)
+            result = self.face_detector.detect(face_image)
+            print(f"[NovaBrain] Face Emotion: {result.get('emotion', 'unknown').upper()} ({result.get('confidence', 0):.0%})")
+            return result
         return {'emotion': 'unknown', 'confidence': 0}
 
     def get_medical_answer(self, question: str) -> dict:
         """Get answer to medical question"""
         if self.medical_qa:
-            return self.medical_qa.query(question)
-        return {'answer': 'Medical QA not available', 'confidence': 0}
+            result = self.medical_qa.query(question)
+            print(f"[NovaBrain] Medical Query - Confidence: {result.get('confidence', 0):.0%}")
+            return result
+        return {'answer': 'Medical QA module not available', 'confidence': 0, 'is_emergency': False}
 
-    def generate_emotional_response(self, emotion: str, user_input: str) -> str:
-        """Generate empathetic response based on detected emotion"""
+    def generate_conversation_response(self, user_input: str, emotion: str = None) -> str:
+        """Generate conversational response using fine-tuned model"""
+        if self.conversational_ai:
+            return self.conversational_ai.generate_response(user_input, emotion)
+        return self._basic_response(user_input, emotion)
+    
+    def _basic_response(self, user_input: str, emotion: str = None) -> str:
+        """Basic fallback responses"""
         responses = {
-            'sad': [
-                "I can sense you might be feeling down. I'm here for you.",
-                "It's okay to feel sad sometimes. Would you like to talk about it?",
-                "I'm here to listen if you need someone to talk to.",
-                "Remember, you're not alone. I'm right here with you."
-            ],
-            'angry': [
-                "I can tell you're frustrated. Take a deep breath with me.",
-                "It's okay to feel angry. Would you like to share what's bothering you?",
-                "Let's take a moment together. I'm here to help."
-            ],
-            'fear': [
-                "I understand you might be worried. You're safe here.",
-                "I'm here with you. Can you tell me what's concerning you?",
-                "It's okay to feel nervous. Let me help you feel more at ease."
-            ],
-            'happy': [
-                "I'm glad you're feeling good! That's wonderful to see.",
-                "Your happiness makes me happy too! What's making you smile?",
-                "It's great to see you in good spirits!"
-            ],
-            'neutral': [
-                "I'm here and ready to help. What would you like to do?",
-                "How can I assist you today?",
-                "I'm listening. What's on your mind?"
-            ]
+            'greeting': "Hello! I'm NovaBot, your AI companion. How are you feeling today?",
+            'farewell': "Take care! I'll be here whenever you need me.",
+            'gratitude': "You're welcome! I'm always here to help.",
+            'time': f"It's currently {datetime.now().strftime('%I:%M %p on %A, %B %d')}.",
         }
         
-        emotion_responses = responses.get(emotion, responses['neutral'])
-        return random.choice(emotion_responses)
+        intent = self.detect_intent(user_input)
+        if intent in responses:
+            return responses[intent]
+        
+        if emotion == 'sad':
+            return "I can sense you might be feeling down. I'm here for you. Would you like to talk about it?"
+        elif emotion == 'happy':
+            return "I'm glad you're feeling good! What would you like to do today?"
+        
+        return "I'm here and listening. How can I help you today?"
 
     def process_input(self, user_input: str, user_id: int = None, face_image=None) -> dict:
         """
         Process user input and return comprehensive response
-        :param user_input: User's text input
-        :param user_id: User ID for context
-        :param face_image: Optional face image for emotion detection
-        :return: dict with response, emotion, intent, etc.
         """
         result = {
             'response': '',
@@ -155,86 +143,81 @@ class NovaBrain:
             'timestamp': datetime.now().isoformat()
         }
 
-        # Detect intent
+        print(f"\n{'='*50}")
+        print(f"[NovaBrain] Processing: '{user_input[:50]}...'")
+        
+        # 1. Detect intent
         intent = self.detect_intent(user_input)
         result['intent'] = intent
+        print(f"[NovaBrain] Intent: {intent}")
 
-        # Analyze emotions
-        text_emotion = self.analyze_emotion_from_text(user_input)
+        # 2. Analyze text emotion
+        text_emotion = self.analyze_text_emotion(user_input)
         result['text_emotion'] = text_emotion
+        detected_emotion = text_emotion.get('emotion', 'neutral')
 
+        # 3. Analyze face emotion if provided
         if face_image is not None:
-            face_emotion = self.analyze_emotion_from_face(face_image)
+            face_emotion = self.analyze_face_emotion(face_image)
             result['face_emotion'] = face_emotion
+            # Combine face and text emotion (face takes priority if confident)
+            if face_emotion.get('confidence', 0) > 0.7:
+                detected_emotion = face_emotion.get('emotion', detected_emotion)
 
         # Store in history
         self.history.append({
             'role': 'user',
             'content': user_input,
-            'emotion': text_emotion.get('emotion'),
+            'emotion': detected_emotion,
             'timestamp': result['timestamp']
         })
 
-        # Generate response based on intent
+        # 4. Generate response based on intent
         response = ""
 
         if intent == 'emergency':
             result['is_emergency'] = True
-            response = "🚨 EMERGENCY DETECTED! I am alerting your guardians and emergency services immediately. Stay calm, help is on the way!"
+            response = "🚨 EMERGENCY DETECTED! I am alerting your guardians and emergency services immediately. Please stay calm - help is on the way!"
+            print("[NovaBrain] *** EMERGENCY TRIGGERED ***")
 
         elif intent == 'medical':
             medical_result = self.get_medical_answer(user_input)
             result['medical_response'] = medical_result
+            
             if medical_result.get('is_emergency'):
                 result['is_emergency'] = True
-                response = medical_result['answer']
-            else:
-                response = medical_result['answer']
-                if medical_result['confidence'] < 0.5:
-                    response += " For accurate medical advice, please consult a healthcare professional."
-
-        elif intent == 'emotional':
-            emotion = text_emotion.get('emotion', 'neutral')
-            response = self.generate_emotional_response(emotion, user_input)
-
-        elif intent == 'greeting':
-            responses = [
-                "Hello! I'm NovaBot, your AI companion. How are you feeling today?",
-                "Hi there! It's great to hear from you. How can I help?",
-                "Hello! I'm here and ready to assist you with anything you need."
-            ]
-            response = random.choice(responses)
+            
+            response = medical_result.get('answer', '')
+            if medical_result.get('confidence', 0) < 0.5:
+                response += " For accurate medical advice, please consult a healthcare professional."
 
         elif intent == 'time':
-            now = datetime.now()
-            response = f"It is currently {now.strftime('%I:%M %p')} on {now.strftime('%A, %B %d, %Y')}."
+            response = f"It's currently {datetime.now().strftime('%I:%M %p on %A, %B %d, %Y')}."
 
-        elif intent == 'reminder':
-            response = "I can help you with medication reminders. Would you like me to check your medication schedule?"
+        elif intent == 'gratitude':
+            response = "You're very welcome! I'm always here for you. Is there anything else I can help with?"
 
-        elif intent == 'navigation':
-            response = "Navigation commands received. In robot mode, I would process: " + user_input
+        elif intent == 'farewell':
+            response = "Take care! Remember, I'm here whenever you need me. Stay safe!"
+
+        elif intent == 'greeting':
+            response = f"Hello! It's wonderful to hear from you. How are you feeling today?"
+            if detected_emotion != 'neutral':
+                response = f"Hello! I notice you might be feeling {detected_emotion}. How can I help you today?"
+
+        elif intent == 'emotional' or detected_emotion in ['sad', 'angry', 'fear']:
+            # Use conversational AI for emotional support
+            response = self.generate_conversation_response(user_input, detected_emotion)
 
         else:
-            # General conversation with emotion-aware response
-            emotion = text_emotion.get('emotion', 'neutral')
-            
-            # Try LLM generation
-            if self.use_local and self.generator:
-                try:
-                    prompt = f"User: {user_input}\nNovaBot (friendly, helpful):"
-                    outputs = self.generator(prompt, max_length=100, num_return_sequences=1, truncation=True)
-                    response = outputs[0]['generated_text'].replace(prompt, '').strip()
-                    if not response:
-                        response = self.generate_emotional_response(emotion, user_input)
-                except:
-                    response = self.generate_emotional_response(emotion, user_input)
-            else:
-                response = self.generate_emotional_response(emotion, user_input)
+            # General conversation
+            response = self.generate_conversation_response(user_input, detected_emotion)
 
         result['response'] = response
+        print(f"[NovaBrain] Response: '{response[:60]}...'")
+        print(f"{'='*50}\n")
 
-        # Store in history
+        # Store bot response
         self.history.append({
             'role': 'assistant',
             'content': response,
@@ -250,6 +233,8 @@ class NovaBrain:
     def clear_history(self):
         """Clear conversation history"""
         self.history = []
+        if self.conversational_ai:
+            self.conversational_ai.clear_history()
 
 
 # Singleton
@@ -260,3 +245,22 @@ def get_nova():
     if _nova_instance is None:
         _nova_instance = NovaBrain()
     return _nova_instance
+
+
+if __name__ == "__main__":
+    nova = NovaBrain()
+    
+    print("\n=== Testing NovaBrain ===")
+    test_inputs = [
+        "Hello, how are you?",
+        "I'm feeling sad today",
+        "What should I do for a headache?",
+        "I think I'm having a heart attack",
+        "Thank you for your help",
+    ]
+    
+    for user_input in test_inputs:
+        result = nova.process_input(user_input)
+        print(f"\nUser: {user_input}")
+        print(f"NovaBot: {result['response']}")
+        print(f"Intent: {result['intent']}, Emotion: {result['text_emotion']}")
