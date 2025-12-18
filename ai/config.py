@@ -19,7 +19,7 @@ class Config:
     # =================================================================
     
     # API Token
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCBB2qqCH4Xjmj1ljJ0LHk5aDBO5dvejrc")
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     
     # Model configuration
     MODEL_NAME = "gemini-2.0-flash"
