@@ -1,57 +1,32 @@
 """
 NovaCare - NovaBrain AI Core
-Central AI module integrating all capabilities:
-- Conversational AI (fine-tuned LLM for emotional support)
-- Emotion Detection (Face & Text)
-- Medical Question Answering (fine-tuned on Med_Dataset)
+Central AI module integrating all capabilities using SOLID principles.
+
+Dependencies are injected via the ai module getters.
 """
-import json
 from datetime import datetime
 
-# Import AI modules with graceful fallbacks
-try:
-    from ai.conversational_ai import get_conversational_ai
-    CONVERSATION_AVAILABLE = True
-except ImportError:
-    CONVERSATION_AVAILABLE = False
-    print("[NovaBrain] Conversational AI not available")
-
-try:
-    from ai.text_emotion import get_text_analyzer
-    TEXT_EMOTION_AVAILABLE = True
-except ImportError:
-    TEXT_EMOTION_AVAILABLE = False
-    print("[NovaBrain] Text emotion analyzer not available")
-
-try:
-    from ai.medical_qa import get_medical_qa
-    MEDICAL_QA_AVAILABLE = True
-except ImportError:
-    MEDICAL_QA_AVAILABLE = False
-    print("[NovaBrain] Medical QA not available")
-
-try:
-    from ai.emotion_detector import get_detector
-    FACE_EMOTION_AVAILABLE = True
-except ImportError:
-    FACE_EMOTION_AVAILABLE = False
-    print("[NovaBrain] Face emotion detector not available")
+# Import from the centralized ai package (DIP - depends on abstractions)
+from ai import get_conversational_ai, get_emotion_analyzer, get_medical_qa
 
 
 class NovaBrain:
     """
     Main AI Brain for NovaBot.
-    Integrates conversation, emotion, and medical modules.
+    Integrates conversation, emotion (unified), and medical modules.
+    
+    SOLID Principles:
+    - Single Responsibility: Orchestrates AI modules only
+    - Dependency Inversion: Uses getter functions for DI
     """
     
     def __init__(self):
         print("[NovaBrain] Initializing AI modules...")
         
-        # Initialize sub-modules
-        self.conversational_ai = get_conversational_ai() if CONVERSATION_AVAILABLE else None
-        self.text_analyzer = get_text_analyzer() if TEXT_EMOTION_AVAILABLE else None
-        self.medical_qa = get_medical_qa() if MEDICAL_QA_AVAILABLE else None
-        self.face_detector = get_detector() if FACE_EMOTION_AVAILABLE else None
+        # Initialize sub-modules via DI
+        self.conversational_ai = get_conversational_ai()
+        self.emotion_analyzer = get_emotion_analyzer()
+        self.medical_qa = get_medical_qa()
         
         self.history = []
         
@@ -70,7 +45,7 @@ class NovaBrain:
         print("[NovaBrain] Initialization complete")
 
     def detect_intent(self, text: str) -> str:
-        """Detect user intent from text"""
+        """Detect user intent from text."""
         text_lower = text.lower()
         for intent, patterns in self.intent_patterns.items():
             for pattern in patterns:
@@ -79,24 +54,23 @@ class NovaBrain:
         return 'general'
 
     def analyze_text_emotion(self, text: str) -> dict:
-        """Analyze emotion from text input"""
-        if self.text_analyzer:
-            result = self.text_analyzer.analyze(text)
-            # Log to console
+        """Analyze emotion from text input using unified analyzer."""
+        if self.emotion_analyzer:
+            result = self.emotion_analyzer.analyze_text(text)
             print(f"[NovaBrain] Text Emotion: {result.get('emotion', 'unknown').upper()} ({result.get('confidence', 0):.0%})")
             return result
-        return {'emotion': 'neutral', 'confidence': 0.5, 'method': 'default'}
+        return {'emotion': 'neutral', 'confidence': 0.5, 'source': 'text', 'method': 'default'}
 
     def analyze_face_emotion(self, face_image) -> dict:
-        """Analyze emotion from face image"""
-        if self.face_detector:
-            result = self.face_detector.detect(face_image)
+        """Analyze emotion from face image using unified analyzer."""
+        if self.emotion_analyzer:
+            result = self.emotion_analyzer.analyze_face(face_image)
             print(f"[NovaBrain] Face Emotion: {result.get('emotion', 'unknown').upper()} ({result.get('confidence', 0):.0%})")
             return result
-        return {'emotion': 'unknown', 'confidence': 0}
+        return {'emotion': 'unknown', 'confidence': 0, 'source': 'face'}
 
     def get_medical_answer(self, question: str) -> dict:
-        """Get answer to medical question"""
+        """Get answer to medical question."""
         if self.medical_qa:
             result = self.medical_qa.query(question)
             print(f"[NovaBrain] Medical Query - Confidence: {result.get('confidence', 0):.0%}")
@@ -104,13 +78,13 @@ class NovaBrain:
         return {'answer': 'Medical QA module not available', 'confidence': 0, 'is_emergency': False}
 
     def generate_conversation_response(self, user_input: str, emotion: str = None) -> str:
-        """Generate conversational response using fine-tuned model"""
+        """Generate conversational response using fine-tuned model."""
         if self.conversational_ai:
             return self.conversational_ai.generate_response(user_input, emotion)
         return self._basic_response(user_input, emotion)
     
     def _basic_response(self, user_input: str, emotion: str = None) -> str:
-        """Basic fallback responses"""
+        """Basic fallback responses."""
         responses = {
             'greeting': "Hello! I'm NovaBot, your AI companion. How are you feeling today?",
             'farewell': "Take care! I'll be here whenever you need me.",
@@ -123,16 +97,14 @@ class NovaBrain:
             return responses[intent]
         
         if emotion == 'sad':
-            return "I can sense you might be feeling down. I'm here for you. Would you like to talk about it?"
+            return "I can sense you might be feeling down. I'm here for you."
         elif emotion == 'happy':
             return "I'm glad you're feeling good! What would you like to do today?"
         
         return "I'm here and listening. How can I help you today?"
 
     def process_input(self, user_input: str, user_id: int = None, face_image=None) -> dict:
-        """
-        Process user input and return comprehensive response
-        """
+        """Process user input and return comprehensive response."""
         result = {
             'response': '',
             'intent': 'general',
@@ -160,7 +132,6 @@ class NovaBrain:
         if face_image is not None:
             face_emotion = self.analyze_face_emotion(face_image)
             result['face_emotion'] = face_emotion
-            # Combine face and text emotion (face takes priority if confident)
             if face_emotion.get('confidence', 0) > 0.7:
                 detected_emotion = face_emotion.get('emotion', detected_emotion)
 
@@ -195,7 +166,7 @@ class NovaBrain:
             response = f"It's currently {datetime.now().strftime('%I:%M %p on %A, %B %d, %Y')}."
 
         elif intent == 'gratitude':
-            response = "You're very welcome! I'm always here for you. Is there anything else I can help with?"
+            response = "You're very welcome! I'm always here for you."
 
         elif intent == 'farewell':
             response = "Take care! Remember, I'm here whenever you need me. Stay safe!"
@@ -206,18 +177,15 @@ class NovaBrain:
                 response = f"Hello! I notice you might be feeling {detected_emotion}. How can I help you today?"
 
         elif intent == 'emotional' or detected_emotion in ['sad', 'angry', 'fear']:
-            # Use conversational AI for emotional support
             response = self.generate_conversation_response(user_input, detected_emotion)
 
         else:
-            # General conversation
             response = self.generate_conversation_response(user_input, detected_emotion)
 
         result['response'] = response
         print(f"[NovaBrain] Response: '{response[:60]}...'")
         print(f"{'='*50}\n")
 
-        # Store bot response
         self.history.append({
             'role': 'assistant',
             'content': response,
@@ -227,11 +195,11 @@ class NovaBrain:
         return result
 
     def get_history(self):
-        """Get conversation history"""
+        """Get conversation history."""
         return self.history
 
     def clear_history(self):
-        """Clear conversation history"""
+        """Clear conversation history."""
         self.history = []
         if self.conversational_ai:
             self.conversational_ai.clear_history()
@@ -245,22 +213,3 @@ def get_nova():
     if _nova_instance is None:
         _nova_instance = NovaBrain()
     return _nova_instance
-
-
-if __name__ == "__main__":
-    nova = NovaBrain()
-    
-    print("\n=== Testing NovaBrain ===")
-    test_inputs = [
-        "Hello, how are you?",
-        "I'm feeling sad today",
-        "What should I do for a headache?",
-        "I think I'm having a heart attack",
-        "Thank you for your help",
-    ]
-    
-    for user_input in test_inputs:
-        result = nova.process_input(user_input)
-        print(f"\nUser: {user_input}")
-        print(f"NovaBot: {result['response']}")
-        print(f"Intent: {result['intent']}, Emotion: {result['text_emotion']}")

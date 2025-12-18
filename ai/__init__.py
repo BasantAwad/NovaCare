@@ -1,43 +1,54 @@
 """
 NovaCare AI Package
-Centralized imports for all AI modules.
+Centralized imports following SOLID principles.
+
+Structure:
+- ai/interfaces/  - Abstract interfaces (ISP)
+- ai/impl/        - Concrete implementations (SRP)
 """
 
-# Emotion Detection (Face)
-try:
-    from .emotion_detector import EmotionDetector, get_detector
-except ImportError as e:
-    print(f"[AI] Emotion detector unavailable: {e}")
-    EmotionDetector = None
-    get_detector = None
+# ==================== INTERFACES ====================
+from ai.interfaces import IEmotionAnalyzer, IConversationalAgent, IMedicalQA
 
-# Text Emotion Analysis
-try:
-    from .text_emotion import TextEmotionAnalyzer, get_text_analyzer
-except ImportError as e:
-    print(f"[AI] Text emotion unavailable: {e}")
-    TextEmotionAnalyzer = None
-    get_text_analyzer = None
+# ==================== IMPLEMENTATIONS ====================
+from ai.impl import EmotionAnalyzer, ConversationalAI, MedicalQA
 
-# Medical QA
-try:
-    from .medical_qa import MedicalQA, get_medical_qa
-except ImportError as e:
-    print(f"[AI] Medical QA unavailable: {e}")
-    MedicalQA = None
-    get_medical_qa = None
 
-# Conversational AI
-try:
-    from .conversational_ai import ConversationalAI, get_conversational_ai
-except ImportError as e:
-    print(f"[AI] Conversational AI unavailable: {e}")
-    ConversationalAI = None
-    get_conversational_ai = None
+# ==================== SINGLETON GETTERS (DIP) ====================
+_emotion_analyzer_instance = None
+_conversational_ai_instance = None
+_medical_qa_instance = None
+
+
+def get_emotion_analyzer() -> EmotionAnalyzer:
+    """Get singleton EmotionAnalyzer instance."""
+    global _emotion_analyzer_instance
+    if _emotion_analyzer_instance is None:
+        _emotion_analyzer_instance = EmotionAnalyzer()
+    return _emotion_analyzer_instance
+
+
+def get_conversational_ai() -> ConversationalAI:
+    """Get singleton ConversationalAI instance."""
+    global _conversational_ai_instance
+    if _conversational_ai_instance is None:
+        _conversational_ai_instance = ConversationalAI()
+    return _conversational_ai_instance
+
+
+def get_medical_qa() -> MedicalQA:
+    """Get singleton MedicalQA instance."""
+    global _medical_qa_instance
+    if _medical_qa_instance is None:
+        _medical_qa_instance = MedicalQA()
+    return _medical_qa_instance
+
 
 __all__ = [
-    'EmotionDetector', 'get_detector',
-    'TextEmotionAnalyzer', 'get_text_analyzer', 
-    'MedicalQA', 'get_medical_qa',
-    'ConversationalAI', 'get_conversational_ai'
+    # Interfaces
+    'IEmotionAnalyzer', 'IConversationalAgent', 'IMedicalQA',
+    # Implementations
+    'EmotionAnalyzer', 'ConversationalAI', 'MedicalQA',
+    # Getters
+    'get_emotion_analyzer', 'get_conversational_ai', 'get_medical_qa'
 ]

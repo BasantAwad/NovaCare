@@ -20,7 +20,6 @@ def train_medical_qa():
         from ai.medical_qa import MedicalQA
         qa = MedicalQA()
         
-        # Train on Med_Dataset
         success = qa.train(
             dataset_name="Med-dataset/Med_Dataset",
             epochs=3,
@@ -61,8 +60,8 @@ def train_conversational_ai(dataset_path=None):
         print(f"✗ Error: {e}")
 
 
-def train_emotion_detector(dataset_path=None):
-    """Train the facial emotion detection model"""
+def train_emotion_face(dataset_path=None):
+    """Train the facial emotion detection model using unified EmotionAnalyzer"""
     print("\n" + "="*60)
     print("TRAINING: Facial Emotion Detection")
     print("="*60)
@@ -73,23 +72,18 @@ def train_emotion_detector(dataset_path=None):
         return
     
     try:
-        from ai.emotion_detector import EmotionDetector
-        detector = EmotionDetector()
+        from ai.emotion_analyzer import EmotionAnalyzer
+        analyzer = EmotionAnalyzer()
         
-        history = detector.train(
-            dataset_path=dataset_path,
-            epochs=25,
-            batch_size=64
-        )
-        
-        print("✓ Emotion detector training complete!")
+        history = analyzer.train(dataset_path, mode='face', epochs=25, batch_size=64)
+        print("✓ Face emotion training complete!")
         
     except Exception as e:
         print(f"✗ Error: {e}")
 
 
-def train_text_emotion(dataset_path=None):
-    """Train the text emotion classifier"""
+def train_emotion_text(dataset_path=None):
+    """Train the text emotion classifier using unified EmotionAnalyzer"""
     print("\n" + "="*60)
     print("TRAINING: Text Emotion Classifier")
     print("="*60)
@@ -100,10 +94,10 @@ def train_text_emotion(dataset_path=None):
         return
     
     try:
-        from ai.text_emotion import TextEmotionAnalyzer
-        analyzer = TextEmotionAnalyzer()
+        from ai.emotion_analyzer import EmotionAnalyzer
+        analyzer = EmotionAnalyzer()
         
-        accuracy = analyzer.train(dataset_path)
+        accuracy = analyzer.train(dataset_path, mode='text')
         print(f"✓ Text emotion training complete! Accuracy: {accuracy:.2%}")
         
     except Exception as e:
@@ -141,8 +135,8 @@ def main():
     parser.add_argument("--all", action="store_true", help="Train all models")
     parser.add_argument("--medical", action="store_true", help="Train Medical QA model")
     parser.add_argument("--conversation", action="store_true", help="Train Conversational AI")
-    parser.add_argument("--emotion", action="store_true", help="Train Emotion Detector (face)")
-    parser.add_argument("--text-emotion", action="store_true", help="Train Text Emotion Classifier")
+    parser.add_argument("--emotion-face", action="store_true", help="Train Emotion Analyzer (face)")
+    parser.add_argument("--emotion-text", action="store_true", help="Train Emotion Analyzer (text)")
     parser.add_argument("--download", action="store_true", help="Download Kaggle datasets")
     
     parser.add_argument("--emotion-dataset", type=str, help="Path to facial emotion dataset")
@@ -165,18 +159,19 @@ def main():
     if args.all or args.conversation:
         train_conversational_ai(args.conversation_dataset)
     
-    if args.emotion:
-        train_emotion_detector(args.emotion_dataset)
+    if args.emotion_face:
+        train_emotion_face(args.emotion_dataset)
     
-    if args.text_emotion:
-        train_text_emotion(args.text_emotion_dataset)
+    if args.emotion_text:
+        train_emotion_text(args.text_emotion_dataset)
     
-    if not any([args.all, args.medical, args.conversation, args.emotion, args.text_emotion]):
+    if not any([args.all, args.medical, args.conversation, args.emotion_face, args.emotion_text]):
         print("\nNo training option selected. Use --help to see options.")
         print("\nExamples:")
         print("  python train_models.py --all                    # Train medical + conversation")
         print("  python train_models.py --medical                # Train medical QA only")
-        print("  python train_models.py --emotion --emotion-dataset /path/to/fer")
+        print("  python train_models.py --emotion-face --emotion-dataset /path/to/fer")
+        print("  python train_models.py --emotion-text --text-emotion-dataset /path/to/csv")
         print("  python train_models.py --download               # Download Kaggle datasets")
     
     print("\n" + "="*60)
