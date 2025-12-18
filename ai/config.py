@@ -3,6 +3,10 @@ NovaCare AI - Configuration
 Central configuration for all AI modules.
 """
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 
 class Config:
@@ -14,8 +18,8 @@ class Config:
     # DO NOT HARDCODE API KEYS HERE. Set the GEMINI_API_KEY environment variable.
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     
-    # Model configuration
-    MODEL_NAME = "gemini-1.5-flash"
+    # Model configuration - Full model name including 'models/' prefix
+    MODEL_NAME = "models/gemini-2.5-flash"
     
     @classmethod
     def is_configured(cls) -> bool:

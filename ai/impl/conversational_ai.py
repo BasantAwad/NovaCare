@@ -3,7 +3,8 @@ NovaCare AI - ConversationalAI Implementation
 Gemini-powered Conversational Agent for NovaBot.
 Reflects the persona, safety protocols, and hardware context of the assistive rover.
 """
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from typing import Optional
 from ai.config import Config
 
@@ -19,9 +20,10 @@ class ConversationalAI:
         self.api_key = api_key or Config.GEMINI_API_KEY
         
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            print("[ConversationalAI] Gemini SDK Initialized")
+            self.client = genai.Client(api_key=self.api_key)
+            print("[ConversationalAI] Gemini SDK Initialized (google.genai)")
         else:
+            self.client = None
             print("[ConversationalAI] WARNING: No API key found for Gemini")
         
         # ... rest of the instructions ...
@@ -48,21 +50,18 @@ class ConversationalAI:
         """
         
         try:
-            self.model = genai.GenerativeModel(
-                model_name=Config.MODEL_NAME,
-                system_instruction=self.system_instruction
-            )
-            # Initialize chat
-            self.chat_session = self.model.start_chat(history=[])
+            self.model_name = Config.MODEL_NAME
+            self.chat_history = []
+            print(f"[ConversationalAI] Using model: {self.model_name}")
         except Exception as e:
             print(f"[ConversationalAI] Model initialization error: {e}")
-            self.model = None
+            self.client = None
 
     def generate_response(self, user_input: str, emotion: Optional[str] = None) -> str:
         """
         Generate a response to user input, incorporating emotional context.
         """
-        if not self.model or not self.api_key:
+        if not self.client or not self.api_key:
             return "I am currently offline. Please check my connection."
 
         try:
@@ -79,11 +78,35 @@ class ConversationalAI:
                 User: {user_input}
                 """
 
-            # 2. Generate
-            response = self.chat_session.send_message(prompt)
+            # 2. Build message history for context
+            contents = [types.Content(
+                role="user",
+                parts=[types.Part(text=self.system_instruction)]
+            )]
+            
+            # Add chat history
+            for msg in self.chat_history[-6:]:  # Keep last 3 exchanges
+                contents.append(msg)
+            
+            # Add current message
+            contents.append(types.Content(
+                role="user",
+                parts=[types.Part(text=prompt)]
+            ))
+
+            # 3. Generate using new API
+            response = self.client.models.generate_content(
+                model=self.model_name,  # Already includes 'models/' prefix from Config
+                contents=contents
+            )
+            
             clean_response = response.text.replace("*", "").strip() # Clean markdown for cleaner TTS
             
-            # 3. Fallback check
+            # 4. Update history
+            self.chat_history.append(types.Content(role="user", parts=[types.Part(text=user_input)]))
+            self.chat_history.append(types.Content(role="model", parts=[types.Part(text=clean_response)]))
+            
+            # 5. Fallback check
             if not clean_response:
                 return "I am listening. Could you repeat that?"
                 
@@ -95,8 +118,8 @@ class ConversationalAI:
 
     def clear_history(self) -> None:
         """Clear conversation history."""
-        if self.model:
-            self.chat_session = self.model.start_chat(history=[])
+        if self.client:
+            self.chat_history = []
             print("[ConversationalAI] Memory cleared")
 
     def train(self, dataset_path: str = None, **kwargs) -> bool:
