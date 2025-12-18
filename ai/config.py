@@ -10,8 +10,9 @@ class Config:
     Central configuration for NovaCare AI modules.
     """
     
-    # API Token - Priority: Environment Variable > Hardcoded Fallback
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB7oilCjUqHK2zX8KBkafoS7hF_1_BSHsU")
+    # API Token - Priority: Environment Variable
+    # DO NOT HARDCODE API KEYS HERE. Set the GEMINI_API_KEY environment variable.
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     
     # Model configuration
     MODEL_NAME = "gemini-1.5-flash"
