@@ -3,8 +3,12 @@ from typing import Optional, List, Dict
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
-# Load environment variables
-load_dotenv()
+
+# Load environment variables from .env file in parent directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+env_path = os.path.join(parent_dir, '.env')
+load_dotenv(env_path, override=True)
 
 # Configuration - Read from .env file
 API_KEY = os.getenv("HUGGINGFACE_API_KEY")
