@@ -1,31 +1,28 @@
 """
 Face Emotion Predictor - Specialist 3
-Uses ResNet50 fine-tuned on FER2013 dataset for facial emotion recognition.
+Uses model fine-tuned on FER2013 dataset for facial emotion recognition.
+Loads from HuggingFace: BasantAwad/facial-emotion
 """
 
 import os
 import cv2
 import numpy as np
 import torch
-import torch.nn as nn
-from typing import Dict, Optional, List, Tuple, Union
+from typing import Dict, Optional, List, Union
 from PIL import Image
 
-# Try TensorFlow/Keras first, fall back to PyTorch
+# Try to import transformers for HuggingFace model
 try:
-    import tensorflow as tf
-    from tensorflow.keras.applications import ResNet50
-    from tensorflow.keras.models import Model, load_model
-    from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
-    USE_TENSORFLOW = True
+    from transformers import AutoImageProcessor, AutoModelForImageClassification
+    HF_AVAILABLE = True
 except ImportError:
-    USE_TENSORFLOW = False
-    from torchvision import models, transforms
+    HF_AVAILABLE = False
+    print("Warning: transformers not installed. Install with: pip install transformers")
 
 
 class FaceEmotionAnalyzer:
     """
-    Face-based emotion analyzer using ResNet50.
+    Face-based emotion analyzer using HuggingFace model.
     Analyzes facial expressions to detect emotions.
     """
     
@@ -34,168 +31,101 @@ class FaceEmotionAnalyzer:
     
     # Image specifications
     TARGET_SIZE = (224, 224)
-    FER_SIZE = (48, 48)
-    
-    # ImageNet normalization values
-    IMAGENET_MEAN = [0.485, 0.456, 0.406]
-    IMAGENET_STD = [0.229, 0.224, 0.225]
     
     def __init__(
         self,
         model_path: Optional[str] = None,
+        use_huggingface: bool = True,
         device: Optional[str] = None
     ):
         """
         Initialize the Face Emotion Analyzer.
         
         Args:
-            model_path: Path to locally saved model.
+            model_path: Path to locally saved model (optional).
+            use_huggingface: If True, load model from HuggingFace.
             device: Device to run model on ('cuda' or 'cpu').
         """
         self.device = device or ('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = None
-        self.use_tensorflow = USE_TENSORFLOW
+        self.processor = None
         
         # Load face detector
         self.face_cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         )
         
-        if model_path and os.path.exists(model_path):
-            self._load_model(model_path)
+        if use_huggingface and HF_AVAILABLE:
+            self._load_huggingface_model(model_path)
+        elif model_path and os.path.exists(model_path):
+            self._load_local_model(model_path)
         else:
-            print("No pre-trained model found. Building base architecture...")
-            self._build_model()
+            print("Warning: No model loaded. Please provide a model path or enable HuggingFace.")
     
-    def _build_model(self):
-        """Build the ResNet50 model architecture."""
-        if self.use_tensorflow:
-            self._build_tensorflow_model()
-        else:
-            self._build_pytorch_model()
-    
-    def _build_tensorflow_model(self):
-        """Build model using TensorFlow/Keras."""
-        print("Building TensorFlow model...")
-        
-        # Load ResNet50 without the top classification layer
-        base_model = ResNet50(
-            weights='imagenet',
-            include_top=False,
-            input_shape=(224, 224, 3)
-        )
-        
-        # Freeze base model layers (optional - unfreeze for fine-tuning)
-        for layer in base_model.layers:
-            layer.trainable = False
-        
-        # Add custom classification head
-        x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(512, activation='relu')(x)
-        x = Dropout(0.5)(x)
-        x = Dense(256, activation='relu')(x)
-        x = Dropout(0.3)(x)
-        outputs = Dense(7, activation='softmax')(x)  # 7 emotions
-        
-        self.model = Model(inputs=base_model.input, outputs=outputs)
-        print("TensorFlow model built successfully!")
-    
-    def _build_pytorch_model(self):
-        """Build model using PyTorch."""
-        print("Building PyTorch model...")
-        
-        # Load pretrained ResNet50
-        self.model = models.resnet50(pretrained=True)
-        
-        # Freeze all layers
-        for param in self.model.parameters():
-            param.requires_grad = False
-        
-        # Replace the final fully connected layer
-        num_features = self.model.fc.in_features
-        self.model.fc = nn.Sequential(
-            nn.Linear(num_features, 512),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(256, 7)  # 7 emotions
-        )
-        
-        self.model.to(self.device)
-        self.model.eval()
-        
-        # Define transforms
-        self.transforms = transforms.Compose([
-            transforms.Resize(self.TARGET_SIZE),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=self.IMAGENET_MEAN, std=self.IMAGENET_STD)
-        ])
-        
-        print(f"PyTorch model built successfully on {self.device}!")
-    
-    def _load_model(self, model_path: str):
-        """Load a saved model from disk."""
-        print(f"Loading model from {model_path}...")
+    def _load_huggingface_model(self, model_path: Optional[str] = None):
+        """Load model from HuggingFace Hub."""
+        # Use custom model or default to user's uploaded model
+        model_name = model_path or "BasantAwad/facial-emotion"
+        print(f"Loading model from HuggingFace: {model_name}")
         
         try:
-            if model_path.endswith('.h5') or model_path.endswith('.keras'):
-                # TensorFlow model
-                self.model = load_model(model_path)
-                self.use_tensorflow = True
-            elif model_path.endswith('.pt') or model_path.endswith('.pth'):
-                # PyTorch model
-                self._build_pytorch_model()
-                state_dict = torch.load(model_path, map_location=self.device)
-                self.model.load_state_dict(state_dict)
-                self.model.eval()
-                self.use_tensorflow = False
-            else:
-                # Try to detect format
-                if os.path.isdir(model_path):
-                    # Likely a SavedModel directory
-                    self.model = tf.keras.models.load_model(model_path)
-                    self.use_tensorflow = True
-                else:
-                    raise ValueError(f"Unknown model format: {model_path}")
+            self.processor = AutoImageProcessor.from_pretrained(model_name)
+            self.model = AutoModelForImageClassification.from_pretrained(model_name)
+            self.model.to(self.device)
+            self.model.eval()
             
-            print("Model loaded successfully!")
+            # Get label mapping from model config
+            if hasattr(self.model.config, 'id2label'):
+                self.id2label = self.model.config.id2label
+            else:
+                self.id2label = {i: label for i, label in enumerate(self.EMOTION_LABELS)}
+            
+            print(f"Model loaded successfully on {self.device}")
+            print(f"Labels: {list(self.id2label.values())}")
             
         except Exception as e:
-            print(f"Error loading model: {e}")
-            print("Building new model instead...")
-            self._build_model()
+            print(f"Error loading HuggingFace model: {e}")
+            self.model = None
+            self.processor = None
     
-    def _preprocess_image(self, image: np.ndarray) -> np.ndarray:
+    def _load_local_model(self, model_path: str):
+        """Load a locally saved model."""
+        print(f"Loading local model from: {model_path}")
+        try:
+            self.processor = AutoImageProcessor.from_pretrained(model_path)
+            self.model = AutoModelForImageClassification.from_pretrained(model_path)
+            self.model.to(self.device)
+            self.model.eval()
+            print("Local model loaded successfully!")
+        except Exception as e:
+            print(f"Error loading local model: {e}")
+            self.model = None
+    
+    def _preprocess_image(self, image: np.ndarray) -> Image.Image:
         """
         Preprocess image for model input.
-        Handles grayscale conversion and resizing.
         
         Args:
-            image: Input image (BGR format from OpenCV or RGB).
+            image: Input image (BGR format from OpenCV).
         
         Returns:
-            Preprocessed image array.
+            PIL Image ready for processing.
         """
         # Convert grayscale to RGB if needed
         if len(image.shape) == 2:
-            # Grayscale - stack to create 3 channels
             image = np.stack([image, image, image], axis=-1)
         elif image.shape[-1] == 1:
             image = np.concatenate([image, image, image], axis=-1)
         elif image.shape[-1] == 4:
-            # BGRA to RGB
             image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
         elif image.shape[-1] == 3:
-            # Assume BGR from OpenCV - convert to RGB
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         # Resize to target size
         image = cv2.resize(image, self.TARGET_SIZE)
         
-        return image
+        # Convert to PIL Image
+        return Image.fromarray(image)
     
     def _detect_face(self, image: np.ndarray) -> Optional[np.ndarray]:
         """
@@ -247,14 +177,8 @@ class FaceEmotionAnalyzer:
         
         Returns:
             Dictionary with emotion and confidence.
-            {
-                "emotion": "happy",
-                "confidence": 0.95,
-                "face_detected": True,
-                "all_scores": {...}  # Optional
-            }
         """
-        if self.model is None:
+        if self.model is None or self.processor is None:
             return {
                 "emotion": "unknown",
                 "confidence": 0.0,
@@ -279,30 +203,26 @@ class FaceEmotionAnalyzer:
                     image = face
                 else:
                     face_detected = False
-                    # Use full image if no face detected
             
             # Preprocess
-            processed = self._preprocess_image(image)
+            pil_image = self._preprocess_image(image)
+            
+            # Process with HuggingFace processor
+            inputs = self.processor(images=pil_image, return_tensors="pt")
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
             
             # Run inference
-            if self.use_tensorflow:
-                # TensorFlow inference
-                processed = processed.astype(np.float32) / 255.0
-                processed = np.expand_dims(processed, axis=0)
-                predictions = self.model.predict(processed, verbose=0)[0]
-            else:
-                # PyTorch inference
-                pil_image = Image.fromarray(processed)
-                tensor = self.transforms(pil_image).unsqueeze(0).to(self.device)
-                
-                with torch.no_grad():
-                    outputs = self.model(tensor)
-                    predictions = torch.nn.functional.softmax(outputs, dim=1)[0].cpu().numpy()
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+                logits = outputs.logits
+                probabilities = torch.nn.functional.softmax(logits, dim=-1)
             
-            # Get top prediction
-            predicted_idx = np.argmax(predictions)
-            confidence = float(predictions[predicted_idx])
-            emotion = self.EMOTION_LABELS[predicted_idx]
+            # Get predictions
+            probs = probabilities[0].cpu().numpy()
+            predicted_idx = int(np.argmax(probs))
+            confidence = float(probs[predicted_idx])
+            
+            emotion = self.id2label.get(predicted_idx, self.EMOTION_LABELS[predicted_idx % len(self.EMOTION_LABELS)])
             
             response = {
                 "emotion": emotion,
@@ -312,8 +232,8 @@ class FaceEmotionAnalyzer:
             
             if return_all_scores:
                 response["all_scores"] = {
-                    self.EMOTION_LABELS[i]: round(float(p), 4)
-                    for i, p in enumerate(predictions)
+                    self.id2label.get(i, f"emotion_{i}"): round(float(p), 4)
+                    for i, p in enumerate(probs)
                 }
             
             return response
@@ -331,16 +251,7 @@ class FaceEmotionAnalyzer:
         images: List[Union[str, np.ndarray]],
         detect_face: bool = True
     ) -> List[Dict]:
-        """
-        Predict emotions for multiple images.
-        
-        Args:
-            images: List of image paths or numpy arrays.
-            detect_face: If True, detect and crop face first.
-        
-        Returns:
-            List of prediction dictionaries.
-        """
+        """Predict emotions for multiple images."""
         return [self.predict(img, detect_face=detect_face) for img in images]
     
     def predict_from_video_frames(
@@ -348,18 +259,9 @@ class FaceEmotionAnalyzer:
         frames: List[np.ndarray],
         detect_face: bool = True
     ) -> Dict:
-        """
-        Analyze emotions across video frames and aggregate results.
-        
-        Args:
-            frames: List of video frames.
-            detect_face: If True, detect face in each frame.
-        
-        Returns:
-            Aggregated emotion analysis.
-        """
+        """Analyze emotions across video frames and aggregate results."""
         all_predictions = []
-        emotion_counts = {e: 0 for e in self.EMOTION_LABELS}
+        emotion_counts = {}
         total_confidence = 0.0
         faces_detected = 0
         
@@ -368,15 +270,15 @@ class FaceEmotionAnalyzer:
             all_predictions.append(result)
             
             if result['emotion'] != 'unknown':
-                emotion_counts[result['emotion']] += 1
+                emotion = result['emotion']
+                emotion_counts[emotion] = emotion_counts.get(emotion, 0) + 1
                 total_confidence += result['confidence']
                 if result.get('face_detected', False):
                     faces_detected += 1
         
-        # Get dominant emotion
         valid_predictions = [p for p in all_predictions if p['emotion'] != 'unknown']
         
-        if valid_predictions:
+        if valid_predictions and emotion_counts:
             dominant_emotion = max(emotion_counts, key=emotion_counts.get)
             avg_confidence = total_confidence / len(valid_predictions)
         else:
@@ -388,32 +290,9 @@ class FaceEmotionAnalyzer:
             "average_confidence": round(avg_confidence, 4),
             "frames_analyzed": len(frames),
             "faces_detected": faces_detected,
-            "emotion_distribution": {
-                k: v / len(frames) if len(frames) > 0 else 0
-                for k, v in emotion_counts.items()
-            },
+            "emotion_distribution": emotion_counts,
             "frame_predictions": all_predictions
         }
-    
-    def save_model(self, save_path: str):
-        """
-        Save the model to disk.
-        
-        Args:
-            save_path: Path to save the model.
-        """
-        if self.model is None:
-            print("No model to save!")
-            return
-        
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        
-        if self.use_tensorflow:
-            self.model.save(save_path)
-        else:
-            torch.save(self.model.state_dict(), save_path)
-        
-        print(f"Model saved to {save_path}")
 
 
 # ============================================================================
@@ -424,8 +303,8 @@ if __name__ == "__main__":
     print("Face Emotion Analyzer - Demo")
     print("=" * 60)
     
-    # Initialize analyzer
-    analyzer = FaceEmotionAnalyzer()
+    # Initialize analyzer with HuggingFace model
+    analyzer = FaceEmotionAnalyzer(use_huggingface=True)
     
     # Test with sample image (if available)
     test_image_path = "data/face_data/sample.jpg"
