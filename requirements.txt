@@ -6,3 +6,8 @@ numpy>=1.24.0
 pillow>=10.0.0
 transformers>=4.35.0
 torch>=2.0.0
+mediapipe>=0.10.0
+SpeechRecognition>=3.10.0
+PyAudio>=0.2.13
+ultralytics>=8.0.0
+tf-keras
