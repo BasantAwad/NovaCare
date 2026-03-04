@@ -16,10 +16,40 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/rover/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/page.js"
+    ],
     "/rover/medications/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/rover/medications/page.js"
+    ],
+    "/rover/navigate/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/navigate/page.js"
+    ],
+    "/rover/emergency/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/emergency/page.js"
+    ],
+    "/rover/health/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/health/page.js"
+    ],
+    "/rover/entertainment/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/entertainment/page.js"
+    ],
+    "/rover/settings/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/rover/settings/page.js"
     ],
     "/page": [
       "static/chunks/webpack.js",
@@ -35,6 +65,26 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/guardian/layout.js"
+    ],
+    "/guardian/medications/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/guardian/medications/page.js"
+    ],
+    "/guardian/activity/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/guardian/activity/page.js"
+    ],
+    "/guardian/communication/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/guardian/communication/page.js"
+    ],
+    "/guardian/settings/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/guardian/settings/page.js"
     ],
     "/medical/page": [
       "static/chunks/webpack.js",
@@ -76,30 +126,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/medical/settings/page.js"
     ],
-    "/guardian/medications/page": [
+    "/rover/help/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/guardian/medications/page.js"
-    ],
-    "/guardian/activity/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/guardian/activity/page.js"
-    ],
-    "/guardian/communication/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/guardian/communication/page.js"
-    ],
-    "/guardian/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/guardian/settings/page.js"
-    ],
-    "/rover/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/rover/page.js"
+      "static/chunks/app/rover/help/page.js"
     ]
   }
 }

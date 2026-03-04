@@ -6,6 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { sendMessage as sendToNovaBot, checkHealth, clearHistory } from "@/lib/novabot-api";
 import { STTService, TTSService } from "@/lib/speech";
+import ASLRecognitionModal from "@/components/ASLRecognitionModal";
 
 interface Message {
   id: number;
@@ -37,6 +38,7 @@ export default function TalkPage() {
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [isASLModalOpen, setIsASLModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sttRef = useRef<STTService | null>(null);
   const ttsRef = useRef<TTSService | null>(null);
@@ -189,6 +191,19 @@ export default function TalkPage() {
     }
   }, []);
 
+  // Handle ASL text confirmation - set it as input and send
+  const handleASLConfirm = useCallback((text: string) => {
+    setIsASLModalOpen(false);
+    if (text.trim()) {
+      setInputText(text);
+      // Auto-send the ASL text
+      setTimeout(() => {
+        const sendButton = document.querySelector('[data-send-button]') as HTMLButtonElement;
+        if (sendButton) sendButton.click();
+      }, 100);
+    }
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col animate-fade-in">
       {/* Connection Status Banner */}
@@ -255,7 +270,10 @@ export default function TalkPage() {
           {isListening ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
           <span className="text-lg font-semibold">{isListening ? "Stop" : "Voice"}</span>
         </button>
-        <button className="rover-btn flex-1 py-4 px-6 rounded-2xl bg-white dark:bg-gray-800 border-2 border-secondary text-secondary flex items-center justify-center gap-3">
+        <button 
+          onClick={() => setIsASLModalOpen(true)}
+          className="rover-btn flex-1 py-4 px-6 rounded-2xl bg-white dark:bg-gray-800 border-2 border-secondary text-secondary flex items-center justify-center gap-3 hover:bg-secondary hover:text-white transition-all"
+        >
           <Hand className="w-6 h-6" />
           <span className="text-lg font-semibold">Sign Language</span>
         </button>
@@ -346,6 +364,7 @@ export default function TalkPage() {
         <button
           onClick={handleSend}
           disabled={!inputText.trim() || isTyping}
+          data-send-button
           className={cn(
             "rover-btn px-8 py-4 rounded-2xl flex items-center gap-3 transition-all",
             inputText.trim() && !isTyping
@@ -361,6 +380,13 @@ export default function TalkPage() {
           <span className="text-lg font-semibold">{isTyping ? "Sending" : "Send"}</span>
         </button>
       </div>
+
+      {/* ASL Recognition Modal */}
+      <ASLRecognitionModal
+        isOpen={isASLModalOpen}
+        onClose={() => setIsASLModalOpen(false)}
+        onConfirm={handleASLConfirm}
+      />
     </div>
   );
 }

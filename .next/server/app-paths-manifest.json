@@ -1,9 +1,8 @@
 {
-  "/page": "app/page.js",
-  "/guardian/page": "app/guardian/page.js",
-  "/guardian/medications/page": "app/guardian/medications/page.js",
+  "/rover/emergency/page": "app/rover/emergency/page.js",
+  "/rover/help/page": "app/rover/help/page.js",
+  "/rover/health/page": "app/rover/health/page.js",
+  "/rover/settings/page": "app/rover/settings/page.js",
   "/rover/page": "app/rover/page.js",
-  "/guardian/communication/page": "app/guardian/communication/page.js",
-  "/guardian/activity/page": "app/guardian/activity/page.js",
-  "/rover/talk/page": "app/rover/talk/page.js"
+  "/rover/entertainment/page": "app/rover/entertainment/page.js"
 }
