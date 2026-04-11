@@ -4,7 +4,7 @@ NovaCare is an AI-powered healthcare companion application with three integrated
 
 | Service | Port | Tech | Description |
 |---------|------|------|-------------|
-| 🖐️ ASL Model API | `8000` | FastAPI | Real-time ASL fingerspelling recognition |
+| 🖐️ ASL Model API | `8001` | FastAPI | Real-time ASL fingerspelling recognition |
 | 🤖 LLM Backend | `5000` | Flask | Conversational AI chatbot (NovaBot) |
 | 🖥️ Frontend | `3000` | Next.js | User interface with multiple dashboards |
 
