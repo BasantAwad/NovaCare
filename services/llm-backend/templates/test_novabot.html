@@ -306,6 +306,10 @@
         </div>
     </div>
 
+    <!-- Optional TTS: direct Pocket POST /tts (wins over proxy if both set)
+         <script>window.NOVACARE_POCKET_TTS_URL = 'http://127.0.0.1:8000';</script> -->
+    <!-- Optional: NovaCare edge proxy POST /api/speak
+         <script>window.NOVACARE_EDGE_TTS_URL = 'http://127.0.0.1:8765';</script> -->
     <!-- Include required scripts -->
     <script src="{{ url_for('static', filename='js/STT.js') }}"></script>
     <script src="{{ url_for('static', filename='js/TTS.js') }}"></script>

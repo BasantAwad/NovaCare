@@ -66,6 +66,18 @@ python start_server.py
 
 Open `http://localhost:5000` for the bundled test page. For voice/text tests, use the **Cloud model (higher quality, slower)** checkbox to send `prefer_quality: true`.
 
+### Test UI: remote TTS (Pocket / proxy)
+
+The bundled page can use the same HTTP TTS stack as the Next.js rover (optional). Configure in HTML (see comments in `templates/test_novabot.html`) or before loading scripts:
+
+| Global | Purpose |
+|--------|---------|
+| `window.NOVACARE_POCKET_TTS_URL` | Pocket base URL → browser **`POST …/tts`** (wins if set). |
+| `window.NOVACARE_POCKET_TTS_VOICE_URL` | Optional Pocket `voice_url` form field. |
+| `window.NOVACARE_EDGE_TTS_URL` | NovaCare edge proxy → **`POST …/api/speak`** (used if Pocket URL unset). |
+
+Implementation: `static/js/TTS.js`. Full behavior, CORS, and Jetson deployment: **[../../docs/tts.md](../../docs/tts.md)**.
+
 ## Other endpoints
 
 - `POST /api/clear` — clear server-side chat history.

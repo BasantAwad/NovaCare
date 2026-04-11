@@ -107,6 +107,7 @@ frontend/
 **API Communication:**
 - → LLM Backend: via `NEXT_PUBLIC_NOVABOT_API_URL` env var (default `http://localhost:5000`)
 - → ASL Model: via hardcoded `http://localhost:8000` in `lib/asl-api.ts`
+- → Edge TTS (optional): via `NEXT_PUBLIC_EDGE_TTS_URL` to NovaCare `edge-tts-proxy` (see `docs/tts.md`)
 
 ---
 

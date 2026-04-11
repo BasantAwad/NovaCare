@@ -125,7 +125,7 @@ class InferenceConfig:
 class APIConfig:
     """API configuration"""
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
     
     # CORS
     allow_origins: List[str] = field(default_factory=lambda: ["*"])
