@@ -2,6 +2,8 @@
 
 AI-powered healthcare companion with emotional support, medical Q&A, and vital monitoring.
 
+> **Monorepo note:** The production-style **NovaBot chat API** lives in **`../services/llm-backend`** (Flask, port 5000). It supports **local Ollama** (fast) and **Hugging Face Inference** (quality), with `llm_profile` / `prefer_quality` on `POST /api/chat`. See **`../services/llm-backend/README.md`** and the root **`../README.md`**. The `frontend/ai/` package below is used by the integrated Flask dashboard (`frontend/backend`) and may use different provider config than the LLM Backend.
+
 ## 🚀 Quick Start
 
 ```bash
@@ -95,6 +97,6 @@ set HF_API_TOKEN=hf_your_token_here
 ## 📊 Tech Stack
 
 **Backend:** Flask, SQLAlchemy  
-**AI:** HuggingFace Inference API  
+**AI:** Provider-specific (e.g. Gemini / Hugging Face in `ai/`); separate **LLM Backend** uses Ollama + Hugging Face — see `services/llm-backend/README.md`  
 **Frontend:** Bootstrap 5, Chart.js  
 **Database:** SQLite

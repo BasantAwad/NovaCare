@@ -23,8 +23,9 @@ class NovaBrain:
     def __init__(self):
         print("[NovaBrain] Initializing AI modules...")
         
-        # Initialize sub-modules via DI
+        # Initialize sub-modules via DI (chat → Flask LLM Backend by default; see ai package)
         self.conversational_ai = get_conversational_ai()
+        print(f"[NovaBrain] Conversational backend: {type(self.conversational_ai).__name__}")
         self.emotion_analyzer = get_emotion_analyzer()
         self.medical_qa = get_medical_qa()
         

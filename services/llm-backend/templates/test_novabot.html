@@ -296,6 +296,13 @@
                 <label>API Status:</label>
                 <span id="apiStatus">Not checked</span>
             </div>
+            <div class="setting-item">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="qualityLlm">
+                    Cloud model (higher quality, slower)
+                </label>
+                <small style="color: #666;">When unchecked, the server default applies (local Ollama if configured).</small>
+            </div>
         </div>
     </div>
 
@@ -322,7 +329,12 @@
                 apiEndpoint: '/api/chat',
                 ttsEnabled: true,
                 ttsRate: 0.9,
-                sttLang: 'en-US'
+                sttLang: 'en-US',
+                chatPayloadExtras: () => {
+                    const el = document.getElementById('qualityLlm');
+                    if (el && el.checked) return { prefer_quality: true };
+                    return {};
+                }
             });
 
             // Setup callbacks
@@ -458,7 +470,9 @@
             try {
                 const response = await fetch(`${apiUrl}/health`);
                 if (response.ok) {
-                    statusElement.textContent = '✅ Connected';
+                    const h = await response.json();
+                    const def = h.llm && h.llm.default_profile ? h.llm.default_profile : '';
+                    statusElement.textContent = def ? `✅ Connected (default LLM: ${def})` : '✅ Connected';
                     statusElement.style.color = '#28a745';
                 } else {
                     throw new Error('Server responded with error');

@@ -24,6 +24,7 @@ novacare/
 │   │   └── requirements.txt
 │   │
 │   └── llm-backend/        ← Flask LLM chatbot service
+│       ├── README.md       ← Env vars, Ollama + Hugging Face routing, API
 │       ├── LLMs/           ← Conversational AI logic
 │       ├── utils/           ← Utility functions
 │       ├── static/js/      ← Client-side JS (NovaBotClient, STT, TTS)
@@ -52,7 +53,7 @@ novacare/
 ### Prerequisites
 - **Node.js** v18+ and **npm**
 - **Python** 3.10+
-- A **Hugging Face API key**
+- For **NovaBot chat** (LLM Backend): either **[Ollama](https://ollama.com/)** with a pulled model (e.g. `ollama pull qwen2.5:0.5b`) and/or a **Hugging Face API key** (see `services/llm-backend/README.md`)
 
 ### First-Time Setup
 
@@ -80,9 +81,13 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# Create .env file with your Hugging Face key:
-echo HUGGINGFACE_API_KEY=hf_your_key_here > .env
+# Create .env — use Ollama for fast local chat, Hugging Face for quality / fallback:
+#   OLLAMA_MODEL=qwen2.5:0.5b
+#   HUGGINGFACE_API_KEY=hf_your_key_here
+# Optional: CHAT_LLM_DEFAULT_PROFILE=fast|quality, MODEL_NAME=..., OLLAMA_BASE_URL=...
 ```
+
+See **`services/llm-backend/README.md`** for dual routing, `POST /api/chat` fields (`llm_profile`, `prefer_quality`), and defaults.
 
 #### 3. Frontend
 ```powershell
@@ -90,9 +95,8 @@ cd frontend
 
 npm install
 
-# Create .env.local:
+# Create .env.local (NovaBot talks to the LLM Backend; keys below are only needed if the frontend reads them directly):
 echo NEXT_PUBLIC_NOVABOT_API_URL=http://localhost:5000 > .env.local
-echo HUGGINGFACE_API_KEY=hf_your_key_here >> .env.local
 ```
 
 ### ⚡ Start All Services (One Command!)

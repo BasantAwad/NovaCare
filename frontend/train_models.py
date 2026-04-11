@@ -1,7 +1,8 @@
 """
 NovaCare - Model Training Script
 Note: With API-based models, training is only needed for local face emotion model.
-For conversational and medical QA, the HuggingFace Inference API is used.
+The standalone LLM Backend (services/llm-backend) uses Ollama and/or Hugging Face for chat;
+this package's conversational/medical modules use their own API configuration.
 """
 import os
 import sys
@@ -67,7 +68,7 @@ def main():
     print("="*60)
     print("NovaCare AI Model Training")
     print("="*60)
-    print("\nNote: Conversational AI and Medical QA use HuggingFace API")
+    print("\nNote: Conversational AI / Medical QA here use configured APIs; see services/llm-backend for Ollama + HF chat.")
     print("Only face emotion model requires local training.\n")
     
     if args.download:
