@@ -1,0 +1,21 @@
+[Unit]
+Description=NovaCare — Kyutai Pocket TTS (loopback, for edge proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=novabot
+Group=novabot
+WorkingDirectory=/opt/novacare/edge-tts
+
+# Pocket TTS PyTorch 2.5+; use quantize on Nano if memory is tight:
+#   pocket-tts serve --host 127.0.0.1 --port 8800 --quantize
+ExecStart=/opt/novacare/edge-tts/venv/bin/pocket-tts serve --host 127.0.0.1 --port 8800
+
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

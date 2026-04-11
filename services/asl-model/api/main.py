@@ -2,7 +2,7 @@
 FastAPI Application for ASL Recognition Service
 
 Usage:
-    uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
 
 Or run directly:
     python -m api.main

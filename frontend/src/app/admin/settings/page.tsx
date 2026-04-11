@@ -155,7 +155,7 @@ export default function AdminSettingsPage() {
                                             API Keys
                                         </h4>
                                         <div className="space-y-4">
-                                            <Input label="HuggingFace API Key" type="password" defaultValue="hf_xxxxxxxxxxxxx" helperText="Used by LLM Backend for model inference" />
+                                            <Input label="HuggingFace API Key" type="password" defaultValue="hf_xxxxxxxxxxxxx" helperText="Set in services/llm-backend/.env for Hugging Face (quality) chat; fast path uses Ollama via OLLAMA_MODEL" />
                                         </div>
                                     </div>
                                     <div>

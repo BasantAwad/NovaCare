@@ -86,7 +86,7 @@ if (-not (Test-Path 'venv')) {
 }
 if (-not (Test-Path '.env')) {
     Write-Host '[!] WARNING: No .env file found!' -ForegroundColor Red
-    Write-Host '[!] Create .env with: HUGGINGFACE_API_KEY=your_key_here' -ForegroundColor Yellow
+    Write-Host '[!] Create .env with OLLAMA_MODEL and/or HUGGINGFACE_API_KEY (see README.md)' -ForegroundColor Yellow
 }
 Write-Host '[*] Starting Flask on port 5000...' -ForegroundColor Cyan
 python start_server.py
@@ -108,9 +108,9 @@ if (-not (Test-Path 'node_modules')) {
 }
 if (-not (Test-Path '.env.local')) {
     Write-Host '[!] WARNING: No .env.local file found!' -ForegroundColor Red
-    Write-Host '[!] Create .env.local with:' -ForegroundColor Yellow
+    Write-Host '[!] Create .env.local with at least:' -ForegroundColor Yellow
     Write-Host '    NEXT_PUBLIC_NOVABOT_API_URL=http://localhost:5000' -ForegroundColor Yellow
-    Write-Host '    HUGGINGFACE_API_KEY=your_key_here' -ForegroundColor Yellow
+    Write-Host '[!] LLM keys: services/llm-backend/.env (Ollama + Hugging Face)' -ForegroundColor Yellow
 }
 Write-Host '[*] Starting Next.js on port 3000...' -ForegroundColor Cyan
 npm run dev

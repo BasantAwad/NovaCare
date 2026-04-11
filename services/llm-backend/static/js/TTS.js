@@ -9,6 +9,14 @@ class TTS {
             voiceName: options.voice ?? null
         };
 
+        /** @type {HTMLAudioElement|null} */
+        this._edgeAudio = null;
+        /** @type {string|null} */
+        this._edgeObjectUrl = null;
+        this._edgeTimeoutMs = (typeof window !== 'undefined' && window.NOVACARE_EDGE_TTS_TIMEOUT_MS)
+            ? parseInt(String(window.NOVACARE_EDGE_TTS_TIMEOUT_MS), 10) || 90000
+            : 90000;
+
         this.state = {
             utterance: null,
             speaking: false
@@ -47,12 +55,152 @@ class TTS {
     /* Core API                                                           */
     /* ------------------------------------------------------------------ */
 
+    _pocketBaseUrl() {
+        if (typeof window === 'undefined' || !window.NOVACARE_POCKET_TTS_URL) return '';
+        return String(window.NOVACARE_POCKET_TTS_URL).replace(/\/$/, '');
+    }
+
+    _pocketVoiceUrl() {
+        if (typeof window === 'undefined' || !window.NOVACARE_POCKET_TTS_VOICE_URL) return '';
+        return String(window.NOVACARE_POCKET_TTS_VOICE_URL).trim();
+    }
+
+    _edgeBaseUrl() {
+        if (typeof window === 'undefined' || !window.NOVACARE_EDGE_TTS_URL) return '';
+        return String(window.NOVACARE_EDGE_TTS_URL).replace(/\/$/, '');
+    }
+
+    _cleanForTts(text) {
+        return text
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '')
+            .replace(/#{1,6}\s/g, '')
+            .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+            .trim();
+    }
+
+    _clearEdgeAudio() {
+        if (this._edgeAudio) {
+            const a = this._edgeAudio;
+            a.onplay = null;
+            a.onended = null;
+            a.onerror = null;
+            a.pause();
+            a.src = '';
+            this._edgeAudio = null;
+        }
+        if (this._edgeObjectUrl) {
+            URL.revokeObjectURL(this._edgeObjectUrl);
+            this._edgeObjectUrl = null;
+        }
+    }
+
+    _speakPocketDirect(baseUrl, cleanText, options, originalText) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), this._edgeTimeoutMs);
+
+        const body = new URLSearchParams();
+        body.set('text', cleanText);
+        const vu = this._pocketVoiceUrl();
+        if (vu) body.set('voice_url', vu);
+
+        fetch(`${baseUrl}/tts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: body.toString(),
+            signal: controller.signal
+        })
+            .then((r) => {
+                clearTimeout(timer);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.blob();
+            })
+            .then((blob) => this._playWavBlob(blob, cleanText, options, originalText))
+            .catch(() => {
+                clearTimeout(timer);
+                this._speakWebOnly(cleanText, options, originalText);
+            });
+    }
+
+    _speakEdge(baseUrl, cleanText, options, originalText) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), this._edgeTimeoutMs);
+
+        fetch(`${baseUrl}/api/speak`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: cleanText }),
+            signal: controller.signal
+        })
+            .then((r) => {
+                clearTimeout(timer);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.blob();
+            })
+            .then((blob) => this._playWavBlob(blob, cleanText, options, originalText))
+            .catch(() => {
+                clearTimeout(timer);
+                this._speakWebOnly(cleanText, options, originalText);
+            });
+    }
+
+    _playWavBlob(blob, cleanText, options, originalText) {
+        const url = URL.createObjectURL(blob);
+        this._edgeObjectUrl = url;
+        const audio = new Audio(url);
+        this._edgeAudio = audio;
+        audio.volume = options.volume ?? this.config.volume ?? 1.0;
+        audio.onplay = () => {
+            this.state.speaking = true;
+            this._updateStatus('Speaking...');
+            this.callbacks.start?.(originalText);
+        };
+        audio.onended = () => {
+            this._clearEdgeAudio();
+            this._resetState();
+            this._updateStatus('Finished speaking');
+            this.callbacks.end?.(originalText);
+        };
+        audio.onerror = () => {
+            this._clearEdgeAudio();
+            this._resetState();
+            this._speakWebOnly(cleanText, options, originalText);
+        };
+        return audio.play().catch(() => {
+            this._clearEdgeAudio();
+            this._speakWebOnly(cleanText, options, originalText);
+        });
+    }
+
+    _speakWebOnly(cleanText, options, originalText) {
+        if (!this.isSupported()) {
+            this._emitError('not-supported', 'TTS not supported');
+            return;
+        }
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        this._applyOptions(utterance, options);
+        this._attachEvents(utterance, originalText);
+        window.speechSynthesis.speak(utterance);
+    }
+
     speak(text, options = {}) {
         if (!this._canSpeak(text)) return false;
 
         this.stop();
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        const cleanText = this._cleanForTts(text);
+        const pocket = this._pocketBaseUrl();
+        if (pocket && typeof fetch !== 'undefined') {
+            this._speakPocketDirect(pocket, cleanText, options, text);
+            return true;
+        }
+        const base = this._edgeBaseUrl();
+        if (base && typeof fetch !== 'undefined') {
+            this._speakEdge(base, cleanText, options, text);
+            return true;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
         this._applyOptions(utterance, options);
         this._attachEvents(utterance, text);
 
@@ -61,9 +209,10 @@ class TTS {
     }
 
     stop() {
-        if (!this.isSupported()) return;
-
-        window.speechSynthesis.cancel();
+        this._clearEdgeAudio();
+        if (this.isSupported()) {
+            window.speechSynthesis.cancel();
+        }
         this._resetState();
         this._updateStatus('Speech stopped');
     }
@@ -110,7 +259,10 @@ class TTS {
     }
 
     isCurrentlySpeaking() {
+        const edgePlaying =
+            this._edgeAudio && !this._edgeAudio.paused && !this._edgeAudio.ended;
         return (
+            edgePlaying ||
             this.state.speaking ||
             (this.isSupported() && window.speechSynthesis.speaking)
         );
@@ -189,11 +341,14 @@ class TTS {
 
     _canSpeak(text) {
         if (!this.config.enabled) return false;
+        if (!text || !text.trim()) return false;
+        if (this._pocketBaseUrl() && typeof fetch !== 'undefined') return true;
+        const base = this._edgeBaseUrl();
+        if (base && typeof fetch !== 'undefined') return true;
         if (!this.isSupported()) {
             this._emitError('not-supported', 'TTS not supported');
             return false;
         }
-        if (!text || !text.trim()) return false;
         return true;
     }
 

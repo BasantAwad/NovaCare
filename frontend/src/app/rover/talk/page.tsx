@@ -40,6 +40,7 @@ export default function TalkPage() {
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const [isASLModalOpen, setIsASLModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   const sttRef = useRef<STTService | null>(null);
   const ttsRef = useRef<TTSService | null>(null);
   const messageIdRef = useRef(1);
@@ -84,7 +85,12 @@ export default function TalkPage() {
   }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesScrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -205,10 +211,10 @@ export default function TalkPage() {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto h-full flex flex-col animate-fade-in">
+    <div className="h-full min-h-0 flex flex-col w-full animate-fade-in">
       {/* Connection Status Banner */}
       {isConnected === false && (
-        <div className="mb-4 p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-2xl flex items-center justify-between">
+        <div className="shrink-0 mb-3 sm:mb-4 p-3 sm:p-4 bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-2xl flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <WifiOff className="w-5 h-5 text-orange-500" />
             <span className="text-orange-700 dark:text-orange-300">
@@ -227,7 +233,7 @@ export default function TalkPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      <div className="shrink-0 flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
         <Link
           href="/rover"
           className="rover-btn w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -257,7 +263,7 @@ export default function TalkPage() {
       </div>
 
       {/* Input Mode Selector */}
-      <div className="flex gap-4 mb-6">
+      <div className="shrink-0 flex gap-2 sm:gap-4 mb-3 sm:mb-4">
         <button
           onClick={handleVoiceToggle}
           className={cn(
@@ -291,9 +297,12 @@ export default function TalkPage() {
         </button>
       </div>
 
-      {/* Chat Messages */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700 p-6 overflow-y-auto mb-6">
-        <div className="space-y-6">
+      {/* Chat messages: only this region scrolls; flex-1 + min-h-0 required for nested flex overflow */}
+      <div
+        ref={messagesScrollRef}
+        className="flex-1 min-h-0 bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700 p-4 sm:p-6 overflow-y-auto overscroll-contain mb-3 sm:mb-4"
+      >
+        <div className="space-y-4 sm:space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -335,7 +344,7 @@ export default function TalkPage() {
       </div>
 
       {/* Quick Suggestions */}
-      <div className="flex gap-3 overflow-x-auto pb-4 mb-4">
+      <div className="shrink-0 flex gap-2 sm:gap-3 overflow-x-auto pb-2 mb-2 sm:mb-3 [scrollbar-width:thin]">
         {suggestedQuestions.map((question, index) => (
           <button
             key={index}
@@ -348,7 +357,7 @@ export default function TalkPage() {
       </div>
 
       {/* Text Input */}
-      <div className="flex gap-4">
+      <div className="shrink-0 flex gap-2 sm:gap-4 pt-1">
         <input
           type="text"
           value={inputText}

@@ -13,6 +13,12 @@ class Config:
     """
     Central configuration for NovaCare AI modules.
     """
+
+    # Flask LLM Backend (services/llm-backend) — used by NovaBrain for chat when not on Gemini
+    NOVABOT_LLM_API_URL = os.environ.get(
+        "NOVABOT_LLM_API_URL",
+        os.environ.get("NEXT_PUBLIC_NOVABOT_API_URL", "http://127.0.0.1:5000"),
+    ).rstrip("/")
     
     # API Token - Priority: Environment Variable
     # DO NOT HARDCODE API KEYS HERE. Set the GEMINI_API_KEY environment variable.

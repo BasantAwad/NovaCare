@@ -1,6 +1,6 @@
 # NovaCare — Roadmap & Tasks
 
-> **Deadline:** May 31, 2026 · **Last Updated:** March 8, 2026 · **Team Size:** 5
+> **Deadline:** May 31, 2026 · **Last Updated:** April 11, 2026 · **Team Size:** 5
 
 ---
 
@@ -23,9 +23,9 @@
 |------|--------|---------|
 | ASL fingerspelling model (PyTorch + MediaPipe) | ✅ | ASL Model |
 | ASL FastAPI with `/predict` endpoints | ✅ | ASL Model |
-| NovaBot conversational AI (HuggingFace LLM) | ✅ | LLM Backend |
+| NovaBot conversational AI (Ollama + Hugging Face, dual routing) | ✅ | LLM Backend |
 | Facial emotion detection (ViT model) | ✅ | LLM Backend |
-| Chat API (`/api/chat`, `/api/clear`) | ✅ | LLM Backend |
+| Chat API (`/api/chat` with `llm_profile` / `prefer_quality`, `/api/clear`) | ✅ | LLM Backend |
 | Emotion API (`/api/emotion/detect`) | ✅ | LLM Backend |
 | Rover dashboard (talk, health, meds, emergency, entertainment, navigate, help, settings) | ✅ | Frontend |
 | Guardian dashboard (activity, communication, medications, settings) | ✅ | Frontend |
