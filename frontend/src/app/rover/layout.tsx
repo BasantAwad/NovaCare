@@ -29,9 +29,9 @@ export default function RoverLayout({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 flex flex-col transition-colors">
+    <div className="h-[100dvh] min-h-0 max-h-[100dvh] bg-background dark:bg-gray-900 flex flex-col overflow-hidden transition-colors">
       {/* Status Bar - Rover specific */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+      <header className="shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
         <div className="flex items-center justify-between">
           {/* Left - Time */}
           <div className="flex items-center gap-3">
@@ -71,13 +71,15 @@ export default function RoverLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-8 overflow-auto">
-        {children}
+      {/* Main: min-h-0 lets flex children shrink; width cap matches common robot LCD 16:10 */}
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
+        <div className="flex-1 min-h-0 w-full max-w-[min(100%,calc(100dvh*16/10))] mx-auto flex flex-col overflow-y-auto">
+          {children}
+        </div>
       </main>
 
       {/* Bottom Navigation - Large Touch Targets */}
-      <nav className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4">
+      <nav className="shrink-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4">
         <div className="flex justify-center gap-2 overflow-x-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;

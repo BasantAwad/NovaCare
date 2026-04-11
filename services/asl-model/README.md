@@ -118,7 +118,7 @@ Controls:
 ### 7. Start API Server
 
 ```bash
-python -m api.main --port 8000
+python -m api.main --port 8001
 ```
 
 API documentation available at: http://localhost:8000/docs

@@ -3,6 +3,10 @@ class NovaBotClient {
         // API Configuration
         this.apiUrl = options.apiUrl || 'http://localhost:5000';
         this.apiEndpoint = options.apiEndpoint || '/api/chat';
+        /** Optional () => object merged into chat POST JSON (e.g. llm_profile / prefer_quality) */
+        this.chatPayloadExtras = typeof options.chatPayloadExtras === 'function'
+            ? options.chatPayloadExtras
+            : null;
         
         // Initialize STT and TTS
         this.stt = new STT({
@@ -147,16 +151,24 @@ class NovaBotClient {
                 content: message
             });
 
+            const payload = {
+                message: message,
+                history: this.conversationHistory.slice(-5)
+            };
+            if (this.chatPayloadExtras) {
+                const extra = this.chatPayloadExtras();
+                if (extra && typeof extra === 'object') {
+                    Object.assign(payload, extra);
+                }
+            }
+
             // Call API
             const response = await fetch(`${this.apiUrl}${this.apiEndpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: message,
-                    history: this.conversationHistory.slice(-5) // Send last 5 messages for context
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
