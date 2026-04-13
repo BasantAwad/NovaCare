@@ -129,7 +129,6 @@ graph TD
 | **Entry Point** | `start_server.py` | `python start_server.py` → Flask on port 5000 |
 | **Chat Engine** | `LLMs/conversational_ai.py` | `ConversationalAI`: dual routing, system prompt, chat history, Ollama + HF clients, `describe_llm_config()` |
 | **Emotion Engine** | `emotion_detection.py` | `FaceEmotionAnalyzer`: Haar face detection, ViT inference, base64 handling. Singleton via `get_analyzer()` |
-| **Utilities** | `utils/` | Shared utility functions |
 | **Test UI** | `templates/test_novabot.html` | Bundled HTML test page (voice/text/TTS) |
 | **Client JS** | `static/js/` | NovaBotClient, STT, TTS for the test page |
 

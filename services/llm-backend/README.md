@@ -84,4 +84,3 @@ Implementation: `static/js/TTS.js`. Precedence: Pocket direct → edge proxy →
 - `POST /api/emotion/detect` — facial emotion from base64 image (ViT).
 - `GET /api/emotion/health` — emotion model status.
 
-See `AXIOM_SETUP.md` for optional observability (Axiom).

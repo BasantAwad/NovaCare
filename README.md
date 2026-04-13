@@ -27,7 +27,6 @@ novacare/
 │   └── llm-backend/        ← Flask LLM chatbot service
 │       ├── README.md       ← Env vars, Ollama + Hugging Face routing, API
 │       ├── LLMs/           ← Conversational AI logic
-│       ├── utils/           ← Utility functions
 │       ├── static/js/      ← Client-side JS (NovaBotClient, STT, TTS)
 │       ├── templates/      ← Test HTML templates
 │       └── requirements.txt
