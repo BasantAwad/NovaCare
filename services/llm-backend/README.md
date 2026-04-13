@@ -76,7 +76,7 @@ The bundled page can use the same HTTP TTS stack as the Next.js rover (optional)
 | `window.NOVACARE_POCKET_TTS_VOICE_URL` | Optional Pocket `voice_url` form field. |
 | `window.NOVACARE_EDGE_TTS_URL` | NovaCare edge proxy → **`POST …/api/speak`** (used if Pocket URL unset). |
 
-Implementation: `static/js/TTS.js`. Full behavior, CORS, and Jetson deployment: **[../../docs/tts.md](../../docs/tts.md)**.
+Implementation: `static/js/TTS.js`. Precedence: Pocket direct → edge proxy → Web Speech (browser fallback). For full TTS architecture, CORS, and Jetson deployment, see **[`../edge-tts-proxy/README.md`](../edge-tts-proxy/README.md)**.
 
 ## Other endpoints
 

@@ -94,20 +94,13 @@ frontend/
 │   │   ├── speech.ts           # Browser STT/TTS
 │   │   └── utils.ts
 │   └── types/                  # TypeScript definitions
-├── backend/                    # Flask backend (dashboard data)
-│   ├── routes/api/             # REST endpoints (alerts, chat, medication, vitals)
-│   ├── routes/auth.py          # Authentication
-│   ├── routes/dashboard.py     # Dashboard rendering
-│   ├── templates/              # HTML templates (Jinja2)
-│   └── static/                 # CSS & JS assets
-├── ai/                         # AI integration modules
 └── package.json
 ```
 
 **API Communication:**
 - → LLM Backend: via `NEXT_PUBLIC_NOVABOT_API_URL` env var (default `http://localhost:5000`)
 - → ASL Model: via hardcoded `http://localhost:8000` in `lib/asl-api.ts`
-- → Edge TTS (optional): via `NEXT_PUBLIC_EDGE_TTS_URL` to NovaCare `edge-tts-proxy` (see `docs/tts.md`)
+- → Edge TTS (optional): via `NEXT_PUBLIC_EDGE_TTS_URL` to NovaCare `edge-tts-proxy` (see `services/edge-tts-proxy/README.md`)
 
 ---
 
@@ -211,7 +204,7 @@ Key entities (from project book ERD):
 
 | Current | Planned |
 |---------|---------|
-| Local development (3 terminals or `start_all.bat`) | To be decided: local on rover vs. cloud |
+| Local development (3 terminals, `start_all.sh` / `start_all.bat` / `start_all.ps1`) | To be decided: local on rover vs. cloud |
 | SQLite | PostgreSQL |
 | No auth middleware | JWT/session-based auth |
 | No HTTPS | TLS for all communications |
