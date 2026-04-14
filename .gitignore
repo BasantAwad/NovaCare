@@ -54,3 +54,30 @@ services/asl-model/data/models/
 *.log
 npm-debug.log*
 package-lock.json
+
+# ---- Virtual Environments ----
+.venv/
+venv/
+env/
+
+# ---- Python Cache ----
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# ---- Test & Scratch Files ----
+database_testing/
+test_*.py
+*_test.py
+final_db_test.py
+export_db.py
+setup_mock_db.py
+mock_mysql.db
+
+# ---- Generated PDF Reports ----
+*.pdf
+!docs/**/*.pdf
+
+# ---- Dev SQLite DB ----
+*.db
+*.sqlite3

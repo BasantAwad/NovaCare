@@ -3,8 +3,14 @@ NovaCare AI - ConversationalAI Implementation
 Gemini-powered Conversational Agent for NovaBot.
 Reflects the persona, safety protocols, and hardware context of the assistive rover.
 """
-from google import genai
-from google.genai import types
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+    types = None
+    print("[WARNING] google.genai could not be imported. ConversationalAI will run in mock mode.")
+
 from typing import Optional
 from ai.config import Config
 
@@ -19,12 +25,12 @@ class ConversationalAI:
         # Use provided key or fall back to Config
         self.api_key = api_key or Config.GEMINI_API_KEY
         
-        if self.api_key:
+        if self.api_key and genai:
             self.client = genai.Client(api_key=self.api_key)
             print("[ConversationalAI] Gemini SDK Initialized (google.genai)")
         else:
             self.client = None
-            print("[ConversationalAI] WARNING: No API key found for Gemini")
+            print("[ConversationalAI] WARNING: No API key found for Gemini, or google.genai not imported")
         
         # ... rest of the instructions ...
         self.system_instruction = """
