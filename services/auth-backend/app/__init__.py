@@ -17,7 +17,10 @@ def create_app() -> Flask:
 
     # Register blueprints
     from app.routes.auth import auth_bp
+    from app.routes.dashboard import dashboard_bp
+    
     app.register_blueprint(auth_bp)
+    app.register_blueprint(dashboard_bp)
 
     # Health check
     @app.route("/health", methods=["GET"])
@@ -27,7 +30,7 @@ def create_app() -> Flask:
             "data": {
                 "service": "auth-backend",
                 "version": "1.0.0",
-                "database": "mock (in-memory)",
+                "database": "live (192.168.1.164)",
             },
         }), 200
 
