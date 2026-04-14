@@ -1,6 +1,6 @@
 # NovaCare — System Architecture
 
-> **Version:** 1.0 · **Last Updated:** March 8, 2026
+> **Version:** 1.1 · **Last Updated:** April 11, 2026
 
 ---
 
@@ -28,7 +28,7 @@ NovaCare follows a **3-service microservice architecture** with a shared fronten
 │                │              │                    │
 │  ┌──────────┐  │              ▼                    ▼
 │  │ Flask    │  │   ┌───────────────────┐   ┌──────────────┐
-│  │ Backend  │  │   │ HuggingFace API   │   │ PyTorch +    │
+│  │ Backend  │  │   │ Ollama + HF API   │   │ PyTorch +    │
 │  │ (Python) │  │   │ ViT Emotion Model │   │ MediaPipe    │
 │  │ Port 5001│  │   └───────────────────┘   └──────────────┘
 │  └──────────┘  │
@@ -94,19 +94,13 @@ frontend/
 │   │   ├── speech.ts           # Browser STT/TTS
 │   │   └── utils.ts
 │   └── types/                  # TypeScript definitions
-├── backend/                    # Flask backend (dashboard data)
-│   ├── routes/api/             # REST endpoints (alerts, chat, medication, vitals)
-│   ├── routes/auth.py          # Authentication
-│   ├── routes/dashboard.py     # Dashboard rendering
-│   ├── templates/              # HTML templates (Jinja2)
-│   └── static/                 # CSS & JS assets
-├── ai/                         # AI integration modules
 └── package.json
 ```
 
 **API Communication:**
 - → LLM Backend: via `NEXT_PUBLIC_NOVABOT_API_URL` env var (default `http://localhost:5000`)
 - → ASL Model: via hardcoded `http://localhost:8000` in `lib/asl-api.ts`
+- → Edge TTS (optional): via `NEXT_PUBLIC_EDGE_TTS_URL` to NovaCare `edge-tts-proxy` (see `services/edge-tts-proxy/README.md`)
 
 ---
 
@@ -116,21 +110,21 @@ frontend/
 |-----------|-------|
 | **Framework** | Flask + Flask-CORS |
 | **Port** | 5000 |
-| **AI Models** | HuggingFace LLM (conversational), ViT (emotion detection) |
+| **AI Models** | Conversational: **Ollama** (local, fast) + **Hugging Face Inference API** (cloud, quality), with per-request `llm_profile` / `prefer_quality`; ViT (emotion detection) |
 | **Entry point** | `start_server.py` or `api_server.py` |
 
 **API Endpoints:**
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/chat` | Send message, get AI response |
+| `POST` | `/api/chat` | Send message, get AI response; optional JSON `llm_profile` (`fast` \| `quality`) or `prefer_quality: true`; response includes `llm_route` |
 | `POST` | `/api/clear` | Clear conversation history |
 | `POST` | `/api/emotion/detect` | Detect emotion from base64 image |
 | `GET` | `/api/emotion/health` | Check emotion analyzer status |
-| `GET` | `/health` | Service health check |
+| `GET` | `/health` | Service health check; includes `llm` (default profile, Ollama/HF availability) |
 
 **Key modules:**
-- `LLMs/conversational_ai.py` — HuggingFace model wrapper for chat
+- `LLMs/conversational_ai.py` — Chat routing: Ollama + Hugging Face, env-driven defaults (see `services/llm-backend/README.md`)
 - `emotion_detection.py` — ViT-based facial emotion recognition
 - `utils/` — Shared utilities
 
@@ -181,7 +175,7 @@ User Input (voice/text/ASL/touch)
              ▼                              ▼
     ┌─── LLM Backend ──┐         ┌── ASL Model API ──┐
     │ Conversational AI │         │ MediaPipe → CNN    │
-    │ → HuggingFace LLM │         │ → letter → text    │
+    │ → Ollama / HF LLM │         │ → letter → text    │
     └────────┬──────────┘         └────────┬──────────┘
              │ AI response                  │ recognized text
              ▼                              ▼
@@ -210,7 +204,7 @@ Key entities (from project book ERD):
 
 | Current | Planned |
 |---------|---------|
-| Local development (3 terminals or `start_all.bat`) | To be decided: local on rover vs. cloud |
+| Local development (3 terminals, `start_all.sh` / `start_all.bat` / `start_all.ps1`) | To be decided: local on rover vs. cloud |
 | SQLite | PostgreSQL |
 | No auth middleware | JWT/session-based auth |
 | No HTTPS | TLS for all communications |

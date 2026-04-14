@@ -1,6 +1,6 @@
 # NovaCare — Product Specification (PRD)
 
-> **Version:** 1.0 · **Last Updated:** March 8, 2026 · **Deadline:** May 31, 2026
+> **Version:** 1.1 · **Last Updated:** April 11, 2026 · **Deadline:** May 31, 2026
 
 ---
 
@@ -32,7 +32,7 @@ This is the software component of a larger graduation project. The full system i
 
 | Feature | Service | Description |
 |---------|---------|-------------|
-| **NovaBot Chat** | LLM Backend | Conversational AI via HuggingFace LLM, accessible from Rover dashboard |
+| **NovaBot Chat** | LLM Backend | Conversational AI via **Ollama** (local, fast) and/or **Hugging Face Inference API** (quality); client can send `llm_profile` / `prefer_quality` on `POST /api/chat` |
 | **ASL Recognition** | ASL Model API | Real-time fingerspelling recognition from camera feed using MediaPipe + PyTorch |
 | **Emotion Detection** | LLM Backend | Facial emotion recognition using ViT model (7 emotion categories) |
 | **Speech-to-Text** | Frontend (browser) | Voice input for hands-free interaction |
@@ -88,7 +88,7 @@ This is the software component of a larger graduation project. The full system i
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js 14, React 18, TypeScript, Tailwind CSS, Framer Motion |
-| **LLM Backend** | Python, Flask, HuggingFace Transformers, ViT (emotion detection) |
+| **LLM Backend** | Python, Flask, Ollama (local LLM), Hugging Face Inference API, HuggingFace Transformers, ViT (emotion detection) |
 | **ASL Model API** | Python, FastAPI, PyTorch, MediaPipe, Uvicorn |
 | **Database** | SQLite (current) → PostgreSQL (planned) |
 | **Robot** | Hiwonder JetAuto Kit, ROS 2 (future integration) |

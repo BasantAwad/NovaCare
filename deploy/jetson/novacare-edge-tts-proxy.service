@@ -1,0 +1,23 @@
+[Unit]
+Description=NovaCare — Edge TTS CORS proxy (Flask) for Chromium
+After=network-online.target novacare-pocket-tts.service
+Requires=novacare-pocket-tts.service
+
+[Service]
+Type=simple
+User=novabot
+Group=novabot
+WorkingDirectory=/opt/novacare/edge-tts-proxy
+
+Environment=POCKET_TTS_UPSTREAM=http://127.0.0.1:8800
+Environment=EDGE_TTS_PROXY_HOST=0.0.0.0
+Environment=EDGE_TTS_PROXY_PORT=8765
+Environment=EDGE_TTS_CORS_ORIGINS=*
+
+ExecStart=/opt/novacare/edge-tts-proxy/venv/bin/python app.py
+
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

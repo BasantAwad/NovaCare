@@ -199,6 +199,9 @@ cd services/asl-model && python -m pytest tests/ -v
 # LLM Backend
 cd services/llm-backend && python -m pytest tests/ -v
 
+# LLM Backend env (chat): configure `OLLAMA_MODEL` + running Ollama for fast path,
+# `HUGGINGFACE_API_KEY` for quality / fallback — see `services/llm-backend/README.md`.
+
 # Frontend
 cd frontend && npm test
 ```

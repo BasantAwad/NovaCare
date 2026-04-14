@@ -32,7 +32,7 @@ interface LogEntry {
 }
 
 const logsData: LogEntry[] = [
-    { id: 1, timestamp: "2026-03-08 14:42:31", level: "warning", source: "LLM Backend", message: "Response time exceeded 3s threshold", details: "Endpoint: /api/chat, Duration: 3.45s, Model: HuggingFace LLM" },
+    { id: 1, timestamp: "2026-03-08 14:42:31", level: "warning", source: "LLM Backend", message: "Response time exceeded 3s threshold", details: "Endpoint: /api/chat, Duration: 3.45s, llm_route: huggingface" },
     { id: 2, timestamp: "2026-03-08 14:35:12", level: "info", source: "System", message: "Automated backup completed successfully" },
     { id: 3, timestamp: "2026-03-08 14:20:05", level: "success", source: "ASL Model", message: "Model checkpoint updated to v2.3", details: "Accuracy: 94.2%, Size: 128MB" },
     { id: 4, timestamp: "2026-03-08 13:55:18", level: "error", source: "Auth", message: "Failed login attempt from unknown IP", details: "IP: 192.168.1.105, User: admin, Attempts: 3" },
