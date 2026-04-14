@@ -47,6 +47,10 @@ export default function SignUpPage() {
   const [bloodType, setBloodType] = useState("");
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+  const [primaryConditionName, setPrimaryConditionName] = useState("");
+  const [customCondition, setCustomCondition] = useState("");
+  const [customAllergies, setCustomAllergies] = useState(""); // Fallback
+
   const [needsCaregiver, setNeedsCaregiver] = useState(false);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
@@ -137,7 +141,10 @@ export default function SignUpPage() {
           date_of_birth: dateOfBirth, gender, phone_number: phone,
           blood_type: bloodType, needs_caregiver: needsCaregiver,
           health_conditions: selectedConditions.map((id) => ({ condition_id: id, severity: "mild" })),
-          allergies: selectedAllergies.map((id) => ({ allergy_id: id, severity: "mild" })),
+          allergies: selectedAllergies.length > 0
+            ? selectedAllergies.map((id) => ({ allergy_id: id, severity: "mild" }))
+            : customAllergies ? customAllergies.split(",").map(a => ({ allergy_name: a.trim() })) : undefined,
+          primary_condition_name: primaryConditionName === "other" ? customCondition : primaryConditionName,
           emergency_contact: emergencyName ? {
             name: emergencyName, phone_number: emergencyPhone,
             relationship: emergencyRelationship,
@@ -432,46 +439,81 @@ export default function SignUpPage() {
                   </select>
                 </div>
 
-                {/* Health Conditions */}
+                {/* Primary Disability / Condition */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-2">Health Conditions (optional)</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(referenceData?.health_conditions || []).map((hc) => (
-                      <label key={hc.id} className={cn(
-                        "flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
-                        selectedConditions.includes(hc.id)
-                          ? "border-primary bg-primary-50 dark:bg-primary-900/30"
-                          : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      )}>
-                        <input type="checkbox" checked={selectedConditions.includes(hc.id)} onChange={(e) => {
-                          if (e.target.checked) setSelectedConditions([...selectedConditions, hc.id]);
-                          else setSelectedConditions(selectedConditions.filter((id) => id !== hc.id));
-                        }} className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                        <span className="text-sm text-text-primary dark:text-white">{hc.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-2">Primary Condition / Disability</label>
+                  {referenceData?.health_conditions && referenceData.health_conditions.length > 0 ? (
+                    <div className="space-y-3">
+                      <select value={primaryConditionName} onChange={(e) => {
+                          setPrimaryConditionName(e.target.value);
+                          if (e.target.value !== "other") setCustomCondition("");
+                        }} className="input-field border-primary focus:ring-primary/20">
+                        <option value="">Select primary condition</option>
+                        {referenceData.health_conditions.map((hc) => (
+                          <option key={hc.id} value={hc.name}>{hc.name}</option>
+                        ))}
+                        <option value="other">Other (Please specify)</option>
+                      </select>
+                      {primaryConditionName === "other" && (
+                        <Input placeholder="Enter your condition" value={customCondition} onChange={(e) => setCustomCondition(e.target.value)} />
+                      )}
+                    </div>
+                  ) : (
+                    <Input placeholder="E.g., Visually Impaired (Text fallback)" value={customCondition} onChange={(e) => {
+                      setPrimaryConditionName("other");
+                      setCustomCondition(e.target.value);
+                    }} helperText="Server fetch failed: Please enter manually." />
+                  )}
+                </div>
+
+                {/* Other Health Conditions */}
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-2">Additional Health Conditions (optional)</label>
+                  {referenceData?.health_conditions && referenceData.health_conditions.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-xl">
+                      {referenceData.health_conditions.map((hc) => (
+                        <label key={hc.id} className={cn(
+                          "flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all",
+                          selectedConditions.includes(hc.id)
+                            ? "border-primary bg-primary-50 dark:bg-primary-900/30"
+                            : "border-transparent hover:bg-gray-50 dark:hover:bg-gray-800"
+                        )}>
+                          <input type="checkbox" checked={selectedConditions.includes(hc.id)} onChange={(e) => {
+                            if (e.target.checked) setSelectedConditions([...selectedConditions, hc.id]);
+                            else setSelectedConditions(selectedConditions.filter((id) => id !== hc.id));
+                          }} className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                          <span className="text-sm truncate text-text-primary dark:text-white" title={hc.name}>{hc.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-text-muted">Options unavailable right now.</p>
+                  )}
                 </div>
 
                 {/* Allergies */}
                 <div>
                   <label className="block text-sm font-medium text-text-secondary dark:text-gray-300 mb-2">Allergies (optional)</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(referenceData?.allergies || []).map((alg) => (
-                      <label key={alg.id} className={cn(
-                        "flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition-all",
-                        selectedAllergies.includes(alg.id)
-                          ? "border-accent bg-accent-50 dark:bg-accent-900/30"
-                          : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                      )}>
-                        <input type="checkbox" checked={selectedAllergies.includes(alg.id)} onChange={(e) => {
-                          if (e.target.checked) setSelectedAllergies([...selectedAllergies, alg.id]);
-                          else setSelectedAllergies(selectedAllergies.filter((id) => id !== alg.id));
-                        }} className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent" />
-                        <span className="text-sm text-text-primary dark:text-white">{alg.name}</span>
-                      </label>
-                    ))}
-                  </div>
+                  {referenceData?.allergies && referenceData.allergies.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-xl">
+                      {referenceData.allergies.map((alg) => (
+                        <label key={alg.id} className={cn(
+                          "flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all",
+                          selectedAllergies.includes(alg.id)
+                            ? "border-accent bg-accent-50 dark:bg-accent-900/30"
+                            : "border-transparent hover:bg-gray-50 dark:hover:bg-gray-800"
+                        )}>
+                          <input type="checkbox" checked={selectedAllergies.includes(alg.id)} onChange={(e) => {
+                            if (e.target.checked) setSelectedAllergies([...selectedAllergies, alg.id]);
+                            else setSelectedAllergies(selectedAllergies.filter((id) => id !== alg.id));
+                          }} className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent" />
+                          <span className="text-sm truncate text-text-primary dark:text-white" title={alg.name}>{alg.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                     <Input placeholder="E.g., Peanuts, Latex" value={customAllergies} onChange={(e) => setCustomAllergies(e.target.value)} helperText="Server fetch failed: Enter comma separated." />
+                  )}
                 </div>
 
                 {/* Caregiver question */}

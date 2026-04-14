@@ -9,9 +9,9 @@ from app.config import Config
 app = create_app()
 
 if __name__ == "__main__":
-    print(f"🔐 NovaCare Auth Backend starting on port {Config.PORT}")
+    print(f"[AUTH] NovaCare Auth Backend starting on port {Config.PORT}")
     print(f"   Health: http://localhost:{Config.PORT}/health")
     print(f"   Auth:   http://localhost:{Config.PORT}/api/auth/")
-    print(f"   DB:     In-memory mock (placeholder)")
+    print(f"   DB:     Live MySQL (192.168.1.164)")
     print()
     app.run(host="0.0.0.0", port=Config.PORT, debug=Config.DEBUG)

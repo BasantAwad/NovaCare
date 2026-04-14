@@ -12,8 +12,14 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Enable CORS for the Next.js frontend
-    CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
+    # Enable CORS for the Next.js frontend (must allow all methods + headers for preflight)
+    CORS(
+        app,
+        origins=["http://localhost:3000"],
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization", "Accept"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    )
 
     # Register blueprints
     from app.routes.auth import auth_bp
