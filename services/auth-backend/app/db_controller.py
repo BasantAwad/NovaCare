@@ -26,7 +26,7 @@ class DatabaseController:
 
     def initialize(self):
         """Initialize the connection pool securely using environment variables."""
-        self.host = os.getenv("DB_HOST", "192.168.1.15")
+        self.host = os.getenv("DB_HOST", "192.168.1.164")
         self.port = int(os.getenv("DB_PORT", 3306))
         self.database = os.getenv("DB_NAME", "NovaCare_db")
         

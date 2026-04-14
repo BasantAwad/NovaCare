@@ -10,7 +10,7 @@ A secure integration controller has been built in the Auth Backend to centrally 
 This controller is a Singleton wrapper that implements connection pooling. It provides an efficient and secure conduit to communicate with the central database and is entirely resilient against SQL injection.
 
 ### The Central Schema Profile
-- **Host / IP**: `192.168.1.15`
+- **Host / IP**: `192.168.1.164`
 - **Port**: `3306`
 - **Database**: `NovaCare_db`
 
@@ -31,7 +31,7 @@ Every admin must create their own local connection file to be authenticated. The
 3. Open your newly created `.env` file and replace the placeholder fields at the bottom with your specifically assigned administrative username and password:
    ```env
    # Database Configuration
-   DB_HOST=192.168.1.15
+   DB_HOST=192.168.1.164
    DB_PORT=3306
    DB_NAME=NovaCare_db
    
