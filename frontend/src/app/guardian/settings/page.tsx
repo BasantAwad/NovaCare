@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { User, Bell, Shield, HelpCircle, ChevronRight, Mail, Phone, Lock, Eye, Volume2, Smartphone, Users } from "lucide-react";
+import { User, Bell, Shield, HelpCircle, ChevronRight, Mail, Phone, Lock, Eye, Volume2, Smartphone, Users, LogOut } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Avatar } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 const settingsSections = [
   { id: "profile", label: "Profile", icon: User },
@@ -13,6 +14,7 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
+  const { logout } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
   const [notifications, setNotifications] = useState({
     email: true,
@@ -91,7 +93,11 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  <div className="flex justify-end mt-6">
+                  <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 dark:border-red-800" onClick={logout}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Log Out
+                    </Button>
                     <Button>Save Changes</Button>
                   </div>
                 </CardContent>

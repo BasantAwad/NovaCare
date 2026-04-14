@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MessageCircle, Pill, Navigation, AlertTriangle, Heart, Music, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import EmotionDetectionModal from "@/components/EmotionDetectionModal";
+import { useAuth } from "@/context/AuthContext";
 
 const mainFeatures = [
   {
@@ -60,6 +61,8 @@ const mainFeatures = [
 
 export default function RoverHomePage() {
   const [isEmotionModalOpen, setIsEmotionModalOpen] = useState(false);
+  const { user } = useAuth();
+  const userName = user?.first_name || "Friend";
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
@@ -71,7 +74,7 @@ export default function RoverHomePage() {
       {/* Greeting */}
       <div className="text-center">
         <h1 className="text-4xl font-display font-bold text-text-primary dark:text-white mb-2">
-          Hello, Sarah! 👋
+          Hello, {userName}! 👋
         </h1>
         <p className="text-xl text-text-muted dark:text-gray-400">How can I help you today?</p>
       </div>

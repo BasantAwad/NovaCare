@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Heart,
   Home,
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar, Badge, ThemeToggle } from "@/components/ui";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/guardian", icon: Home },
@@ -35,8 +36,17 @@ interface GuardianLayoutProps {
 
 export default function GuardianLayout({ children }: GuardianLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const displayName = user ? `${user.first_name} ${user.last_name}` : "Guardian";
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/auth/login");
+  };
 
   return (
     <div className="min-h-screen bg-background-cream dark:bg-gray-900 transition-colors">
@@ -110,13 +120,13 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
 
           {/* Logout */}
           <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-700">
-            <Link
-              href="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-text-muted dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-accent transition-all"
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-text-muted dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-accent transition-all"
             >
               <LogOut className="w-5 h-5" />
               Sign Out
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -135,7 +145,7 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
               </button>
               <div>
                 <h1 className="text-xl font-display font-bold text-text-primary dark:text-white">
-                  Caring for Sarah
+                  {displayName}&apos;s Dashboard
                 </h1>
                 <p className="text-sm text-text-muted dark:text-gray-400">Last check-in: 5 minutes ago</p>
               </div>
@@ -157,9 +167,9 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 transition-colors"
                 >
-                  <Avatar name="John Doe" size="sm" />
+                  <Avatar name={displayName} size="sm" />
                   <span className="hidden md:block text-sm font-medium text-text-primary dark:text-white">
-                    John Doe
+                    {displayName}
                   </span>
                   <ChevronDown className="w-4 h-4 text-text-muted dark:text-gray-400" />
                 </button>
@@ -181,13 +191,13 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
                       Settings
                     </Link>
                     <hr className="my-2 border-gray-200 dark:border-gray-700" />
-                    <Link
-                      href="/"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-accent hover:bg-gray-50 dark:hover:bg-gray-700"
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-accent hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>
