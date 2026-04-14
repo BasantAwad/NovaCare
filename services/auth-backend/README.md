@@ -1,4 +1,4 @@
-# NovaCare Authentication & Authorization System
+    # NovaCare Authentication & Authorization System
 
 Secure, multi-role authentication backend for the NovaCare platform supporting direct email/password and Google OAuth integrations using Flask and JWT.
 
