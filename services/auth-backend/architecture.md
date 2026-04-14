@@ -7,7 +7,7 @@ The Authentication backend serves as the core identity provider and Role-Based A
 - **Factory Pattern**: The Flask application is instantiated using an App Factory scheme (`app/__init__.py`), enabling scaleable microservice extensions and clean testing environments.
 - **Stateless Authentication**: Purely JSON Web Token (JWT) driven, removing server-side session overhead.
 - **Route Encapsulation**: Endpoints (`/api/auth/*`) are encapsulated in Flask Blueprints, cleanly separating authentication logic from health-checks or potential feature updates.
-- **Repository Pattern (Mocked)**: Database interaction (`mock_db.py`) abstracts away raw SQL queries, preparing the foundation for an effortless SQLAlchemy drop-in.
+- **Database Controller**: Database interaction (`db_controller.py`) actively abstracts away raw SQL queries into a secure MySQL pool.
 
 ## Request Flow
 ```
@@ -21,7 +21,7 @@ Flask App Route Layer (`app.routes.auth`)
     ├── Identifies User by Email or Google ID
     │
     ▼
-Database Mock / SQLAlchemy Layer (`app.mock_db`)
+Database Controller (`app.db_controller`)
     │
     ├── Verifies `pbkdf2:sha256` Password Hash (`app.utils.password`)
     ├── Extracts Multi-Roles (`rover`, `caregiver`, `doctor`)

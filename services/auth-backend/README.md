@@ -29,7 +29,7 @@ auth-backend/
 │   │   └── password.py     # Werkzeug hash generation & verification
 │   ├── __init__.py         # Flask App Factory initialize
 │   ├── config.py           # Environment and app configuration
-│   └── mock_db.py          # In-memory database representing 3NF structure
+│   └── db_controller.py    # MySQL connection pooling controller handling transactions securely
 ├── .env.example            # Environment variables template
 ├── requirements.txt
 ├── run.py                  # Server entry point
