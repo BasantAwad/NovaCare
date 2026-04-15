@@ -54,3 +54,4 @@ services/asl-model/data/models/
 *.log
 npm-debug.log*
 package-lock.json
+novacare-key.pem
