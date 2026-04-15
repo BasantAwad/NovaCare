@@ -46,7 +46,7 @@ export default function ASLRecognitionModal({
             } catch (err) {
                 setApiStatus("error");
                 setError(
-                    "ASL API is not running. Please start the API server at http://localhost:8000"
+                    "ASL API is not running. Please start the API server at http://localhost:8001"
                 );
             }
         };

@@ -10,7 +10,7 @@ import json
 import time
 
 # API base URL
-API_URL = "http://localhost:8000"
+API_URL = "http://localhost:8001"
 
 
 def test_health():
@@ -135,7 +135,7 @@ canvas.getContext('2d').drawImage(video, 0, 0);
 const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
 
 // 3. Send to API
-const response = await fetch('http://localhost:8000/predict/confirm', {
+const response = await fetch('http://localhost:8001/predict/confirm', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({image: imageData})
@@ -146,7 +146,7 @@ console.log('Letter:', result.letter);
 console.log('Confidence:', result.confidence);
 
 // 4. Get accumulated text
-const textResponse = await fetch('http://localhost:8000/accumulator');
+const textResponse = await fetch('http://localhost:8010/accumulator');
 const text = await textResponse.json();
 document.getElementById('output').textContent = text.full_text;
 
@@ -180,6 +180,6 @@ if __name__ == "__main__":
     except requests.exceptions.ConnectionError:
         print("\n❌ Error: Could not connect to API")
         print("Make sure the API server is running:")
-        print("  python -m api.main --port 8000\n")
+        print("  python -m api.main --port 8001\n")
     except Exception as e:
         print(f"\n❌ Error: {e}\n")
