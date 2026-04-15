@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables FIRST before importing any modules
 load_dotenv()
 
-from app import create_app
+from backend import create_app
 
 # Create the application
 app = create_app()

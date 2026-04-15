@@ -15,4 +15,4 @@ sudo systemctl enable --now novacare-pocket-tts.service
 sudo systemctl enable --now novacare-edge-tts-proxy.service
 ```
 
-Full procedure and benchmark: [docs/tts.md](../../docs/tts.md).
+Full procedure and benchmark: [services/edge-tts-proxy/README.md](../../services/edge-tts-proxy/README.md).
