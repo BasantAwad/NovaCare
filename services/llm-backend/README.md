@@ -56,12 +56,22 @@ Returns `llm` with `default_profile`, `ollama` (`enabled`, `base_url`, `model`),
 
 ### Run
 
+**Windows (PowerShell)**:
 ```powershell
 cd services\llm-backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python start_server.py
+```
+
+**Ubuntu / Linux / macOS**:
+```bash
+cd services/llm-backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 start_server.py
 ```
 
 Open `http://localhost:5000` for the bundled test page. For voice/text tests, use the **Cloud model (higher quality, slower)** checkbox to send `prefer_quality: true`.
