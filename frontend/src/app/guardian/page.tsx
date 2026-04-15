@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Phone,
   MessageCircle,
@@ -17,72 +17,31 @@ import {
   Bell,
   X,
   PhoneCall,
+  Loader2,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Avatar, Badge, ProgressBar, Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui";
 import { cn } from "@/lib/utils";
-
-// Mock data
-const patientData = {
-  name: "Sarah Johnson",
-  status: "online" as const,
-  mood: { emoji: "😊", label: "Content" },
-  vitals: {
-    heartRate: { value: 72, status: "normal" },
-    activityLevel: { value: "Moderate", status: "normal" },
-    battery: { value: 85, status: "normal" },
-    lastCheckIn: "5m ago",
-  },
-};
-
-const medications = [
-  { id: 1, name: "Lisinopril", time: "8:00 AM", status: "taken", takenAt: "8:05 AM" },
-  { id: 2, name: "Metformin", time: "12:00 PM", status: "taken", takenAt: "12:10 PM" },
-  { id: 3, name: "Aspirin", time: "6:00 PM", status: "upcoming" },
-];
-
-const activities = [
-  {
-    id: 1,
-    type: "medication",
-    description: "Took Metformin (500mg)",
-    time: "12:10 PM",
-    timeAgo: "2h ago",
-  },
-  {
-    id: 2,
-    type: "navigation",
-    description: "Navigated to Kitchen",
-    time: "11:30 AM",
-    timeAgo: "3h ago",
-  },
-  {
-    id: 3,
-    type: "conversation",
-    description: "Had a 15-minute conversation with NovaCare",
-    time: "10:45 AM",
-    timeAgo: "4h ago",
-  },
-  {
-    id: 4,
-    type: "medication",
-    description: "Took Lisinopril (10mg)",
-    time: "8:05 AM",
-    timeAgo: "6h ago",
-  },
-  {
-    id: 5,
-    type: "alert",
-    description: "Low battery warning - now charging",
-    time: "7:30 AM",
-    timeAgo: "7h ago",
-  },
-];
+import {
+  getMedications,
+  getActivities,
+  getVitals,
+  getLinkedRover,
+  getBatteryStatus,
+  getMoodLogs,
+  type MedicationSchedule,
+  type ActivityLog,
+  type VitalSign,
+  type LinkedRover,
+  type BatteryStatus,
+  type MoodLog,
+} from "@/lib/dashboard-api";
 
 const activityColors = {
   medication: "bg-success",
   navigation: "bg-primary",
   conversation: "bg-purple-500",
   alert: "bg-secondary",
+  vital: "bg-accent",
 };
 
 const activityIcons = {
@@ -90,10 +49,121 @@ const activityIcons = {
   navigation: Navigation,
   conversation: MessageSquare,
   alert: Bell,
+  vital: Heart,
 };
+
+// ---------------------------------------------------------------------------
+// Fallback mock data — used ONLY when backend returns empty/error
+// ---------------------------------------------------------------------------
+const FALLBACK_PATIENT = {
+  name: "Sarah Johnson",
+  status: "online" as const,
+};
+
+const FALLBACK_VITALS = {
+  heartRate: { value: 72, status: "normal" },
+  activityLevel: { value: "Moderate", status: "normal" },
+  battery: { value: 85, status: "normal" },
+  lastCheckIn: "5m ago",
+};
+
+const FALLBACK_MEDICATIONS: MedicationSchedule[] = [
+  { id: "1", rover_id: "", medication_id: "", medication_name: "Lisinopril", dosage: "", frequency: "", scheduled_time: "8:00 AM", status: "taken", taken_at: "8:05 AM", is_active: true },
+  { id: "2", rover_id: "", medication_id: "", medication_name: "Metformin", dosage: "", frequency: "", scheduled_time: "12:00 PM", status: "taken", taken_at: "12:10 PM", is_active: true },
+  { id: "3", rover_id: "", medication_id: "", medication_name: "Aspirin", dosage: "", frequency: "", scheduled_time: "6:00 PM", status: "upcoming", is_active: true },
+];
+
+const FALLBACK_ACTIVITIES: ActivityLog[] = [
+  { id: "1", rover_id: "", type: "medication", title: "Medication Taken", description: "Took Metformin (500mg)", timestamp: new Date(Date.now() - 2 * 3600000).toISOString() },
+  { id: "2", rover_id: "", type: "navigation", title: "Navigation Complete", description: "Navigated to Kitchen", timestamp: new Date(Date.now() - 3 * 3600000).toISOString() },
+  { id: "3", rover_id: "", type: "conversation", title: "Conversation", description: "Had a 15-minute conversation with NovaCare", timestamp: new Date(Date.now() - 4 * 3600000).toISOString() },
+  { id: "4", rover_id: "", type: "medication", title: "Medication Taken", description: "Took Lisinopril (10mg)", timestamp: new Date(Date.now() - 6 * 3600000).toISOString() },
+  { id: "5", rover_id: "", type: "alert", title: "Warning", description: "Low battery warning - now charging", timestamp: new Date(Date.now() - 7 * 3600000).toISOString() },
+];
+
+function formatTimeAgo(timestamp: string): string {
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export default function GuardianDashboard() {
   const [alertOpen, setAlertOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Dynamic state fetched from backend
+  const [medications, setMedications] = useState<MedicationSchedule[]>(FALLBACK_MEDICATIONS);
+  const [activities, setActivities] = useState<ActivityLog[]>(FALLBACK_ACTIVITIES);
+  const [linkedRover, setLinkedRover] = useState<LinkedRover | null>(null);
+  const [latestVitals, setLatestVitals] = useState<VitalSign | null>(null);
+  const [battery, setBattery] = useState<BatteryStatus | null>(null);
+  const [todayMood, setTodayMood] = useState<MoodLog | null>(null);
+
+  // Derived display values
+  const patientName = linkedRover ? `${linkedRover.first_name} ${linkedRover.last_name}` : FALLBACK_PATIENT.name;
+  const patientStatus = linkedRover?.status || FALLBACK_PATIENT.status;
+  const heartRate = latestVitals?.heart_rate ?? FALLBACK_VITALS.heartRate.value;
+  const activityLevel = FALLBACK_VITALS.activityLevel.value;
+  const batteryLevel = battery?.battery_percent ?? FALLBACK_VITALS.battery.value;
+  const moodEmoji = todayMood?.emoji ?? "😊";
+  const moodLabel = todayMood ? todayMood.mood.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase()) : "Content";
+  const lastCheckIn = linkedRover?.last_check_in
+    ? formatTimeAgo(linkedRover.last_check_in)
+    : FALLBACK_VITALS.lastCheckIn;
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      setIsLoading(true);
+      try {
+        // Fetch all data concurrently
+        const [medsRes, activitiesRes, roverRes, vitalsRes, batteryRes, moodRes] = await Promise.all([
+          getMedications(),
+          getActivities(),
+          getLinkedRover(),
+          getVitals(),
+          getBatteryStatus(),
+          getMoodLogs(),
+        ]);
+
+        if (medsRes.status === "success" && medsRes.data && medsRes.data.length > 0) {
+          setMedications(medsRes.data);
+        }
+
+        if (activitiesRes.status === "success" && activitiesRes.data && activitiesRes.data.length > 0) {
+          setActivities(activitiesRes.data);
+        }
+
+        if (roverRes.status === "success" && roverRes.data) {
+          setLinkedRover(roverRes.data);
+        }
+
+        if (vitalsRes.status === "success" && vitalsRes.data && vitalsRes.data.length > 0) {
+          setLatestVitals(vitalsRes.data[0]);
+        }
+
+        if (batteryRes.status === "success" && batteryRes.data) {
+          setBattery(batteryRes.data);
+        }
+
+        if (moodRes.status === "success" && moodRes.data && moodRes.data.length > 0) {
+          setTodayMood(moodRes.data[0]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch guardian dashboard data:", error);
+        // Fallback data remains in state
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, []);
+
   const takenMeds = medications.filter((m) => m.status === "taken").length;
 
   return (
@@ -141,59 +211,73 @@ export default function GuardianDashboard() {
             <CardTitle>Live Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center mb-6">
-              <Avatar name={patientData.name} size="xl" status={patientData.status} />
-              <h3 className="mt-3 font-semibold text-text-primary dark:text-white">{patientData.name}</h3>
-              <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full">
-                <span className="text-xl">{patientData.mood.emoji}</span>
-                <span className="text-sm text-text-secondary dark:text-gray-300">{patientData.mood.label}</span>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex flex-col items-center mb-6">
+                  <Avatar name={patientName} size="xl" status={patientStatus} />
+                  <h3 className="mt-3 font-semibold text-text-primary dark:text-white">{patientName}</h3>
+                  {/* Mood now from mood_logs table */}
+                  <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full">
+                    <span className="text-xl">{moodEmoji}</span>
+                    <span className="text-sm text-text-secondary dark:text-gray-300">{moodLabel}</span>
+                  </div>
+                </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Heart className="w-5 h-5 text-accent" />
-                  <span className="text-sm text-text-secondary dark:text-gray-300">Heart Rate</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-text-primary dark:text-white">
-                    {patientData.vitals.heartRate.value} bpm
-                  </span>
-                  <Badge variant="success">Normal</Badge>
-                </div>
-              </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Heart className="w-5 h-5 text-accent" />
+                      <span className="text-sm text-text-secondary dark:text-gray-300">Heart Rate</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-text-primary dark:text-white">
+                        {heartRate} bpm
+                      </span>
+                      <Badge variant="success">Normal</Badge>
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Activity className="w-5 h-5 text-primary" />
-                  <span className="text-sm text-text-secondary dark:text-gray-300">Activity</span>
-                </div>
-                <span className="font-semibold text-text-primary dark:text-white">
-                  {patientData.vitals.activityLevel.value}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Activity className="w-5 h-5 text-primary" />
+                      <span className="text-sm text-text-secondary dark:text-gray-300">Activity</span>
+                    </div>
+                    <span className="font-semibold text-text-primary dark:text-white">
+                      {activityLevel}
+                    </span>
+                  </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Battery className="w-5 h-5 text-success" />
-                  <span className="text-sm text-text-secondary dark:text-gray-300">Rover Battery</span>
-                </div>
-                <span className="font-semibold text-text-primary dark:text-white">
-                  {patientData.vitals.battery.value}%
-                </span>
-              </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Battery className="w-5 h-5 text-success" />
+                      <span className="text-sm text-text-secondary dark:text-gray-300">Rover Battery</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-text-primary dark:text-white">
+                        {batteryLevel}%
+                      </span>
+                      {battery?.is_charging && (
+                        <Badge variant="info">Charging</Badge>
+                      )}
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-text-muted dark:text-gray-400" />
-                  <span className="text-sm text-text-secondary dark:text-gray-300">Last Check-in</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-text-muted dark:text-gray-400" />
+                      <span className="text-sm text-text-secondary dark:text-gray-300">Last Check-in</span>
+                    </div>
+                    <span className="font-semibold text-text-primary dark:text-white">
+                      {lastCheckIn}
+                    </span>
+                  </div>
                 </div>
-                <span className="font-semibold text-text-primary dark:text-white">
-                  {patientData.vitals.lastCheckIn}
-                </span>
-              </div>
-            </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -205,56 +289,64 @@ export default function GuardianDashboard() {
               <CardTitle>Today&apos;s Medications</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {medications.map((med) => (
-                  <div
-                    key={med.id}
-                    className={cn(
-                      "flex items-center justify-between p-4 rounded-xl border",
-                      med.status === "taken"
-                        ? "bg-success-50 dark:bg-success-900/30 border-success-200 dark:border-success-800"
-                        : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {medications.map((med) => (
                       <div
+                        key={med.id}
                         className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center",
-                          med.status === "taken" ? "bg-success" : "bg-gray-200 dark:bg-gray-600"
+                          "flex items-center justify-between p-4 rounded-xl border",
+                          med.status === "taken"
+                            ? "bg-success-50 dark:bg-success-900/30 border-success-200 dark:border-success-800"
+                            : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
                         )}
                       >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center",
+                              med.status === "taken" ? "bg-success" : "bg-gray-200 dark:bg-gray-600"
+                            )}
+                          >
+                            {med.status === "taken" ? (
+                              <Check className="w-5 h-5 text-white" />
+                            ) : (
+                              <Clock className="w-5 h-5 text-text-muted dark:text-gray-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-text-primary dark:text-white">{med.medication_name}</p>
+                            <p className="text-sm text-text-muted dark:text-gray-400">Scheduled: {med.scheduled_time}</p>
+                          </div>
+                        </div>
                         {med.status === "taken" ? (
-                          <Check className="w-5 h-5 text-white" />
+                          <span className="text-sm text-success-700 dark:text-success-400">Taken at {med.taken_at}</span>
                         ) : (
-                          <Clock className="w-5 h-5 text-text-muted dark:text-gray-400" />
+                          <Badge variant="warning">Upcoming</Badge>
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold text-text-primary dark:text-white">{med.name}</p>
-                        <p className="text-sm text-text-muted dark:text-gray-400">Scheduled: {med.time}</p>
-                      </div>
-                    </div>
-                    {med.status === "taken" ? (
-                      <span className="text-sm text-success-700 dark:text-success-400">Taken at {med.takenAt}</span>
-                    ) : (
-                      <Badge variant="warning">Upcoming</Badge>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-text-muted dark:text-gray-400">Compliance Today</span>
-                  <span className="text-sm font-semibold text-text-primary dark:text-white">
-                    {Math.round((takenMeds / medications.length) * 100)}%
-                  </span>
-                </div>
-                <ProgressBar
-                  value={takenMeds}
-                  max={medications.length}
-                  variant="success"
-                />
-              </div>
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-text-muted dark:text-gray-400">Compliance Today</span>
+                      <span className="text-sm font-semibold text-text-primary dark:text-white">
+                        {medications.length > 0 ? Math.round((takenMeds / medications.length) * 100) : 0}%
+                      </span>
+                    </div>
+                    <ProgressBar
+                      value={takenMeds}
+                      max={medications.length}
+                      variant="success"
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -270,32 +362,38 @@ export default function GuardianDashboard() {
               <CardTitle>Recent Activities</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
-                {activities.map((activity, index) => {
-                  const Icon = activityIcons[activity.type as keyof typeof activityIcons];
-                  return (
-                    <div key={activity.id} className="flex gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
-                      <div className="relative">
-                        <div
-                          className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center",
-                            activityColors[activity.type as keyof typeof activityColors]
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {activities.map((activity, index) => {
+                    const Icon = activityIcons[activity.type as keyof typeof activityIcons] || Bell;
+                    return (
+                      <div key={activity.id} className="flex gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
+                        <div className="relative">
+                          <div
+                            className={cn(
+                              "w-10 h-10 rounded-full flex items-center justify-center",
+                              activityColors[activity.type as keyof typeof activityColors] || "bg-gray-400"
+                            )}
+                          >
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          {index < activities.length - 1 && (
+                            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-200 dark:bg-gray-600" />
                           )}
-                        >
-                          <Icon className="w-5 h-5 text-white" />
                         </div>
-                        {index < activities.length - 1 && (
-                          <div className="absolute top-10 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-gray-200 dark:bg-gray-600" />
-                        )}
+                        <div className="flex-1">
+                          <p className="text-text-primary dark:text-white">{activity.description}</p>
+                          <p className="text-sm text-text-muted dark:text-gray-400">{formatTimeAgo(activity.timestamp)}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-text-primary dark:text-white">{activity.description}</p>
-                        <p className="text-sm text-text-muted dark:text-gray-400">{activity.timeAgo}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

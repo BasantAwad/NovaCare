@@ -1,63 +1,39 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Edit2, Trash2, Check, Clock, AlertCircle, ChevronLeft, ChevronRight, Calendar, Pill, Search, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Edit2, Trash2, Check, Clock, AlertCircle, ChevronLeft, ChevronRight, Calendar, Pill, Search, Filter, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Modal, ModalHeader, ModalBody, ModalFooter, ProgressBar } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { getMedications, getMedicationStats, type MedicationSchedule, type MedicationComplianceStats } from "@/lib/dashboard-api";
 
-const medications = [
-  {
-    id: 1,
-    name: "Lisinopril",
-    dosage: "10mg",
-    frequency: "Once daily",
-    time: "8:00 AM",
-    instructions: "Take on empty stomach",
-    status: "active",
-    prescribedBy: "Dr. Smith",
-    startDate: "2025-12-01",
-    compliance: 95,
-  },
-  {
-    id: 2,
-    name: "Metformin",
-    dosage: "500mg",
-    frequency: "Twice daily",
-    time: "12:00 PM, 8:00 PM",
-    instructions: "Take with meals",
-    status: "active",
-    prescribedBy: "Dr. Johnson",
-    startDate: "2025-11-15",
-    compliance: 88,
-  },
-  {
-    id: 3,
-    name: "Aspirin",
-    dosage: "81mg",
-    frequency: "Once daily",
-    time: "6:00 PM",
-    instructions: "Take with water",
-    status: "active",
-    prescribedBy: "Dr. Smith",
-    startDate: "2025-10-01",
-    compliance: 92,
-  },
-  {
-    id: 4,
-    name: "Atorvastatin",
-    dosage: "20mg",
-    frequency: "Once daily",
-    time: "9:00 PM",
-    instructions: "Take at bedtime",
-    status: "discontinued",
-    prescribedBy: "Dr. Smith",
-    startDate: "2025-06-01",
-    endDate: "2025-12-15",
-    compliance: 78,
-  },
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface MedicalMedDisplay {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  time: string;
+  instructions: string;
+  status: "active" | "discontinued";
+  prescribedBy: string;
+  startDate: string;
+  endDate?: string;
+  compliance: number;
+}
+
+// ---------------------------------------------------------------------------
+// Fallback mock data — used ONLY when backend returns empty/error
+// ---------------------------------------------------------------------------
+const FALLBACK_MEDICATIONS: MedicalMedDisplay[] = [
+  { id: "1", name: "Lisinopril", dosage: "10mg", frequency: "Once daily", time: "8:00 AM", instructions: "Take on empty stomach", status: "active", prescribedBy: "Dr. Smith", startDate: "2025-12-01", compliance: 95 },
+  { id: "2", name: "Metformin", dosage: "500mg", frequency: "Twice daily", time: "12:00 PM, 8:00 PM", instructions: "Take with meals", status: "active", prescribedBy: "Dr. Johnson", startDate: "2025-11-15", compliance: 88 },
+  { id: "3", name: "Aspirin", dosage: "81mg", frequency: "Once daily", time: "6:00 PM", instructions: "Take with water", status: "active", prescribedBy: "Dr. Smith", startDate: "2025-10-01", compliance: 92 },
+  { id: "4", name: "Atorvastatin", dosage: "20mg", frequency: "Once daily", time: "9:00 PM", instructions: "Take at bedtime", status: "discontinued", prescribedBy: "Dr. Smith", startDate: "2025-06-01", endDate: "2025-12-15", compliance: 78 },
 ];
 
-const weeklySchedule = [
+const FALLBACK_WEEKLY_SCHEDULE = [
   { day: "Sun", date: 13, meds: [{ taken: true }, { taken: true }, { taken: true }] },
   { day: "Mon", date: 14, meds: [{ taken: true }, { taken: true }, { taken: false }] },
   { day: "Tue", date: 15, meds: [{ taken: true }, { taken: true }, { taken: true }] },
@@ -67,11 +43,59 @@ const weeklySchedule = [
   { day: "Sat", date: 19, meds: [{ taken: true }, { taken: true }, { upcoming: true }] },
 ];
 
+function mapApiToMedDisplay(apiMeds: MedicationSchedule[]): MedicalMedDisplay[] {
+  // Group by medication name and aggregate
+  const seen = new Map<string, MedicalMedDisplay>();
+  for (const m of apiMeds) {
+    const key = m.medication_name || m.medication_id;
+    if (!seen.has(key)) {
+      seen.set(key, {
+        id: m.id,
+        name: m.medication_name || "Unknown",
+        dosage: m.dosage || "",
+        frequency: m.frequency || "",
+        time: m.scheduled_time || "",
+        instructions: m.instructions || "",
+        status: m.is_active ? "active" : "discontinued",
+        prescribedBy: m.prescribed_by || "",
+        startDate: m.start_date || "",
+        endDate: m.end_date || undefined,
+        // TODO: Compliance rate should be computed from medication_logs/history table
+        compliance: 90,
+      });
+    }
+  }
+  return Array.from(seen.values());
+}
+
 export default function MedicalMedicationsPage() {
-  const [selectedMed, setSelectedMed] = useState<number | null>(null);
+  const [selectedMed, setSelectedMed] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "discontinued">("all");
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [medications, setMedications] = useState<MedicalMedDisplay[]>(FALLBACK_MEDICATIONS);
+  // TODO: Weekly schedule should be built from medication_schedules/logs — keeping fallback for now
+  const [weeklySchedule] = useState(FALLBACK_WEEKLY_SCHEDULE);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const res = await getMedications();
+        if (res.status === "success" && res.data && res.data.length > 0) {
+          setMedications(mapApiToMedDisplay(res.data));
+        }
+      } catch (error) {
+        console.error("Failed to fetch medications:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const filteredMeds = medications.filter((med) => {
     const matchesSearch = med.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -129,7 +153,7 @@ export default function MedicalMedicationsPage() {
                       key={i}
                       className={cn(
                         "w-3 h-3 rounded-full",
-                        med.taken ? "bg-success" : med.upcoming ? "bg-gray-300" : "bg-accent"
+                        med.taken ? "bg-success" : "upcoming" in med ? "bg-gray-300" : "bg-accent"
                       )}
                     />
                   ))}
@@ -183,91 +207,98 @@ export default function MedicalMedicationsPage() {
       </div>
 
       {/* Medications List */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        {filteredMeds.map((med) => (
-          <Card
-            key={med.id}
-            variant="elevated"
-            className={cn(
-              "cursor-pointer transition-all",
-              selectedMed === med.id && "ring-2 ring-primary",
-              med.status === "discontinued" && "opacity-60"
-            )}
-            onClick={() => setSelectedMed(selectedMed === med.id ? null : med.id)}
-          >
-            <CardContent>
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center",
-                    med.status === "active" ? "bg-primary-100 dark:bg-primary-900/50" : "bg-gray-200 dark:bg-gray-700"
-                  )}>
-                    <Pill className={cn("w-6 h-6", med.status === "active" ? "text-primary" : "text-text-muted dark:text-gray-400")} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-text-primary dark:text-white">{med.name}</h3>
-                    <p className="text-sm text-text-muted dark:text-gray-400">{med.dosage} • {med.frequency}</p>
-                  </div>
-                </div>
-                <Badge variant={med.status === "active" ? "success" : "default"}>
-                  {med.status}
-                </Badge>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-muted dark:text-gray-400">Time</span>
-                  <span className="text-text-primary dark:text-gray-200">{med.time}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-muted dark:text-gray-400">Instructions</span>
-                  <span className="text-text-primary dark:text-gray-200">{med.instructions}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-muted dark:text-gray-400">Prescribed by</span>
-                  <span className="text-text-primary dark:text-gray-200">{med.prescribedBy}</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-text-muted dark:text-gray-400">Compliance Rate</span>
-                  <span className={cn(
-                    "text-sm font-semibold",
-                    med.compliance >= 90 ? "text-success" : med.compliance >= 70 ? "text-secondary" : "text-accent"
-                  )}>
-                    {med.compliance}%
-                  </span>
-                </div>
-                <ProgressBar
-                  value={med.compliance}
-                  variant={med.compliance >= 90 ? "success" : med.compliance >= 70 ? "warning" : "danger"}
-                />
-              </div>
-
-              {selectedMed === med.id && (
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 animate-fade-in">
-                  <Button variant="outline" size="sm" leftIcon={<Edit2 className="w-4 h-4" />} className="flex-1">
-                    Edit
-                  </Button>
-                  {med.status === "active" ? (
-                    <Button variant="outline" size="sm" leftIcon={<Clock className="w-4 h-4" />} className="flex-1">
-                      Hold
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" leftIcon={<Check className="w-4 h-4" />} className="flex-1">
-                      Reactivate
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" className="text-accent border-accent hover:bg-accent-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        </div>
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {filteredMeds.map((med) => (
+            <Card
+              key={med.id}
+              variant="elevated"
+              className={cn(
+                "cursor-pointer transition-all",
+                selectedMed === med.id && "ring-2 ring-primary",
+                med.status === "discontinued" && "opacity-60"
               )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              onClick={() => setSelectedMed(selectedMed === med.id ? null : med.id)}
+            >
+              <CardContent>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center",
+                      med.status === "active" ? "bg-primary-100 dark:bg-primary-900/50" : "bg-gray-200 dark:bg-gray-700"
+                    )}>
+                      <Pill className={cn("w-6 h-6", med.status === "active" ? "text-primary" : "text-text-muted dark:text-gray-400")} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-text-primary dark:text-white">{med.name}</h3>
+                      <p className="text-sm text-text-muted dark:text-gray-400">{med.dosage} • {med.frequency}</p>
+                    </div>
+                  </div>
+                  <Badge variant={med.status === "active" ? "success" : "default"}>
+                    {med.status}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted dark:text-gray-400">Time</span>
+                    <span className="text-text-primary dark:text-gray-200">{med.time}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted dark:text-gray-400">Instructions</span>
+                    <span className="text-text-primary dark:text-gray-200">{med.instructions}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted dark:text-gray-400">Prescribed by</span>
+                    <span className="text-text-primary dark:text-gray-200">{med.prescribedBy}</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-text-muted dark:text-gray-400">Compliance Rate</span>
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      med.compliance >= 90 ? "text-success" : med.compliance >= 70 ? "text-secondary" : "text-accent"
+                    )}>
+                      {/* TODO: Compliance rate should be computed from medication_logs table */}
+                      {med.compliance}%
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={med.compliance}
+                    variant={med.compliance >= 90 ? "success" : med.compliance >= 70 ? "warning" : "danger"}
+                  />
+                </div>
+
+                {selectedMed === med.id && (
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 animate-fade-in">
+                    <Button variant="outline" size="sm" leftIcon={<Edit2 className="w-4 h-4" />} className="flex-1">
+                      Edit
+                    </Button>
+                    {med.status === "active" ? (
+                      <Button variant="outline" size="sm" leftIcon={<Clock className="w-4 h-4" />} className="flex-1">
+                        Hold
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" leftIcon={<Check className="w-4 h-4" />} className="flex-1">
+                        Reactivate
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" className="text-accent border-accent hover:bg-accent-50">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Add/Edit Medication Modal */}
       <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} size="lg">

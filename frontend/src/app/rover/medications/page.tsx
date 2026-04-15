@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Pill, Clock, Check, X, Bell, ChevronLeft, ChevronRight, ArrowLeft, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Pill, Clock, Check, X, Bell, ChevronLeft, ChevronRight, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getMedications, markMedicationTaken, type MedicationSchedule } from "@/lib/dashboard-api";
 
-interface Medication {
-  id: number;
+interface MedicationDisplay {
+  id: string;
   name: string;
   dosage: string;
   time: string;
@@ -15,9 +16,12 @@ interface Medication {
   color: string;
 }
 
-const medications: Medication[] = [
+// ---------------------------------------------------------------------------
+// Fallback mock data — used ONLY when backend returns empty/error
+// ---------------------------------------------------------------------------
+const FALLBACK_MEDICATIONS: MedicationDisplay[] = [
   {
-    id: 1,
+    id: "1",
     name: "Lisinopril",
     dosage: "10mg",
     time: "8:00 AM",
@@ -26,7 +30,7 @@ const medications: Medication[] = [
     color: "bg-primary",
   },
   {
-    id: 2,
+    id: "2",
     name: "Metformin",
     dosage: "500mg",
     time: "12:00 PM",
@@ -35,7 +39,7 @@ const medications: Medication[] = [
     color: "bg-purple-500",
   },
   {
-    id: 3,
+    id: "3",
     name: "Aspirin",
     dosage: "81mg",
     time: "6:00 PM",
@@ -44,7 +48,7 @@ const medications: Medication[] = [
     color: "bg-secondary",
   },
   {
-    id: 4,
+    id: "4",
     name: "Metformin",
     dosage: "500mg",
     time: "8:00 PM",
@@ -54,6 +58,20 @@ const medications: Medication[] = [
   },
 ];
 
+const medColors = ["bg-primary", "bg-purple-500", "bg-secondary", "bg-success", "bg-accent"];
+
+function mapApiToDisplay(apiMeds: MedicationSchedule[]): MedicationDisplay[] {
+  return apiMeds.map((med, index) => ({
+    id: med.id,
+    name: med.medication_name || "Unknown",
+    dosage: med.dosage || "",
+    time: med.scheduled_time || "",
+    instructions: med.instructions || "",
+    status: med.status,
+    color: medColors[index % medColors.length],
+  }));
+}
+
 const statusConfig = {
   taken: { icon: Check, bg: "bg-success-100 dark:bg-success-900/30", text: "text-success dark:text-success-400", label: "Taken" },
   due: { icon: AlertCircle, bg: "bg-accent-100 dark:bg-accent-900/30", text: "text-accent", label: "Due Now" },
@@ -62,16 +80,51 @@ const statusConfig = {
 };
 
 export default function RoverMedicationsPage() {
-  const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
+  const [selectedMed, setSelectedMed] = useState<MedicationDisplay | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [medications, setMedications] = useState<MedicationDisplay[]>(FALLBACK_MEDICATIONS);
 
-  const handleTakeMedication = (med: Medication) => {
+  useEffect(() => {
+    async function fetchMedications() {
+      setIsLoading(true);
+      try {
+        const res = await getMedications();
+        if (res.status === "success" && res.data && res.data.length > 0) {
+          setMedications(mapApiToDisplay(res.data));
+        }
+      } catch (error) {
+        console.error("Failed to fetch medications:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchMedications();
+  }, []);
+
+  const handleTakeMedication = (med: MedicationDisplay) => {
     setSelectedMed(med);
     setShowConfirm(true);
   };
 
-  const confirmTaken = () => {
-    // In real app, update medication status
+  const confirmTaken = async () => {
+    if (!selectedMed) return;
+
+    try {
+      const res = await markMedicationTaken(selectedMed.id);
+      if (res.status === "success") {
+        // Update local state to reflect the taken medication
+        setMedications((prev) =>
+          prev.map((m) =>
+            m.id === selectedMed.id ? { ...m, status: "taken" as const } : m
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Failed to mark medication as taken:", error);
+    }
+
     setShowConfirm(false);
     setSelectedMed(null);
   };
@@ -102,106 +155,114 @@ export default function RoverMedicationsPage() {
         </div>
       </div>
 
-      {/* Due Now Alert */}
-      {dueMedications.length > 0 && (
-        <div className="bg-accent-50 dark:bg-accent-900/30 border-2 border-accent rounded-3xl p-6 animate-pulse">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center">
-              <Bell className="w-8 h-8 text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-accent mb-1">Medication Due Now!</h2>
-              <p className="text-lg text-text-secondary dark:text-gray-300">
-                {dueMedications[0].name} {dueMedications[0].dosage}
-              </p>
-            </div>
-            <button
-              onClick={() => handleTakeMedication(dueMedications[0])}
-              className="rover-btn px-8 py-4 bg-accent text-white text-xl font-bold rounded-2xl hover:bg-accent-600 transition-colors"
-            >
-              Mark as Taken
-            </button>
-          </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
         </div>
-      )}
-
-      {/* Medications Timeline */}
-      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-text-primary dark:text-white">Today's Schedule</h2>
-        </div>
-        <div className="divide-y divide-gray-100 dark:divide-gray-700">
-          {medications.map((med) => {
-            const config = statusConfig[med.status];
-            const StatusIcon = config.icon;
-
-            return (
-              <div
-                key={med.id}
-                className={cn(
-                  "p-6 flex items-center gap-6 transition-all",
-                  med.status === "due" && "bg-accent-50 dark:bg-accent-900/20",
-                  med.status === "taken" && "opacity-60"
-                )}
-              >
-                {/* Time */}
-                <div className="w-24 text-center">
-                  <p className="text-2xl font-bold text-text-primary dark:text-white">{med.time.split(" ")[0]}</p>
-                  <p className="text-text-muted dark:text-gray-400">{med.time.split(" ")[1]}</p>
+      ) : (
+        <>
+          {/* Due Now Alert */}
+          {dueMedications.length > 0 && (
+            <div className="bg-accent-50 dark:bg-accent-900/30 border-2 border-accent rounded-3xl p-6 animate-pulse">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center">
+                  <Bell className="w-8 h-8 text-white" />
                 </div>
-
-                {/* Medication Icon */}
-                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", med.color)}>
-                  <Pill className="w-8 h-8 text-white" />
-                </div>
-
-                {/* Medication Info */}
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-text-primary dark:text-white">{med.name}</h3>
-                  <p className="text-lg text-text-secondary dark:text-gray-300">{med.dosage} • {med.instructions}</p>
+                  <h2 className="text-2xl font-bold text-accent mb-1">Medication Due Now!</h2>
+                  <p className="text-lg text-text-secondary dark:text-gray-300">
+                    {dueMedications[0].name} {dueMedications[0].dosage}
+                  </p>
                 </div>
-
-                {/* Status / Action */}
-                <div className="flex items-center gap-4">
-                  <span className={cn("px-4 py-2 rounded-xl text-lg font-medium flex items-center gap-2", config.bg, config.text)}>
-                    <StatusIcon className="w-5 h-5" />
-                    {config.label}
-                  </span>
-                  {(med.status === "due" || med.status === "upcoming") && (
-                    <button
-                      onClick={() => handleTakeMedication(med)}
-                      className={cn(
-                        "rover-btn px-6 py-3 rounded-2xl text-lg font-semibold transition-colors",
-                        med.status === "due"
-                          ? "bg-accent text-white hover:bg-accent-600"
-                          : "bg-success text-white hover:bg-success-600"
-                      )}
-                    >
-                      <Check className="w-6 h-6" />
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={() => handleTakeMedication(dueMedications[0])}
+                  className="rover-btn px-8 py-4 bg-accent text-white text-xl font-bold rounded-2xl hover:bg-accent-600 transition-colors"
+                >
+                  Mark as Taken
+                </button>
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </div>
+          )}
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-success-50 dark:bg-success-900/30 rounded-2xl p-6 text-center border-2 border-success-100 dark:border-success-800">
-          <div className="text-4xl font-bold text-success mb-2">{takenMedications.length}</div>
-          <div className="text-text-secondary dark:text-gray-300">Taken</div>
-        </div>
-        <div className="bg-accent-50 dark:bg-accent-900/30 rounded-2xl p-6 text-center border-2 border-accent-100 dark:border-accent-800">
-          <div className="text-4xl font-bold text-accent mb-2">{dueMedications.length}</div>
-          <div className="text-text-secondary dark:text-gray-300">Due Now</div>
-        </div>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 text-center border-2 border-gray-200 dark:border-gray-700">
-          <div className="text-4xl font-bold text-text-primary dark:text-white mb-2">{upcomingMedications.length}</div>
-          <div className="text-text-secondary dark:text-gray-300">Upcoming</div>
-        </div>
-      </div>
+          {/* Medications Timeline */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-soft border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-xl font-semibold text-text-primary dark:text-white">Today's Schedule</h2>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+              {medications.map((med) => {
+                const config = statusConfig[med.status];
+                const StatusIcon = config.icon;
+
+                return (
+                  <div
+                    key={med.id}
+                    className={cn(
+                      "p-6 flex items-center gap-6 transition-all",
+                      med.status === "due" && "bg-accent-50 dark:bg-accent-900/20",
+                      med.status === "taken" && "opacity-60"
+                    )}
+                  >
+                    {/* Time */}
+                    <div className="w-24 text-center">
+                      <p className="text-2xl font-bold text-text-primary dark:text-white">{med.time.split(" ")[0]}</p>
+                      <p className="text-text-muted dark:text-gray-400">{med.time.split(" ")[1]}</p>
+                    </div>
+
+                    {/* Medication Icon */}
+                    <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", med.color)}>
+                      <Pill className="w-8 h-8 text-white" />
+                    </div>
+
+                    {/* Medication Info */}
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-text-primary dark:text-white">{med.name}</h3>
+                      <p className="text-lg text-text-secondary dark:text-gray-300">{med.dosage} • {med.instructions}</p>
+                    </div>
+
+                    {/* Status / Action */}
+                    <div className="flex items-center gap-4">
+                      <span className={cn("px-4 py-2 rounded-xl text-lg font-medium flex items-center gap-2", config.bg, config.text)}>
+                        <StatusIcon className="w-5 h-5" />
+                        {config.label}
+                      </span>
+                      {(med.status === "due" || med.status === "upcoming") && (
+                        <button
+                          onClick={() => handleTakeMedication(med)}
+                          className={cn(
+                            "rover-btn px-6 py-3 rounded-2xl text-lg font-semibold transition-colors",
+                            med.status === "due"
+                              ? "bg-accent text-white hover:bg-accent-600"
+                              : "bg-success text-white hover:bg-success-600"
+                          )}
+                        >
+                          <Check className="w-6 h-6" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-success-50 dark:bg-success-900/30 rounded-2xl p-6 text-center border-2 border-success-100 dark:border-success-800">
+              <div className="text-4xl font-bold text-success mb-2">{takenMedications.length}</div>
+              <div className="text-text-secondary dark:text-gray-300">Taken</div>
+            </div>
+            <div className="bg-accent-50 dark:bg-accent-900/30 rounded-2xl p-6 text-center border-2 border-accent-100 dark:border-accent-800">
+              <div className="text-4xl font-bold text-accent mb-2">{dueMedications.length}</div>
+              <div className="text-text-secondary dark:text-gray-300">Due Now</div>
+            </div>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 text-center border-2 border-gray-200 dark:border-gray-700">
+              <div className="text-4xl font-bold text-text-primary dark:text-white mb-2">{upcomingMedications.length}</div>
+              <div className="text-text-secondary dark:text-gray-300">Upcoming</div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Confirmation Modal */}
       {showConfirm && selectedMed && (

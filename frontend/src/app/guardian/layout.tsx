@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -19,8 +19,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, Badge, ThemeToggle } from "@/components/ui";
-import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { getLinkedRover, type LinkedRover } from "@/lib/dashboard-api";
 
 const navigation = [
   { name: "Dashboard", href: "/guardian", icon: Home },
@@ -40,8 +40,26 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [linkedRover, setLinkedRover] = useState<LinkedRover | null>(null);
 
   const displayName = user ? `${user.first_name} ${user.last_name}` : "Guardian";
+  const roverName = linkedRover ? `${linkedRover.first_name} ${linkedRover.last_name}` : "Patient";
+  const roverStatus = linkedRover?.status || "offline";
+
+  useEffect(() => {
+    async function fetchLinkedRover() {
+      try {
+        const res = await getLinkedRover();
+        if (res.status === "success" && res.data) {
+          setLinkedRover(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch linked rover:", error);
+      }
+    }
+    fetchLinkedRover();
+  }, []);
+
 
   const handleLogout = async () => {
     await logout();
@@ -85,12 +103,12 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
           {/* Patient Info */}
           <div className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
-              <Avatar name="Sarah Johnson" size="md" status="online" />
+              <Avatar name={roverName} size="md" status={roverStatus} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text-primary dark:text-white truncate">Sarah Johnson</p>
-                <p className="text-xs text-success flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-success rounded-full" />
-                  Online
+                <p className="text-sm font-semibold text-text-primary dark:text-white truncate">{roverName}</p>
+                <p className={`text-xs flex items-center gap-1 ${roverStatus === "online" ? "text-success" : roverStatus === "resting" ? "text-secondary" : "text-text-muted"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${roverStatus === "online" ? "bg-success" : roverStatus === "resting" ? "bg-secondary" : "bg-gray-400"}`} />
+                  {roverStatus === "online" ? "Online" : roverStatus === "resting" ? "Resting" : "Offline"}
                 </p>
               </div>
             </div>
@@ -147,7 +165,11 @@ export default function GuardianLayout({ children }: GuardianLayoutProps) {
                 <h1 className="text-xl font-display font-bold text-text-primary dark:text-white">
                   {displayName}&apos;s Dashboard
                 </h1>
-                <p className="text-sm text-text-muted dark:text-gray-400">Last check-in: 5 minutes ago</p>
+                <p className="text-sm text-text-muted dark:text-gray-400">
+                  {linkedRover?.last_check_in
+                    ? `Last check-in: ${new Date(linkedRover.last_check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : "Last check-in: --"}
+                </p>
               </div>
             </div>
 

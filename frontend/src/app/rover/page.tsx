@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { MessageCircle, Pill, Navigation, AlertTriangle, Heart, Music, Smile } from "lucide-react";
+import { MessageCircle, Pill, Navigation, AlertTriangle, Heart, Music, Smile, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import EmotionDetectionModal from "@/components/EmotionDetectionModal";
 import { useAuth } from "@/context/AuthContext";
+import { getVitals, getMedications, getBatteryStatus, type VitalSign, type MedicationSchedule, type BatteryStatus } from "@/lib/dashboard-api";
 
 const mainFeatures = [
   {
@@ -23,7 +24,8 @@ const mainFeatures = [
     description: "View schedule and reminders",
     color: "from-purple-400 to-purple-600",
     textColor: "text-success",
-    badge: "2 Due",
+    // Badge will be set dynamically
+    badgeKey: "medsDue",
   },
   {
     href: "/rover/navigate",
@@ -64,6 +66,48 @@ export default function RoverHomePage() {
   const { user } = useAuth();
   const userName = user?.first_name || "Friend";
 
+  // Dynamic state from backend
+  const [heartRate, setHeartRate] = useState<number>(72);
+  const [medsToday, setMedsToday] = useState<number>(2);
+  const [battery, setBattery] = useState<BatteryStatus | null>(null);
+  const roverStatus = battery
+    ? `${battery.battery_percent}% ${battery.is_charging ? "⚡" : "🔋"}`
+    : "Ready";
+
+  useEffect(() => {
+    async function fetchQuickStats() {
+      try {
+        const [vitalsRes, medsRes, batteryRes] = await Promise.all([
+          getVitals(),
+          getMedications(),
+          getBatteryStatus(),
+        ]);
+
+        if (vitalsRes.status === "success" && vitalsRes.data && vitalsRes.data.length > 0) {
+          const latest = vitalsRes.data[0];
+          if (latest.heart_rate) {
+            setHeartRate(latest.heart_rate);
+          }
+        }
+
+        if (medsRes.status === "success" && medsRes.data) {
+          const todayMeds = medsRes.data.filter(
+            (m: MedicationSchedule) => m.status === "due" || m.status === "upcoming"
+          );
+          setMedsToday(todayMeds.length);
+        }
+
+        if (batteryRes.status === "success" && batteryRes.data) {
+          setBattery(batteryRes.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch rover quick stats:", error);
+      }
+    }
+
+    fetchQuickStats();
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
       {/* Emotion Detection Modal */}
@@ -93,10 +137,10 @@ export default function RoverHomePage() {
             )}
             style={{ minHeight: "200px" }}
           >
-            {/* Badge */}
-            {feature.badge && (
+            {/* Badge — dynamic for medications */}
+            {feature.badgeKey === "medsDue" && medsToday > 0 && (
               <span className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium text-white">
-                {feature.badge}
+                {medsToday} Due
               </span>
             )}
 
@@ -128,21 +172,22 @@ export default function RoverHomePage() {
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft border border-gray-100 dark:border-gray-700 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Heart className="w-6 h-6 text-accent" />
-            <span className="text-3xl font-bold text-text-primary dark:text-white">72</span>
+            <span className="text-3xl font-bold text-text-primary dark:text-white">{heartRate}</span>
           </div>
           <p className="text-text-muted dark:text-gray-400">Heart Rate</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft border border-gray-100 dark:border-gray-700 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Pill className="w-6 h-6 text-purple-500" />
-            <span className="text-3xl font-bold text-text-primary dark:text-white">2</span>
+            <span className="text-3xl font-bold text-text-primary dark:text-white">{medsToday}</span>
           </div>
           <p className="text-text-muted dark:text-gray-400">Medications Today</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-soft border border-gray-100 dark:border-gray-700 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Navigation className="w-6 h-6 text-secondary" />
-            <span className="text-3xl font-bold text-success">Ready</span>
+            {/* TODO: Rover hardware status has no direct DB counterpart — integrate with rover hardware API */}
+            <span className="text-3xl font-bold text-success">{roverStatus}</span>
           </div>
           <p className="text-text-muted dark:text-gray-400">Rover Status</p>
         </div>

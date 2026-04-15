@@ -15,7 +15,7 @@ def create_app() -> Flask:
     # Enable CORS for the Next.js frontend (must allow all methods + headers for preflight)
     CORS(
         app,
-        origins=["http://localhost:3000"],
+        origins=["http://localhost:3000", "http://localhost:3001"],
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization", "Accept"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
