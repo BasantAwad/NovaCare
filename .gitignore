@@ -15,6 +15,7 @@ __pycache__/
 dist/
 build/
 *.so
+.frontend-novacare.pem
 
 # ---- Node.js ----
 node_modules/
@@ -54,4 +55,34 @@ services/asl-model/data/models/
 *.log
 npm-debug.log*
 package-lock.json
+<<<<<<< HEAD
 novacare-key.pem
+=======
+
+# ---- Virtual Environments ----
+.venv/
+venv/
+env/
+
+# ---- Python Cache ----
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# ---- Test & Scratch Files ----
+database_testing/
+test_*.py
+*_test.py
+final_db_test.py
+export_db.py
+setup_mock_db.py
+mock_mysql.db
+
+# ---- Generated PDF Reports ----
+*.pdf
+!docs/**/*.pdf
+
+# ---- Dev SQLite DB ----
+*.db
+*.sqlite3
+>>>>>>> ab44522626a9c47ebbc8e036b2e54f188d77a0f4

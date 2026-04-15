@@ -65,7 +65,7 @@ const servicesData: ServiceDetail[] = [
     },
     {
         name: "LLM Backend (Flask)",
-        description: "NovaBot conversational AI and emotion detection service",
+        description: "NovaBot chat (Ollama + Hugging Face, llm_profile / prefer_quality) and emotion detection",
         port: 5000,
         status: "healthy",
         uptime: "98.7%",

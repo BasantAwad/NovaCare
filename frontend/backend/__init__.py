@@ -24,8 +24,8 @@ def create_app(config=None):
     
     app = Flask(
         __name__,
-        template_folder=os.path.join(basedir, 'app', 'templates'),
-        static_folder=os.path.join(basedir, 'app', 'static')
+        template_folder=os.path.join(basedir, 'backend', 'templates'),
+        static_folder=os.path.join(basedir, 'backend', 'static')
     )
     
     # Default configuration
@@ -62,14 +62,15 @@ def create_app(config=None):
 
 def _register_blueprints(app, login_manager, db, logger, nova):
     """Register all blueprints with dependency injection."""
-    from app.routes.auth import auth_bp, init_auth
-    from app.routes.dashboard import dashboard_bp, init_dashboard
-    from app.routes.api import api_bp
-    from app.routes.api.chat import init_chat
-    from app.routes.api.alerts import init_alerts
-    from app.routes.api.vitals import init_vitals
-    from app.routes.api.medication import init_medication
-    from app.routes.api.reports import init_reports
+    from backend.routes.auth import auth_bp, init_auth
+    from backend.routes.dashboard import dashboard_bp, init_dashboard
+    from backend.routes.api import api_bp
+    from backend.routes.api.chat import init_chat
+    from backend.routes.api.alerts import init_alerts
+    from backend.routes.api.vitals import init_vitals
+    from backend.routes.api.medication import init_medication
+    from backend.routes.api.reports import init_reports
+    from backend.routes.api.reminders import init_reminders_module
     
     # Initialize blueprints with dependencies
     init_auth(login_manager, db, User, logger)
@@ -79,6 +80,7 @@ def _register_blueprints(app, login_manager, db, logger, nova):
     init_vitals(db, logger, VitalSign, Alert)
     init_medication(db, logger, Medication)
     init_reports(db, logger, VitalSign, Alert, MedicationLog, HealthReport, SystemLog)
+    init_reminders_module()
     
     # Register blueprints
     app.register_blueprint(auth_bp)

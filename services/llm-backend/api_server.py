@@ -13,7 +13,7 @@ load_dotenv(env_path)
 sys.path.insert(0, current_dir)
 
 # Import from LLMs module (after loading .env)
-from LLMs.conversational_ai import ConversationalAI
+from LLMs.conversational_ai import ConversationalAI, describe_llm_config
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 CORS(app)  # Enable CORS for cross-origin requests
@@ -46,7 +46,8 @@ def health():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'NovaBot API'
+        'service': 'NovaBot API',
+        'llm': describe_llm_config(),
     })
 
 @app.route('/api/chat', methods=['POST'])
@@ -66,18 +67,28 @@ def chat():
             return jsonify({
                 'error': 'No message provided'
             }), 400
+
+        raw_profile = (data.get('llm_profile') or '').strip().lower()
+        if raw_profile in ('fast', 'quality'):
+            llm_profile = raw_profile
+        elif data.get('prefer_quality') is True:
+            llm_profile = 'quality'
+        else:
+            llm_profile = None
         
         # Initialize AI if not already initialized
         if not ai._initialized:
             ai.initialize()
         
         # Get AI response
-        ai_response = ai.chat(user_message)
+        ai_response = ai.chat(user_message, profile=llm_profile)
         
         # Return response
         return jsonify({
             'response': ai_response,
-            'status': 'success'
+            'status': 'success',
+            'llm_profile': ai.last_profile,
+            'llm_route': ai.last_route,
         })
     
     except Exception as e:
@@ -199,6 +210,6 @@ if __name__ == '__main__':
     print("=" * 50)
     print("Starting server on http://localhost:5000")
     print("API Endpoints:")
-    print("  - Chat: POST /api/chat")
+    print("  - Chat: POST /api/chat (JSON: message; optional llm_profile=fast|quality or prefer_quality=true)")
     print("  - Emotion: POST /api/emotion/detect")
     print("  - Emotion Health: GET /api/emotion/health")

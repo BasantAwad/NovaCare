@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Settings, Volume2, Eye, Hand, Type, Moon, Sun, Bell, Lock, Info, ChevronRight, ArrowLeft, Minus, Plus } from "lucide-react";
+import { Settings, Volume2, Eye, Hand, Type, Moon, Sun, Bell, Lock, Info, ChevronRight, ArrowLeft, Minus, Plus, LogOut } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface SettingToggle {
   id: string;
@@ -18,6 +19,7 @@ export default function RoverSettingsPage() {
   const [textSize, setTextSize] = useState<"small" | "medium" | "large">("medium");
   const [highContrast, setHighContrast] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const { logout } = useAuth();
 
   const [toggles, setToggles] = useState<SettingToggle[]>([
     { id: "voice", label: "Voice Feedback", description: "Speak responses aloud", enabled: true },
@@ -240,6 +242,17 @@ export default function RoverSettingsPage() {
             <ChevronRight className="w-6 h-6 text-text-muted dark:text-gray-400" />
           </button>
         ))}
+      </div>
+
+      {/* Logout Area */}
+      <div className="bg-red-50 dark:bg-red-900/10 rounded-3xl p-6 shadow-soft border border-red-100 dark:border-red-900/30 mb-8">
+        <button
+          onClick={logout}
+          className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all"
+        >
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </button>
       </div>
     </div>
   );

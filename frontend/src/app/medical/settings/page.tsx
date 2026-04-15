@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { User, Bell, Lock, HelpCircle, Shield, Moon, Sun, Monitor, Mail, Phone, Building, FileText, ExternalLink, ChevronRight, Check, X } from "lucide-react";
+import { User, Bell, Lock, HelpCircle, Shield, Moon, Sun, Monitor, Mail, Phone, Building, FileText, ExternalLink, ChevronRight, Check, X, LogOut } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Input, Avatar, Badge } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 const tabs = [
   { id: "profile", label: "Profile", icon: User },
@@ -14,6 +15,7 @@ const tabs = [
 ];
 
 export default function MedicalSettingsPage() {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [theme, setTheme] = useState("system");
 
@@ -79,9 +81,15 @@ export default function MedicalSettingsPage() {
                     <Input label="Specialty" defaultValue="Internal Medicine" />
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                    <Button className="dark:text-white dark:hover:text-text-primary" variant="outline">Cancel</Button>
-                    <Button>Save Changes</Button>
+                  <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                    <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30 dark:border-red-800" onClick={logout}>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Log Out
+                    </Button>
+                    <div className="flex gap-3">
+                      <Button className="dark:text-white dark:hover:text-text-primary" variant="outline">Cancel</Button>
+                      <Button>Save Changes</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

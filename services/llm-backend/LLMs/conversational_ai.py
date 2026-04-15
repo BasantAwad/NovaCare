@@ -1,26 +1,22 @@
+import json
 import os
-from typing import Optional, List, Dict
-from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
+import urllib.error
+import urllib.request
+from typing import Dict, List, Optional
 
+from dotenv import load_dotenv
 
 # Load environment variables from .env file in parent directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
-env_path = os.path.join(parent_dir, '.env')
+env_path = os.path.join(parent_dir, ".env")
 load_dotenv(env_path, override=True)
 
-# Configuration - Read from .env file
 API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
 
-# Validate API key
-if not API_KEY:
-    raise ValueError(
-        "HUGGINGFACE_API_KEY not found in environment variables. "
-        "Please set it in your .env file."
-    )
-
+OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "").strip()
 
 SYSTEM_PROMPT = (
     "You are NovaBot, an empathetic AI assistant rover designed to support individuals with disabilities. "
@@ -40,101 +36,217 @@ SYSTEM_PROMPT = (
 )
 
 
+def _resolve_default_profile() -> str:
+    explicit = os.getenv("CHAT_LLM_DEFAULT_PROFILE", "").strip().lower()
+    if explicit in ("fast", "quality"):
+        return explicit
+    if OLLAMA_MODEL:
+        return "fast"
+    if API_KEY:
+        return "quality"
+    return "fast"
+
+
 class ConversationalAI:
-    """Conversational AI using Hugging Face Inference API"""
-    
+    """Chat via local Ollama (fast) and/or Hugging Face Inference API (quality)."""
+
     def __init__(self):
-        self.client: Optional[InferenceClient] = None
+        self._hf_client = None
         self.history: List[Dict[str, str]] = []
         self._initialized = False
-    
-    def initialize(self):
-        """Initialize the InferenceClient"""
+        self.last_route: Optional[str] = None
+        self.last_profile: Optional[str] = None
+        self._default_profile = _resolve_default_profile()
+
+    def _ensure_configured(self) -> None:
         if self._initialized:
             return
-        
-        try:
-            # Initialize InferenceClient (no model download needed!)
-            print("Initializing InferenceClient...")
-            self.client = InferenceClient(
-                model=MODEL_NAME,
-                token=API_KEY
+        has_hf = bool(API_KEY)
+        has_ollama = bool(OLLAMA_MODEL)
+        if not has_hf and not has_ollama:
+            raise RuntimeError(
+                "No LLM backend configured: set OLLAMA_MODEL (and run Ollama) and/or HUGGINGFACE_API_KEY."
             )
-            
-            self._initialized = True
-            print("✓ InferenceClient initialized successfully")
-            
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize InferenceClient: {str(e)}")
-    
-    def chat(self, user_message: str) -> str:
-        """Generate response to user message using InferenceClient"""
-        if not self._initialized:
-            self.initialize()
-        
-        # Check client is initialized
-        if self.client is None:
-            return "Sorry, the AI model is not initialized. Please try again."
-        
-        # Build prompt with system message
-        messages = [
+        print(
+            f"LLM routes — default={self._default_profile!r}, "
+            f"ollama={'on' if has_ollama else 'off'} ({OLLAMA_MODEL or 'n/a'}), "
+            f"huggingface={'on' if has_hf else 'off'}"
+        )
+        self._initialized = True
+
+    def initialize(self) -> None:
+        self._ensure_configured()
+
+    def _get_hf_client(self):
+        if not API_KEY:
+            raise RuntimeError(
+                "HUGGINGFACE_API_KEY is not set; cloud (quality) route is unavailable."
+            )
+        if self._hf_client is None:
+            from huggingface_hub import InferenceClient
+
+            print("Initializing Hugging Face InferenceClient...")
+            self._hf_client = InferenceClient(model=MODEL_NAME, token=API_KEY)
+            print("✓ Hugging Face InferenceClient ready")
+        return self._hf_client
+
+    def _messages_for_chat(self, user_message: str) -> List[Dict[str, str]]:
+        return [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_message},
         ]
-        
+
+    def _chat_ollama(self, messages: List[Dict[str, str]]) -> str:
+        url = f"{OLLAMA_BASE}/api/chat"
+        payload = json.dumps(
+            {
+                "model": OLLAMA_MODEL,
+                "messages": messages,
+                "stream": False,
+                "options": {"temperature": 0.7, "top_p": 0.9},
+            }
+        ).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
         try:
-            # Generate response using InferenceClient
-            # This uses the chat completion API format
-            response = self.client.chat_completion(
-                messages=messages,
-                max_tokens=256,
-                temperature=0.7,
-                top_p=0.9
-            )
-            
-            # Extract response text
-            # Response format: {"choices": [{"message": {"content": "..."}}]}
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                body = json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Ollama HTTP {e.code}: {detail or e.reason}") from e
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"Ollama unreachable at {OLLAMA_BASE}: {e.reason}") from e
+
+        if body.get("error"):
+            raise RuntimeError(str(body["error"]))
+        msg = body.get("message") or {}
+        content = (msg.get("content") or "").strip()
+        if not content:
+            raise RuntimeError("Ollama returned an empty message.")
+        return content
+
+    def _chat_hf(self, messages: List[Dict[str, str]]) -> str:
+        client = self._get_hf_client()
+        user_message = messages[-1]["content"]
+
+        def _extract_reply(response) -> str:
             reply = ""
-            if hasattr(response, 'choices') and len(response.choices) > 0:
-                content = getattr(response.choices[0].message, 'content', None)
+            if hasattr(response, "choices") and len(response.choices) > 0:
+                content = getattr(response.choices[0].message, "content", None)
                 reply = content.strip() if content else ""
             elif isinstance(response, dict):
-                # Fallback for dict response
-                if 'choices' in response and len(response['choices']) > 0:
-                    reply = response['choices'][0].get('message', {}).get('content', '').strip()
-                elif 'generated_text' in response:
-                    reply = response['generated_text'].strip()
+                if "choices" in response and len(response["choices"]) > 0:
+                    reply = (
+                        response["choices"][0]
+                        .get("message", {})
+                        .get("content", "")
+                        .strip()
+                    )
+                elif "generated_text" in response:
+                    reply = response["generated_text"].strip()
                 else:
-                    # Try direct text extraction
                     reply = str(response).strip()
             else:
                 reply = str(response).strip() if response else ""
-            
-            # Ensure we have a valid reply
-            if not reply:
-                reply = "I'm sorry, I couldn't generate a response. Please try again."
-            
-            # Update history
-            self.history.append({"user": user_message, "assistant": reply})
-            
             return reply
-            
-        except Exception as e:
-            # Fallback: try text generation if chat_completion fails
-            try:
-                prompt = f"{SYSTEM_PROMPT}\n\nUser: {user_message}\nAssistant:"
-                response = self.client.text_generation(
-                    prompt,
-                    max_new_tokens=256,
-                    temperature=0.7,
-                    top_p=0.9
-                )
-                reply = response.strip()
-                self.history.append({"user": user_message, "assistant": reply})
+
+        try:
+            response = client.chat_completion(
+                messages=messages,
+                max_tokens=256,
+                temperature=0.7,
+                top_p=0.9,
+            )
+            reply = _extract_reply(response)
+            if reply:
                 return reply
-            except Exception as e2:
-                return f"Sorry, I encountered an error: {str(e2)}"
-    
-    def clear_history(self):
-        """Clear conversation history"""
+        except Exception:
+            pass
+
+        prompt = f"{SYSTEM_PROMPT}\n\nUser: {user_message}\nAssistant:"
+        response = client.text_generation(
+            prompt,
+            max_new_tokens=256,
+            temperature=0.7,
+            top_p=0.9,
+        )
+        reply = (response or "").strip() if isinstance(response, str) else _extract_reply(response)
+        if not reply:
+            raise RuntimeError("Hugging Face returned an empty reply.")
+        return reply
+
+    def _normalize_profile(self, profile: Optional[str]) -> str:
+        if not profile:
+            return self._default_profile
+        p = profile.strip().lower()
+        if p in ("fast", "quality"):
+            return p
+        return self._default_profile
+
+    def chat(self, user_message: str, profile: Optional[str] = None) -> str:
+        self._ensure_configured()
+        route = self._normalize_profile(profile)
+        self.last_profile = route
+        messages = self._messages_for_chat(user_message)
+
+        reply: str
+        if route == "quality":
+            self.last_route = "huggingface"
+            try:
+                reply = self._chat_hf(messages)
+            except Exception as e:
+                if OLLAMA_MODEL:
+                    try:
+                        print(f"[LLM] Hugging Face failed ({e}); trying Ollama.")
+                        self.last_route = "ollama_fallback"
+                        reply = self._chat_ollama(messages)
+                    except Exception as e2:
+                        return f"Sorry, I encountered an error: {e2}"
+                else:
+                    return f"Sorry, I encountered an error: {e}"
+        else:
+            if OLLAMA_MODEL:
+                self.last_route = "ollama"
+                try:
+                    reply = self._chat_ollama(messages)
+                except Exception as e:
+                    if API_KEY:
+                        print(f"[LLM] Ollama failed ({e}); falling back to Hugging Face.")
+                        self.last_route = "huggingface_fallback"
+                        try:
+                            reply = self._chat_hf(messages)
+                        except Exception as e2:
+                            return f"Sorry, I encountered an error: {e2}"
+                    else:
+                        return f"Sorry, I encountered an error: {e}"
+            else:
+                self.last_route = "huggingface"
+                try:
+                    reply = self._chat_hf(messages)
+                except Exception as e:
+                    return f"Sorry, I encountered an error: {e}"
+
+        self.history.append({"user": user_message, "assistant": reply})
+        return reply
+
+    def clear_history(self) -> None:
         self.history = []
+
+
+def describe_llm_config() -> Dict[str, object]:
+    return {
+        "default_profile": _resolve_default_profile(),
+        "ollama": {
+            "enabled": bool(OLLAMA_MODEL),
+            "base_url": OLLAMA_BASE,
+            "model": OLLAMA_MODEL or None,
+        },
+        "huggingface": {
+            "enabled": bool(API_KEY),
+            "model": MODEL_NAME if API_KEY else None,
+        },
+    }
