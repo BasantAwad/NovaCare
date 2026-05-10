@@ -73,19 +73,32 @@
 
 ---
 
-## Phase 4: Robot Integration (⬜ Not Started)
+## Phase 4: Robot Integration (🔄 In Progress)
 
-> Hardware integration once the JetAuto Kit is available.
+> Hardware integration with SERBot Prime X.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Set up ROS 2 on JetAuto Kit | ⬜ | Follow Hiwonder docs |
-| Bridge ROS 2 ↔ web services (WebSocket/REST) | ⬜ | Navigation commands, sensor data |
-| Deploy AI models to edge (Jetson) | ⬜ | Optimize for inference speed |
-| Camera feed streaming to guardian dashboard | ⬜ | WebRTC or MJPEG |
-| SLAM + obstacle avoidance integration | ⬜ | LiDAR + depth camera |
-| Follow-user mode | ⬜ | Camera-based tracking |
-| On-device vs cloud deployment decision | ⬜ | Performance benchmarks needed |
+| Hardware Abstraction Layer (`robot_hal.py`) | ✅ | Camera, Motion, Audio, LiDAR abstractions |
+| Robot REST Service (`robot_service.py` port 9000) | ✅ | Full REST API for hardware control |
+| Camera integration (GStreamer + fallback) | ✅ | Replaces `cv2.VideoCapture(0)` |
+| Robot TTS (gTTS → pop.AudioPlay) | ✅ | REST endpoint + frontend integration |
+| Robot STT (SpeechRecognition) | ✅ | REST endpoint + frontend integration |
+| Movement API (pop.Pilot.SerBot) | ✅ | Forward, backward, left, right, turn |
+| Navigation with LiDAR obstacle avoidance | ✅ | Auto-stop on obstacle detection |
+| Follow-user mode (face tracking + movement) | ✅ | Camera-based person tracking |
+| Frontend robot-api.ts client | ✅ | TypeScript API for all robot endpoints |
+| Navigate page → real movement API | ✅ | Buttons call robot REST API |
+| Talk page → robot TTS/STT | ✅ | Dual-mode: robot speaker + browser fallback |
+| Emotion modal → robot camera | ✅ | MJPEG stream or frame polling |
+| ASL modal → robot camera | ✅ | Frame capture from robot camera |
+| `CameraEmotionPoller` → robot camera | ✅ | REST API with local webcam fallback |
+| Robot startup script (Linux) | ✅ | `scripts/jetson/start_robot.sh` |
+| Chromium kiosk mode for touchscreen | ✅ | Auto-launch on 7-inch display |
+| Set up ROS 2 on JetAuto Kit | ⬜ | Optional: for advanced SLAM |
+| Camera feed streaming to guardian dashboard | 🔄 | MJPEG endpoint ready |
+| SLAM + obstacle avoidance integration | 🔄 | LiDAR integrated, SLAM TBD |
+| On-device vs cloud deployment decision | ✅ | Hybrid: on-device HAL + cloud LLM APIs |
 
 ---
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Camera, RefreshCw, Smile, AlertCircle, Video, VideoOff } from "lucide-react";
+import { X, Camera, RefreshCw, Smile, AlertCircle, Video, VideoOff, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   detectEmotion,
@@ -10,6 +10,7 @@ import {
   getEmotionColor,
   EmotionResult,
 } from "@/lib/emotion-api";
+import { getCameraFrame, getCameraStreamUrl, checkRobotHealth } from "@/lib/robot-api";
 
 interface EmotionDetectionModalProps {
   isOpen: boolean;
@@ -26,10 +27,13 @@ export default function EmotionDetectionModal({
   const [result, setResult] = useState<EmotionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [useRobotCamera, setUseRobotCamera] = useState(false);
+  const [robotCameraUrl, setRobotCameraUrl] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const robotImgRef = useRef<HTMLImageElement>(null);
 
   // Check service health on mount
   useEffect(() => {
@@ -37,6 +41,15 @@ export default function EmotionDetectionModal({
       checkEmotionHealth().then((health) => {
         setIsServiceAvailable(health.status === "available");
       });
+      // Check if robot camera is available
+      checkRobotHealth()
+        .then((health) => {
+          if (health.hardware.camera) {
+            setUseRobotCamera(true);
+            setRobotCameraUrl(getCameraStreamUrl());
+          }
+        })
+        .catch(() => setUseRobotCamera(false));
     }
   }, [isOpen]);
 
@@ -90,29 +103,29 @@ export default function EmotionDetectionModal({
   }, []);
 
   const captureAndDetect = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
     setIsDetecting(true);
     setError(null);
 
     try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
+      let imageBase64: string;
 
-      if (!ctx) {
-        throw new Error("Could not get canvas context");
+      if (useRobotCamera) {
+        // Fetch frame from robot camera
+        const frameData = await getCameraFrame();
+        imageBase64 = `data:image/jpeg;base64,${frameData.image}`;
+      } else if (videoRef.current && canvasRef.current) {
+        // Capture from browser webcam
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Could not get canvas context");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        imageBase64 = canvas.toDataURL("image/jpeg", 0.8);
+      } else {
+        throw new Error("No camera source available");
       }
-
-      // Set canvas size to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      // Draw video frame to canvas
-      ctx.drawImage(video, 0, 0);
-
-      // Convert to base64
-      const imageBase64 = canvas.toDataURL("image/jpeg", 0.8);
 
       // Send to API
       const result = await detectEmotion(imageBase64);
@@ -131,7 +144,7 @@ export default function EmotionDetectionModal({
     } finally {
       setIsDetecting(false);
     }
-  }, []);
+  }, [useRobotCamera]);
 
   if (!isOpen) return null;
 
@@ -175,19 +188,31 @@ export default function EmotionDetectionModal({
 
           {/* Camera View */}
           <div className="relative aspect-video bg-gray-900 rounded-2xl overflow-hidden mb-6">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={cn(
-                "w-full h-full object-cover",
-                !isCameraOn && "hidden"
-              )}
-            />
+            {/* Robot Camera (MJPEG stream) */}
+            {useRobotCamera && robotCameraUrl && (
+              <img
+                ref={robotImgRef}
+                src={robotCameraUrl}
+                alt="Robot camera feed"
+                className="w-full h-full object-cover"
+              />
+            )}
+            {/* Browser Webcam */}
+            {!useRobotCamera && (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={cn(
+                  "w-full h-full object-cover",
+                  !isCameraOn && "hidden"
+                )}
+              />
+            )}
             <canvas ref={canvasRef} className="hidden" />
 
-            {!isCameraOn && (
+            {!isCameraOn && !useRobotCamera && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                 <VideoOff className="w-16 h-16 mb-4" />
                 <p className="text-lg">Camera is off</p>
@@ -196,6 +221,14 @@ export default function EmotionDetectionModal({
                     {cameraError}
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* Robot Camera Badge */}
+            {useRobotCamera && (
+              <div className="absolute top-3 left-3 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-xl">
+                <Bot className="w-4 h-4 text-green-400" />
+                <span className="text-xs text-green-400 font-medium">Robot Camera</span>
               </div>
             )}
 
@@ -275,7 +308,7 @@ export default function EmotionDetectionModal({
 
           {/* Controls */}
           <div className="flex gap-4">
-            {!isCameraOn ? (
+            {!isCameraOn && !useRobotCamera ? (
               <button
                 onClick={startCamera}
                 disabled={isServiceAvailable === false}

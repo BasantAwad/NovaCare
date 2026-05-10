@@ -1,0 +1,18 @@
+# NovaCare Robot Service — Dependencies
+flask>=3.0.0
+flask-cors>=4.0.0
+python-dotenv>=1.0.0
+
+# Computer Vision
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Text-to-Speech
+gTTS>=2.3.0
+
+# Speech-to-Text
+SpeechRecognition>=3.10.0
+PyAudio>=0.2.14
+
+# NOTE: The `pop` library is pre-installed on the SERBot SBC.
+# It is NOT available on PyPI — do not list it here.

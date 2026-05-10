@@ -6,6 +6,7 @@ NovaCare is an AI-powered healthcare companion application with three integrated
 |---------|------|------|-------------|
 | 🖐️ ASL Model API | `8001` | FastAPI | Real-time ASL fingerspelling recognition |
 | 🤖 LLM Backend | `5000` | Flask | Conversational AI chatbot (NovaBot) |
+| 🤖 Robot Service | `9000` | Flask | Hardware abstraction (camera, motors, audio, LiDAR) |
 | 🖥️ Frontend | `3000` | Next.js | User interface with multiple dashboards |
 
 ---
@@ -24,6 +25,11 @@ novacare/
 │   │   └── requirements.txt
 │   │
 │   ├── edge-tts-proxy/     ← CORS proxy for Pocket TTS (Jetson / edge)
+│   ├── robot/              ← Robot hardware service (SERBot Prime X)
+│   │   ├── robot_hal.py    ← Hardware Abstraction Layer (pop library)
+│   │   ├── robot_service.py ← Flask REST API for hardware control
+│   │   ├── config.py       ← Robot configuration
+│   │   └── requirements.txt
 │   └── llm-backend/        ← Flask LLM chatbot service
 │       ├── README.md       ← Env vars, Ollama + Hugging Face routing, API
 │       ├── LLMs/           ← Conversational AI logic
@@ -43,7 +49,7 @@ novacare/
 │   └── jetson/              ← systemd units for edge TTS (Pocket + proxy)
 ├── docs/                    ← Project-level documentation
 ├── scripts/
-│   └── jetson/              ← e.g. benchmark_tts_latency.py
+│   └── jetson/              ← Robot startup + benchmark scripts
 ├── start_all.sh             ← One-click launcher (macOS / Linux)
 ├── start_all.bat            ← One-click launcher (CMD)
 ├── start_all.ps1            ← One-click launcher (PowerShell)

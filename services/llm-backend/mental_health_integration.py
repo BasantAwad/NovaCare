@@ -11,23 +11,40 @@ import threading
 import time
 
 import cv2
+import base64
+import json
+import urllib.request
+import numpy as np
+
+# Robot camera REST API URL (robot_service.py on port 9000)
+ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://10.115.32.247:9000/api/camera/frame")
 
 
 # ===========================================================================
-# Camera Emotion Poller (unchanged from original)
+# Camera Emotion Poller — Robot-Integrated
 # ===========================================================================
 class CameraEmotionPoller:
+    """
+    Polls camera frames for emotion detection.
+
+    Integration priority:
+      1. Robot camera via REST API (ROBOT_CAMERA_URL)
+      2. Local webcam fallback (cv2.VideoCapture(0))
+    """
+
     def __init__(self):
         self.latest_emotion = "neutral"
         self.latest_confidence = 0.0
         self.running = False
         self.thread = None
         self.analyzer = None
+        self._use_robot_camera = True  # Try robot camera first
+        self._local_cap = None
 
     def start(self):
         if self.running:
             return
-        
+
         try:
             from emotion_detection import get_analyzer
             self.analyzer = get_analyzer()
@@ -39,11 +56,48 @@ class CameraEmotionPoller:
         self.thread = threading.Thread(target=self._poll_camera, daemon=True)
         self.thread.start()
 
+    def _fetch_robot_frame(self):
+        """Fetch a frame from the robot camera REST API."""
+        try:
+            req = urllib.request.Request(ROBOT_CAMERA_URL, method="GET")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            if data.get("status") == "success" and data.get("image"):
+                img_bytes = base64.b64decode(data["image"])
+                img_array = np.frombuffer(img_bytes, dtype=np.uint8)
+                frame = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+                return frame
+        except Exception:
+            pass
+        return None
+
     def _poll_camera(self):
-        cap = cv2.VideoCapture(0)
+        robot_failures = 0
         while self.running:
-            ret, frame = cap.read()
-            if ret and self.analyzer:
+            frame = None
+
+            # Try robot camera first
+            if self._use_robot_camera:
+                frame = self._fetch_robot_frame()
+                if frame is not None:
+                    robot_failures = 0
+                else:
+                    robot_failures += 1
+                    # After 5 consecutive failures, fall back to local webcam
+                    if robot_failures >= 5:
+                        print("[CameraPoller] Robot camera unavailable — falling back to local webcam")
+                        self._use_robot_camera = False
+
+            # Fallback: local webcam
+            if frame is None and not self._use_robot_camera:
+                if self._local_cap is None:
+                    self._local_cap = cv2.VideoCapture(0)
+                ret, frame = self._local_cap.read()
+                if not ret:
+                    frame = None
+
+            # Run emotion detection
+            if frame is not None and self.analyzer:
                 try:
                     result = self.analyzer.predict(frame, detect_face=True)
                     if result.get("emotion") != "unknown":
@@ -51,8 +105,13 @@ class CameraEmotionPoller:
                         self.latest_confidence = result["confidence"]
                 except Exception as e:
                     print(f"Emotion polling error: {e}")
+
             time.sleep(0.5)
-        cap.release()
+
+        # Cleanup
+        if self._local_cap is not None:
+            self._local_cap.release()
+            self._local_cap = None
 
     def stop(self):
         self.running = False

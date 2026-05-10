@@ -25,7 +25,8 @@ function Write-Banner {
     Write-Host ""
     Write-Host "   [1] ASL Model API     " -NoNewline; Write-Host "(port 8000)" -ForegroundColor Yellow
     Write-Host "   [2] LLM Backend       " -NoNewline; Write-Host "(port 5000)" -ForegroundColor Yellow
-    Write-Host "   [3] Frontend           " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
+    Write-Host "   [3] Robot Service     " -NoNewline; Write-Host "(port 9000)" -ForegroundColor Yellow
+    Write-Host "   [4] Frontend          " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host ""
@@ -94,7 +95,38 @@ python start_server.py
 Start-Service -Name "LLM Backend" -WorkDir $llmDir -Command $llmCmd -Color "Blue"
 
 # -------------------------------------------------
-# 3. Frontend (Next.js, port 3000)
+# 3. Robot Service (Flask, port 9000)
+# -------------------------------------------------
+$robotDir = Join-Path $Root "services\robot"
+$robotCmd = @"
+Write-Host '=== NovaCare - Robot Service ===' -ForegroundColor Cyan
+if (-not (Test-Path 'venv')) {
+    Write-Host '[*] Creating venv...' -ForegroundColor Yellow
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    Write-Host '[*] Installing dependencies...' -ForegroundColor Yellow
+    pip install -r requirements.txt
+    Write-Host '[OK] Dependencies installed' -ForegroundColor Green
+} else {
+    .\venv\Scripts\Activate.ps1
+    Write-Host '[OK] Robot Service venv activated' -ForegroundColor Green
+}
+if (-not (Test-Path '.env')) {
+    if (Test-Path '.env.example') {
+        Copy-Item '.env.example' '.env'
+        Write-Host '[OK] Created .env from template' -ForegroundColor Green
+    } else {
+        Write-Host '[!] WARNING: No .env file found!' -ForegroundColor Red
+    }
+}
+Write-Host '[*] Starting Robot Service on port 9000...' -ForegroundColor Cyan
+Write-Host '[*] Note: pop library only available on SERBot hardware (mock mode on dev)' -ForegroundColor Yellow
+python robot_service.py
+"@
+Start-Service -Name "Robot Service" -WorkDir $robotDir -Command $robotCmd -Color "DarkYellow"
+
+# -------------------------------------------------
+# 4. Frontend (Next.js, port 3000)
 # -------------------------------------------------
 $feDir = Join-Path $Root "frontend"
 $feCmd = @"
@@ -125,5 +157,6 @@ Write-Host "  ============================================" -ForegroundColor Cya
 Write-Host ""
 Write-Host "   ASL Model API:  " -NoNewline; Write-Host "http://localhost:8000/docs" -ForegroundColor Yellow
 Write-Host "   LLM Backend:    " -NoNewline; Write-Host "http://localhost:5000" -ForegroundColor Yellow
+Write-Host "   Robot Service:  " -NoNewline; Write-Host "http://localhost:9000/health" -ForegroundColor Yellow
 Write-Host "   Frontend:       " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Yellow
 Write-Host ""
