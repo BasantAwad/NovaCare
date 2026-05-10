@@ -251,6 +251,40 @@ class MotionHAL:
         time.sleep(duration_s)
         self.stop()
 
+    def start_tracking(self, target: str = "face"):
+        """Start built-in pop.Pilot SerBot tracking (e.g. face/color)."""
+        with self._lock:
+            self._moving = True
+            if self._bot and hasattr(self._bot, "tracking"):
+                self._bot.tracking(target)
+                print(f"✓ SerBot built-in tracking started for: {target}")
+            else:
+                print(f"[MOCK] start_tracking(target={target})")
+
+    def stop_tracking(self):
+        """Stop built-in pop.Pilot SerBot tracking."""
+        with self._lock:
+            if self._bot and hasattr(self._bot, "stopTracking"):
+                self._bot.stopTracking()
+                print("✓ SerBot built-in tracking stopped")
+            elif self._bot and hasattr(self._bot, "tracking"):
+                # some pop versions stop tracking by passing None or empty
+                try:
+                    self._bot.tracking("")
+                except:
+                    pass
+            self.stop()
+
+    def navigate_to(self, location_name: str):
+        """Start built-in SerBot room navigation / SLAM mapping."""
+        with self._lock:
+            self._moving = True
+            if self._bot and hasattr(self._bot, "navigation"):
+                self._bot.navigation(location_name)
+                print(f"✓ SerBot navigating to: {location_name}")
+            else:
+                print(f"[MOCK] navigate_to(location={location_name})")
+
 
 # ============================================================================
 # Audio HAL

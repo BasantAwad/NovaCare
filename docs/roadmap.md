@@ -65,7 +65,7 @@
 | **Notification service** (real-time guardian alerts) | ⬜ | 🔴 Must-have | Backend | WebSocket or push notifications |
 | **Fall detection** integration | ⬜ | 🔴 Must-have | ASL Model / new service | Pose estimation + alert pipeline |
 | **Database migration** (SQLite → PostgreSQL) | ⬜ | 🟡 High | Frontend backend | Use Alembic for migrations |
-| **Authentication middleware** (JWT/sessions) | ⬜ | 🟡 High | Frontend backend | Currently no real auth |
+| **Authentication middleware** (JWT/sessions/API Keys) | 🔄 | 🟡 High | Frontend backend | Robot REST API secured; UI auth pending |
 | **RAG medical queries** | ⬜ | 🟡 Medium | LLM Backend | Vector search on medical KB |
 | Speech emotion recognition | ⬜ | 🟢 Nice-to-have | LLM Backend | Wav2Vec 2.0 model |
 | Text emotion recognition | ⬜ | 🟢 Nice-to-have | LLM Backend | RoBERTa model |
@@ -85,8 +85,8 @@
 | Robot TTS (gTTS → pop.AudioPlay) | ✅ | REST endpoint + frontend integration |
 | Robot STT (SpeechRecognition) | ✅ | REST endpoint + frontend integration |
 | Movement API (pop.Pilot.SerBot) | ✅ | Forward, backward, left, right, turn |
-| Navigation with LiDAR obstacle avoidance | ✅ | Auto-stop on obstacle detection |
-| Follow-user mode (face tracking + movement) | ✅ | Camera-based person tracking |
+| Navigation with LiDAR obstacle avoidance | ✅ | Upgraded to native SERBot SLAM navigation |
+| Follow-user mode (face tracking + movement) | ✅ | Upgraded to native SERBot tracking |
 | Frontend robot-api.ts client | ✅ | TypeScript API for all robot endpoints |
 | Navigate page → real movement API | ✅ | Buttons call robot REST API |
 | Talk page → robot TTS/STT | ✅ | Dual-mode: robot speaker + browser fallback |
@@ -97,7 +97,7 @@
 | Chromium kiosk mode for touchscreen | ✅ | Auto-launch on 7-inch display |
 | Set up ROS 2 on JetAuto Kit | ⬜ | Optional: for advanced SLAM |
 | Camera feed streaming to guardian dashboard | 🔄 | MJPEG endpoint ready |
-| SLAM + obstacle avoidance integration | 🔄 | LiDAR integrated, SLAM TBD |
+| SLAM + obstacle avoidance integration | ✅ | Upgraded to use SERBot built-in SLAM |
 | On-device vs cloud deployment decision | ✅ | Hybrid: on-device HAL + cloud LLM APIs |
 
 ---
