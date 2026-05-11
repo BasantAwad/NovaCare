@@ -4,6 +4,20 @@
 
 ## 📅 Progress Log
 
+### [2026-05-11] - Diagnostic Testing & AI Tracking Implementation
+
+**Completed by:** Basant , Nadira
+
+- **Camera Feed:** ✅ **FULLY WORKING.** Integrated high-speed face tracking using **MediaPipe**. Implemented an optimized fallback that uses downscaled OpenCV Haar Cascades (4x reduction) to eliminate lag and prevent system crashes on the Jetson Nano.
+- **LiDAR / SLAM:** ❌ **HARDWARE FAILURE.** Initializing `startMotor()` causes a consistent C-level Segmentation Fault. Diagnostics confirmed no software locks on `/dev/ttyUSB0`. Suspected physical defect or power failure in the LiDAR unit. Dashboard now uses a resilient **multiprocessing worker** to provide mock SLAM data for UI testing.
+- **Obstacle Avoidance:** ✅ **IMPLEMENTED.** Manual forward movement is now programmatically intercepted if the (mock/real) LiDAR detects an object within 300mm.
+- **Speaker & Mic:** ⚠️ **UNSURE / HARDWARE ISSUES.**
+  - **Speaker:** Software (espeak) reports success, but no physical sound is heard.
+  - **Microphone:** `arecord` confirms hardware is missing/disconnected (`Unknown PCM ArrayUAC10`).
+- **Next Steps:** Contact Hiwonder support regarding the peripheral expansion board failure. Continue software development using the mock SLAM fallback.
+
+---
+
 ### [2026-05-10] - Initial Hardware Connection & API Upgrades
 
 **Completed by:** Basant, Nadira, Ramez

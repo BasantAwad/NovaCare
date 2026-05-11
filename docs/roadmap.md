@@ -1,6 +1,6 @@
 # NovaCare — Roadmap & Tasks
 
-> **Deadline:** May 31, 2026 · **Last Updated:** April 11, 2026 · **Team Size:** 5
+> **Deadline:** May 31, 2026 · **Last Updated:** May 11, 2026 · **Team Size:** 5
 
 ---
 
@@ -46,7 +46,7 @@
 |------|--------|-------|-------|
 | Unify 3 repos into single project structure | ✅ | — | `novacare/` folder created |
 | One-click startup scripts (`start_all.bat`, `start_all.ps1`) | ✅ | — | Working |
-| Project documentation (`docs/`) | 🔄 | — | This file + 3 others |
+| Project documentation (`docs/`) | ✅ | — | Unified guide + hardware docs updated |
 | Set up `.gitignore` for unified repo | ✅ | — | |
 | Push unified repo to GitHub | ⬜ | | |
 | Upgrade Next.js to stable patched version | ⬜ | | Currently on 14.2.35, consider stable v14 |
@@ -82,14 +82,14 @@
 | Hardware Abstraction Layer (`robot_hal.py`) | ✅ | Camera, Motion, Audio, LiDAR abstractions |
 | Robot REST Service (`robot_service.py` port 9000) | ✅ | Full REST API for hardware control |
 | Camera integration (GStreamer + fallback) | ✅ | Replaces `cv2.VideoCapture(0)` |
-| Robot TTS (gTTS → pop.AudioPlay) | ✅ | REST endpoint + frontend integration |
-| Robot STT (SpeechRecognition) | ✅ | REST endpoint + frontend integration |
+| Robot TTS (gTTS → pop.AudioPlay) | 🔴 | Issues: Software success but no physical sound output |
+| Robot STT (SpeechRecognition) | 🔴 | Issues: Hardware missing (`ArrayUAC10` disconnected) |
 | Movement API (pop.Pilot.SerBot) | ✅ | Forward, backward, left, right, turn |
-| Navigation with LiDAR obstacle avoidance | ✅ | Upgraded to native SERBot SLAM navigation |
-| Follow-user mode (face tracking + movement) | ✅ | Upgraded to native SERBot tracking |
+| Navigation with LiDAR obstacle avoidance | ✅ | Software logic ready; physical LiDAR unit failing |
+| Follow-user mode (face tracking + movement) | ✅ | Implemented high-speed MediaPipe + OpenCV fallback |
 | Frontend robot-api.ts client | ✅ | TypeScript API for all robot endpoints |
 | Navigate page → real movement API | ✅ | Buttons call robot REST API |
-| Talk page → robot TTS/STT | ✅ | Dual-mode: robot speaker + browser fallback |
+| Talk page → robot TTS/STT | 🔴 | Blocked by physical speaker/mic failure |
 | Emotion modal → robot camera | ✅ | MJPEG stream or frame polling |
 | ASL modal → robot camera | ✅ | Frame capture from robot camera |
 | `CameraEmotionPoller` → robot camera | ✅ | REST API with local webcam fallback |
@@ -97,7 +97,7 @@
 | Chromium kiosk mode for touchscreen | ✅ | Auto-launch on 7-inch display |
 | Set up ROS 2 on JetAuto Kit | ⬜ | Optional: for advanced SLAM |
 | Camera feed streaming to guardian dashboard | 🔄 | MJPEG endpoint ready |
-| SLAM + obstacle avoidance integration | ✅ | Upgraded to use SERBot built-in SLAM |
+| SLAM + obstacle avoidance integration | 🔄 | Logic functional; blocked by LiDAR hardware |
 | On-device vs cloud deployment decision | ✅ | Hybrid: on-device HAL + cloud LLM APIs |
 
 ---
