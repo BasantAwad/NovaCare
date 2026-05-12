@@ -3,12 +3,13 @@
 # ========================================
 
 # ---- Python ----
-venv/
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
+**/venv/
+**/env/
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.pyo
+**/*.pyd
 .Python
 *.egg
 *.egg-info/
@@ -17,30 +18,40 @@ build/
 *.so
 .frontend-novacare.pem
 
-# ---- Node.js ----
-node_modules/
-.next/
-*.tsbuildinfo
+# ---- Node.js / Next.js ----
+**/node_modules/
+**/.next/
+**/*.tsbuildinfo
+**/out/
+next-env.d.ts
+.pnp/
+.pnp.js
 
 # ---- Environment & Secrets ----
 .env
 .env.local
 .env.*.local
+*.pem
+novacare-key.pem
 
 # ---- Databases ----
 *.db
 *.sqlite3
+instance/
+mock_mysql.db
 
 # ---- OS ----
 .DS_Store
 Thumbs.db
 desktop.ini
+ehthumbs.db
 
 # ---- IDE ----
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # ---- Large Model Files ----
 # Model checkpoints — too large for git
@@ -55,17 +66,8 @@ services/asl-model/data/models/
 *.log
 npm-debug.log*
 package-lock.json
-novacare-key.pem
-
-# ---- Virtual Environments ----
-.venv/
-venv/
-env/
-
-# ---- Python Cache ----
-**/__pycache__/
-**/*.pyc
-**/*.pyo
+.webassets-cache
+.vercel
 
 # ---- Test & Scratch Files ----
 database_testing/
@@ -74,12 +76,7 @@ database_testing/
 final_db_test.py
 export_db.py
 setup_mock_db.py
-mock_mysql.db
 
 # ---- Generated PDF Reports ----
 *.pdf
 !docs/**/*.pdf
-
-# ---- Dev SQLite DB ----
-*.db
-*.sqlite3

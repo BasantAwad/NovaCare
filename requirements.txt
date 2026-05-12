@@ -1,0 +1,38 @@
+# ===== CORE =====
+torch>=2.0.0
+transformers>=4.30.0
+datasets
+accelerate
+scikit-learn
+pandas
+numpy
+tqdm
+kaggle
+Pillow
+python-dotenv>=1.0.0   # For .env file loading
+
+# ===== AUDIO =====
+librosa>=0.10.0
+soundfile>=0.12.0
+torchaudio>=2.0.0
+sounddevice>=0.4.6     # Real-time audio capture
+
+# ===== IMAGE =====
+torchvision>=0.15.0
+opencv-python>=4.8.0   # Camera capture
+
+huggingface-hub>=0.20.0
+
+# ===== TTS (Text-to-Speech) =====
+pyttsx3>=2.90          # Offline TTS
+gTTS>=2.3.0            # Google TTS (online)
+pygame>=2.5.0          # Audio playback for gTTS
+
+# ===== STT (Speech-to-Text) =====
+openai-whisper>=20230918  # Whisper STT
+
+# ===== WEB DASHBOARD =====
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=12.0
+requests>=2.31.0
