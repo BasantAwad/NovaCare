@@ -666,17 +666,36 @@ def test_mic():
 
 @app.route('/launch_display')
 def launch_display():
-    """Launch Chromium on the robot's physical display pointing to the frontend."""
+    """Launch Chromium on the robot's physical display pointing to the frontend with camera permissions."""
     try:
         # Use the IP of the laptop that is currently accessing this dashboard
         laptop_ip = request.remote_addr
-        # Fallback to local if laptop_ip is local or something
-        target_url = f"http://{laptop_ip}:3001/rover"
+        
+        # Allow passing a custom URL via query param, fallback to laptop's dev server
+        # We use port 3001 as default since Next.js often jumps there if 3000 is busy
+        target_url = request.args.get('url', f"http://{laptop_ip}:3001/rover")
+        
+        # Flags explained:
+        # --kiosk: Fullscreen mode
+        # --use-fake-ui-for-media-stream: Auto-accept camera/mic permissions
+        # --unsafely-treat-insecure-origin-as-secure: Allows getUserMedia on HTTP (non-localhost)
+        chrome_flags = [
+            "--kiosk",
+            "--disable-infobars",
+            "--no-first-run",
+            "--use-fake-ui-for-media-stream",
+            f"--unsafely-treat-insecure-origin-as-secure={target_url}",
+            "--window-position=0,0",
+            "--check-for-update-interval=31536000", # Disable update checks
+            "--ignore-certificate-errors"
+        ]
+        
+        flags_str = " ".join(chrome_flags)
         
         # Display :0 is the default local display on Jetson
-        # We use kiosk mode for a 'premium' full-screen feel
-        cmd = f"DISPLAY=:0 chromium-browser --kiosk --disable-infobars --no-first-run --window-position=0,0 {target_url} &"
+        cmd = f"DISPLAY=:0 chromium-browser {flags_str} {target_url} &"
         
+        print(f"[Display] Launching: {cmd}")
         subprocess.Popen(cmd, shell=True)
         return f"Display command sent! Target: {target_url}"
     except Exception as e:

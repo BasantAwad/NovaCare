@@ -48,7 +48,7 @@ sleep 2
 # ---------------------------------------------------------------------------
 # 2. ASL Model API (FastAPI, port 8000)
 # ---------------------------------------------------------------------------
-echo "[2/4] Starting ASL Model API (port 8000)..."
+echo "[2/4] Starting ASL Model API (port 8001)..."
 cd "$PROJECT_DIR/services/asl-model"
 
 if [ -d "venv" ]; then
@@ -57,7 +57,7 @@ else
     echo "  [!] No venv found for ASL model — skipping"
 fi
 
-python -m api.main --port 8000 &
+python -m api.main --port 8001 &
 ASL_PID=$!
 echo "  [OK] ASL Model API started (PID: $ASL_PID)"
 sleep 2
@@ -103,7 +103,7 @@ echo "   All Services Running!"
 echo "  ============================================"
 echo ""
 echo "   Robot Service:  http://localhost:9000/health"
-echo "   ASL Model API:  http://localhost:8000/docs"
+echo "   ASL Model API:  http://localhost:8001/docs"
 echo "   LLM Backend:    http://localhost:5000"
 echo "   Frontend:       http://localhost:3000"
 echo ""
@@ -123,6 +123,8 @@ sleep 5  # Wait for frontend to be ready
 if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     chromium-browser --kiosk --noerrdialogs --disable-translate \
         --no-first-run --fast --fast-start --disable-infobars \
+        --use-fake-ui-for-media-stream \
+        --unsafely-treat-insecure-origin-as-secure="http://localhost:3000" \
         --disable-features=TranslateUI --disk-cache-dir=/dev/null \
         "http://localhost:3000/rover" 2>/dev/null &
     echo "  [OK] Chromium kiosk launched"

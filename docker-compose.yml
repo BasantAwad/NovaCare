@@ -1,0 +1,67 @@
+# ===========================================================================
+# NovaCare — Unified Project Docker Orchestration
+# ===========================================================================
+
+version: '3.8'
+
+services:
+  # 🤖 Robot Service: Hardware HAL + REST API
+  robot-service:
+    build:
+      context: ./services/robot
+      dockerfile: Dockerfile
+    container_name: novacare-robot
+    restart: always
+    privileged: true # Required for GPIO and USB access
+    network_mode: "host" # Direct access to ports on the Jetson
+    volumes:
+      - /dev:/dev # Map all hardware devices
+      - /tmp/.X11-unix:/tmp/.X11-unix # X11 for camera if needed
+    environment:
+      - ROBOT_SERVICE_PORT=9000
+      - DISPLAY=:0
+      - NOVACARE_API_KEY=novacare-secure-key-2026
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0" # LiDAR / Serial
+      - "/dev/video0:/dev/video0"   # Camera
+
+  # 🖐️ ASL Service: Sign Language Recognition
+  asl-service:
+    build:
+      context: ./services/asl-model
+      dockerfile: Dockerfile
+    container_name: novacare-asl
+    restart: always
+    network_mode: "host"
+    environment:
+      - ASL_API_PORT=8001
+
+  # 🧠 LLM Service: Chatbot & Emotion AI
+  llm-service:
+    build:
+      context: ./services/llm-backend
+      dockerfile: Dockerfile
+    container_name: novacare-llm
+    restart: always
+    network_mode: "host"
+    environment:
+      - LLM_API_PORT=5000
+
+  # 🖥️ Frontend: Next.js Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: novacare-frontend
+    restart: always
+    network_mode: "host"
+    environment:
+      - NEXT_PUBLIC_NOVABOT_API_URL=http://localhost:5000
+      - NEXT_PUBLIC_ROBOT_API_URL=http://localhost:9000
+      - NEXT_PUBLIC_ASL_API_URL=http://localhost:8001
+      - NODE_ENV=production
+
+# ---------------------------------------------------------------------------
+# Note: network_mode: "host" is used to simplify inter-service communication
+# and hardware discovery on the Jetson Nano.
+# ---------------------------------------------------------------------------
