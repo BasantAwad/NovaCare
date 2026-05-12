@@ -1,6 +1,6 @@
 # NovaCare — Roadmap & Tasks
 
-> **Deadline:** May 31, 2026 · **Last Updated:** April 11, 2026 · **Team Size:** 5
+> **Deadline:** May 31, 2026 · **Last Updated:** May 11, 2026 · **Team Size:** 5
 
 ---
 
@@ -46,7 +46,7 @@
 |------|--------|-------|-------|
 | Unify 3 repos into single project structure | ✅ | — | `novacare/` folder created |
 | One-click startup scripts (`start_all.bat`, `start_all.ps1`) | ✅ | — | Working |
-| Project documentation (`docs/`) | 🔄 | — | This file + 3 others |
+| Project documentation (`docs/`) | ✅ | — | Unified guide + hardware docs updated |
 | Set up `.gitignore` for unified repo | ✅ | — | |
 | Push unified repo to GitHub | ⬜ | | |
 | Upgrade Next.js to stable patched version | ⬜ | | Currently on 14.2.35, consider stable v14 |
@@ -65,7 +65,7 @@
 | **Notification service** (real-time guardian alerts) | ⬜ | 🔴 Must-have | Backend | WebSocket or push notifications |
 | **Fall detection** integration | ⬜ | 🔴 Must-have | ASL Model / new service | Pose estimation + alert pipeline |
 | **Database migration** (SQLite → PostgreSQL) | ⬜ | 🟡 High | Frontend backend | Use Alembic for migrations |
-| **Authentication middleware** (JWT/sessions) | ⬜ | 🟡 High | Frontend backend | Currently no real auth |
+| **Authentication middleware** (JWT/sessions/API Keys) | 🔄 | 🟡 High | Frontend backend | Robot REST API secured; UI auth pending |
 | **RAG medical queries** | ⬜ | 🟡 Medium | LLM Backend | Vector search on medical KB |
 | Speech emotion recognition | ⬜ | 🟢 Nice-to-have | LLM Backend | Wav2Vec 2.0 model |
 | Text emotion recognition | ⬜ | 🟢 Nice-to-have | LLM Backend | RoBERTa model |
@@ -73,19 +73,32 @@
 
 ---
 
-## Phase 4: Robot Integration (⬜ Not Started)
+## Phase 4: Robot Integration (🔄 In Progress)
 
-> Hardware integration once the JetAuto Kit is available.
+> Hardware integration with SERBot Prime X.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Set up ROS 2 on JetAuto Kit | ⬜ | Follow Hiwonder docs |
-| Bridge ROS 2 ↔ web services (WebSocket/REST) | ⬜ | Navigation commands, sensor data |
-| Deploy AI models to edge (Jetson) | ⬜ | Optimize for inference speed |
-| Camera feed streaming to guardian dashboard | ⬜ | WebRTC or MJPEG |
-| SLAM + obstacle avoidance integration | ⬜ | LiDAR + depth camera |
-| Follow-user mode | ⬜ | Camera-based tracking |
-| On-device vs cloud deployment decision | ⬜ | Performance benchmarks needed |
+| Hardware Abstraction Layer (`robot_hal.py`) | ✅ | Camera, Motion, Audio, LiDAR abstractions |
+| Robot REST Service (`robot_service.py` port 9000) | ✅ | Full REST API for hardware control |
+| Camera integration (GStreamer + fallback) | ✅ | Replaces `cv2.VideoCapture(0)` |
+| Robot TTS (gTTS → pop.AudioPlay) | 🔴 | Issues: Software success but no physical sound output |
+| Robot STT (SpeechRecognition) | 🔴 | Issues: Hardware missing (`ArrayUAC10` disconnected) |
+| Movement API (pop.Pilot.SerBot) | ✅ | Forward, backward, left, right, turn |
+| Navigation with LiDAR obstacle avoidance | ✅ | Software logic ready; physical LiDAR unit failing |
+| Follow-user mode (face tracking + movement) | ✅ | Implemented high-speed MediaPipe + OpenCV fallback |
+| Frontend robot-api.ts client | ✅ | TypeScript API for all robot endpoints |
+| Navigate page → real movement API | ✅ | Buttons call robot REST API |
+| Talk page → robot TTS/STT | 🔴 | Blocked by physical speaker/mic failure |
+| Emotion modal → robot camera | ✅ | MJPEG stream or frame polling |
+| ASL modal → robot camera | ✅ | Frame capture from robot camera |
+| `CameraEmotionPoller` → robot camera | ✅ | REST API with local webcam fallback |
+| Robot startup script (Linux) | ✅ | `scripts/jetson/start_robot.sh` |
+| Chromium kiosk mode for touchscreen | ✅ | Auto-launch on 7-inch display |
+| Set up ROS 2 on JetAuto Kit | ⬜ | Optional: for advanced SLAM |
+| Camera feed streaming to guardian dashboard | 🔄 | MJPEG endpoint ready |
+| SLAM + obstacle avoidance integration | 🔄 | Logic functional; blocked by LiDAR hardware |
+| On-device vs cloud deployment decision | ✅ | Hybrid: on-device HAL + cloud LLM APIs |
 
 ---
 

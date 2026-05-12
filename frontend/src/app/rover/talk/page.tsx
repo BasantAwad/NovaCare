@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Mic, MicOff, Send, Volume2, VolumeX, Hand, ArrowLeft, Loader2, WifiOff, RefreshCw } from "lucide-react";
+import { Mic, MicOff, Send, Volume2, VolumeX, Hand, ArrowLeft, Loader2, WifiOff, RefreshCw, Bot } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { sendMessage as sendToNovaBot, checkHealth, clearHistory } from "@/lib/novabot-api";
 import { STTService, TTSService } from "@/lib/speech";
+import { robotSpeak, robotListen, checkRobotHealth } from "@/lib/robot-api";
 import ASLRecognitionModal from "@/components/ASLRecognitionModal";
 
 interface Message {
@@ -39,6 +40,8 @@ export default function TalkPage() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const [isASLModalOpen, setIsASLModalOpen] = useState(false);
+  const [robotAvailable, setRobotAvailable] = useState(false);
+  const [useRobotAudio, setUseRobotAudio] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const sttRef = useRef<STTService | null>(null);
@@ -73,13 +76,26 @@ export default function TalkPage() {
     };
   }, []);
 
-  // Check API health on mount
+  // Check API health on mount (NovaBot + Robot)
   useEffect(() => {
     const checkConnection = async () => {
       setIsCheckingConnection(true);
       const healthy = await checkHealth();
       setIsConnected(healthy);
       setIsCheckingConnection(false);
+
+      // Also check robot service
+      try {
+        const robotHealth = await checkRobotHealth();
+        const robotOk = robotHealth.status === "healthy";
+        setRobotAvailable(robotOk);
+        // Auto-enable robot audio if robot has TTS+STT
+        if (robotOk && robotHealth.hardware.tts) {
+          setUseRobotAudio(true);
+        }
+      } catch {
+        setRobotAvailable(false);
+      }
     };
     checkConnection();
   }, []);
@@ -128,8 +144,17 @@ export default function TalkPage() {
       setMessages((prev) => [...prev, novaMessage]);
       
       // Speak the response if TTS is enabled
-      if (isTTSEnabled && ttsRef.current) {
-        ttsRef.current.speak(response);
+      if (isTTSEnabled) {
+        // Robot TTS: speak through robot's physical speaker
+        if (useRobotAudio && robotAvailable) {
+          robotSpeak({ text: response }).catch((err) => {
+            console.warn('[TTS] Robot speak failed, falling back to browser:', err);
+            ttsRef.current?.speak(response);
+          });
+        } else if (ttsRef.current) {
+          // Browser TTS fallback
+          ttsRef.current.speak(response);
+        }
       }
     } catch (error) {
       console.error('[Talk] Error getting response:', error);
@@ -149,22 +174,45 @@ export default function TalkPage() {
     }
   }, [inputText, isTyping, isTTSEnabled]);
 
-  const handleVoiceToggle = useCallback(() => {
-    if (!sttRef.current) return;
-
+  const handleVoiceToggle = useCallback(async () => {
     if (isListening) {
-      sttRef.current.stop();
+      sttRef.current?.stop();
       setIsListening(false);
-    } else {
-      // Stop TTS if speaking
-      ttsRef.current?.stop();
-      
+      return;
+    }
+
+    // Stop TTS if speaking
+    ttsRef.current?.stop();
+
+    // Try robot microphone first
+    if (useRobotAudio && robotAvailable) {
+      setIsListening(true);
+      try {
+        const result = await robotListen(10, 5);
+        if (result.status === "success" && result.text) {
+          setInputText(result.text);
+        }
+      } catch (err) {
+        console.warn('[STT] Robot listen failed, falling back to browser:', err);
+        // Fall through to browser STT
+        if (sttRef.current) {
+          sttRef.current.start();
+          return; // isListening already true
+        }
+      } finally {
+        setIsListening(false);
+      }
+      return;
+    }
+
+    // Browser STT fallback
+    if (sttRef.current) {
       const started = sttRef.current.start();
       if (started) {
         setIsListening(true);
       }
     }
-  }, [isListening]);
+  }, [isListening, useRobotAudio, robotAvailable]);
 
   const handleTTSToggle = useCallback(() => {
     if (ttsRef.current) {
@@ -244,21 +292,37 @@ export default function TalkPage() {
           <h1 className="text-3xl font-display font-bold text-text-primary dark:text-white">Talk to Nova</h1>
           <p className="text-text-muted dark:text-gray-400">Voice, text, or sign language input</p>
         </div>
-        {/* Connection Status Indicator */}
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              "w-3 h-3 rounded-full",
-              isConnected === null
-                ? "bg-gray-400 animate-pulse"
-                : isConnected
-                  ? "bg-green-500"
-                  : "bg-red-500"
-            )}
-          />
-          <span className="text-sm text-text-muted dark:text-gray-400">
-            {isConnected === null ? "Connecting..." : isConnected ? "Connected" : "Offline"}
-          </span>
+        {/* Connection Status Indicators */}
+        <div className="flex items-center gap-4">
+          {/* NovaBot API */}
+          <div className="flex items-center gap-1.5">
+            <div
+              className={cn(
+                "w-2.5 h-2.5 rounded-full",
+                isConnected === null
+                  ? "bg-gray-400 animate-pulse"
+                  : isConnected
+                    ? "bg-green-500"
+                    : "bg-red-500"
+              )}
+            />
+            <span className="text-xs text-text-muted dark:text-gray-400">
+              {isConnected === null ? "..." : isConnected ? "AI" : "AI ✗"}
+            </span>
+          </div>
+          {/* Robot */}
+          <div className="flex items-center gap-1.5">
+            <Bot className="w-3.5 h-3.5 text-text-muted dark:text-gray-400" />
+            <div
+              className={cn(
+                "w-2.5 h-2.5 rounded-full",
+                robotAvailable ? "bg-green-500" : "bg-gray-400"
+              )}
+            />
+            <span className="text-xs text-text-muted dark:text-gray-400">
+              {robotAvailable ? "Robot" : "Robot ✗"}
+            </span>
+          </div>
         </div>
       </div>
 

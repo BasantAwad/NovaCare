@@ -188,6 +188,28 @@ class ConversationalAI:
         return self._default_profile
 
     def chat(self, user_message: str, profile: Optional[str] = None) -> str:
+        prefix_to_add = ""
+        try:
+            import sys
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+            from mental_health_integration import get_orchestrator
+            orchestrator = get_orchestrator()
+            bypass, hf_reply, prefix = orchestrator.process(user_message, conversation_history=self.history)
+            
+            if bypass:
+                self.history.append({"user": user_message, "assistant": hf_reply})
+                self.last_profile = "quality"
+                self.last_route = "huggingface_mental_health"
+                return hf_reply
+            elif prefix:
+                prefix_to_add = prefix
+        except Exception as e:
+            print(f"Warning: MentalHealthOrchestrator failed: {e}")
+
         self._ensure_configured()
         route = self._normalize_profile(profile)
         self.last_profile = route
@@ -205,9 +227,9 @@ class ConversationalAI:
                         self.last_route = "ollama_fallback"
                         reply = self._chat_ollama(messages)
                     except Exception as e2:
-                        return f"Sorry, I encountered an error: {e2}"
+                        reply = f"Sorry, I encountered an error: {e2}"
                 else:
-                    return f"Sorry, I encountered an error: {e}"
+                    reply = f"Sorry, I encountered an error: {e}"
         else:
             if OLLAMA_MODEL:
                 self.last_route = "ollama"
@@ -220,15 +242,18 @@ class ConversationalAI:
                         try:
                             reply = self._chat_hf(messages)
                         except Exception as e2:
-                            return f"Sorry, I encountered an error: {e2}"
+                            reply = f"Sorry, I encountered an error: {e2}"
                     else:
-                        return f"Sorry, I encountered an error: {e}"
+                        reply = f"Sorry, I encountered an error: {e}"
             else:
                 self.last_route = "huggingface"
                 try:
                     reply = self._chat_hf(messages)
                 except Exception as e:
-                    return f"Sorry, I encountered an error: {e}"
+                    reply = f"Sorry, I encountered an error: {e}"
+
+        if prefix_to_add and not reply.startswith("Sorry, I encountered"):
+            reply = f"{prefix_to_add} {reply}"
 
         self.history.append({"user": user_message, "assistant": reply})
         return reply
