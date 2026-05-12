@@ -1,14 +1,14 @@
 # NovaCare ASL Model Service - Dockerfile
 # Optimized for Jetson Nano / ARM64
 
-FROM python:3.10-slim
+FROM python:3.10-slim-bullseye
 
 # Install system dependencies for OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libopencv-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* || true
 
 WORKDIR /app
 
