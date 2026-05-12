@@ -2,7 +2,7 @@
 # NovaCare — Unified Project Docker Orchestration
 # ===========================================================================
 
-version: '3.8'
+version: '3.3'
 
 services:
   # 🤖 Robot Service: Hardware HAL + REST API
