@@ -10,7 +10,7 @@ Or run directly:
 import sys
 import argparse
 from pathlib import Path
-from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,55 +27,31 @@ predictor = None
 accumulator = None
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup and shutdown events"""
+# Create FastAPI app
+app = FastAPI(
+    title="ASL Recognition API",
+    version="1.0.0",
+)
+
+@app.on_event("startup")
+async def startup_event():
+    """Startup events"""
     global predictor, accumulator
-    
-    # Startup
     print("🚀 Starting ASL Recognition API...")
-    
     try:
         predictor = ASLPredictor()
         accumulator = LetterAccumulator()
         set_predictor(predictor, accumulator)
         print("✅ Model loaded successfully")
-    except FileNotFoundError as e:
-        print(f"⚠️ Warning: Model not found - {e}")
-        print("   API will start but predictions won't work until model is trained")
     except Exception as e:
         print(f"❌ Failed to load model: {e}")
-    
-    yield
-    
-    # Shutdown
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown events"""
     print("🛑 Shutting down...")
     if predictor:
         predictor.close()
-
-
-# Create FastAPI app
-app = FastAPI(
-    title="ASL Recognition API",
-    description="""
-    Real-time American Sign Language fingerspelling recognition API.
-    
-    ## Features
-    - Predict ASL letters from images
-    - Accumulate letters into words/sentences
-    - Low latency inference (~20-50ms)
-    
-    ## Endpoints
-    - `POST /predict` - Predict from base64 image
-    - `POST /predict/landmarks` - Predict from raw landmarks
-    - `POST /predict/confirm` - Predict with automatic text accumulation
-    - `GET /accumulator` - Get accumulated text
-    - `POST /reset` - Reset state
-    - `GET /health` - Health check
-    """,
-    version="1.0.0",
-    lifespan=lifespan
-)
 
 # CORS middleware
 app.add_middleware(
