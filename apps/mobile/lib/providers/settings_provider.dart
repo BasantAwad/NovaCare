@@ -21,6 +21,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleHighContrast() {
+    _isHighContrast = !_isHighContrast;
+    _themeMode = _isHighContrast ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
   String get themeLabel {
     if (_isHighContrast) return 'High Contrast';
     switch (_themeMode) {

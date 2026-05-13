@@ -7,19 +7,18 @@ import 'providers/settings_provider.dart';
 import 'providers/ble_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
-import 'l10n/app_localizations.dart';
+import 'screens/home_screen.dart';
+import 'screens/reminders_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Lock orientation to portrait for accessibility
+  
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
-  // Initialize Firebase (uncomment when firebase_options.dart is generated)
-  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(const NovaCareApp());
 }
@@ -40,20 +39,55 @@ class NovaCareApp extends StatelessWidget {
           return MaterialApp(
             title: 'NovaCare Assistant',
             debugShowCheckedModeBanner: false,
-            themeMode: settings.themeMode,
             theme: AppTheme.lightTheme(),
-            darkTheme: settings.isHighContrast
-                ? AppTheme.highContrastTheme()
-                : AppTheme.darkTheme(),
-            locale: settings.locale,
-            supportedLocales: const [
-              Locale('en', ''),
-              Locale('ar', ''),
-            ],
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: const SplashScreen(),
+            darkTheme: AppTheme.darkTheme(),
+            themeMode: settings.themeMode,
+            home: const MainNavigationHolder(),
           );
         },
+      ),
+    );
+  }
+}
+
+class MainNavigationHolder extends StatefulWidget {
+  const MainNavigationHolder({super.key});
+
+  @override
+  State<MainNavigationHolder> createState() => _MainNavigationHolderState();
+}
+
+class _MainNavigationHolderState extends State<MainNavigationHolder> {
+  int _currentIndex = 0;
+
+  final List<Widget> _screens = [
+    const HomeScreen(),
+    const RemindersScreen(),
+    const NotificationsScreen(),
+    const SettingsScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppTheme.accentPink,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.alarm_rounded), label: 'Reminders'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded), label: 'Alerts'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Settings'),
+        ],
       ),
     );
   }
