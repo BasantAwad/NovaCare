@@ -48,7 +48,7 @@ class AppTheme {
   static const double buttonHeight = 72.0;
   static const double bigButtonSize = 140.0;
 
-  static final _baseFontFamily = 'Inter';
+  static const _baseFontFamily = 'Inter';
 
   // ═══════════════════════════════════════════════════════════════
   //  LIGHT THEME
@@ -87,7 +87,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadiusMd),
-          side: BorderSide(color: neutralGray100, width: 1),
+          side: const BorderSide(color: neutralGray100, width: 1),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -116,7 +116,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusSm),
-          borderSide: BorderSide(color: neutralGray100, width: 1),
+          borderSide: const BorderSide(color: neutralGray100, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusSm),
@@ -174,7 +174,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadiusMd),
-          side: BorderSide(color: darkCardBorder, width: 1),
+          side: const BorderSide(color: darkCardBorder, width: 1),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -203,7 +203,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusSm),
-          borderSide: BorderSide(color: darkCardBorder, width: 1),
+          borderSide: const BorderSide(color: darkCardBorder, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(borderRadiusSm),
