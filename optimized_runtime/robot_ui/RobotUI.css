@@ -23,136 +23,333 @@
 }
 
 .eye {
-  width: 100px;
-  height: 100px;
-  background: radial-gradient(circle, #ffffff 0%, #e0e0e0 100%);
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, #ffffff 10%, #f0f0f0 100%);
   border-radius: 50%;
   position: relative;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 5px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25), inset 0 5px 15px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition: all 0.4s ease;
+  border: 4px solid rgba(255, 255, 255, 0.5);
 }
 
 .pupil {
-  width: 40px;
-  height: 40px;
-  background: radial-gradient(circle, #1a1a1a 0%, #000000 100%);
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #2d2d2d 0%, #000000 100%);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  transition: transform 0.1s ease-out;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
 }
+
 
 .pupil.listening {
   animation: tracking 1.5s ease-in-out infinite;
 }
 
 @keyframes tracking {
-  0%, 100% {
+  0%, 80%, 100% {
     transform: translate(-50%, -50%);
   }
-  25% {
-    transform: translate(-60%, -50%);
+  85% {
+    transform: translate(-55%, -50%);
   }
-  50% {
-    transform: translate(-50%, -60%);
+  90% {
+    transform: translate(-50%, -55%);
   }
-  75% {
-    transform: translate(-40%, -50%);
+  95% {
+    transform: translate(-45%, -50%);
   }
 }
 
-/* Audio Visualization */
-.audio-visualization {
+.pupil.listening {
+  animation: tracking 8s ease-in-out infinite; /* Much slower and steady */
+}
+
+/* Bow Decoration */
+.bow-container {
+  position: absolute;
+  top: 12%;
+  left: 62%;
+  transform: translateX(-50%) rotate(25deg);
+  z-index: 100;
   display: flex;
-  gap: 8px;
-  margin-bottom: 30px;
-  align-items: flex-end;
-  height: 100px;
   justify-content: center;
 }
 
-.audio-bar {
-  width: 8px;
-  background: linear-gradient(to top, #4CAF50, #81C784);
+
+.bow-tie {
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 5px 10px rgba(219, 39, 119, 0.3));
+}
+
+.bow-left, .bow-right {
+  width: 40px;
+  height: 50px;
+  background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+  border-radius: 40% 60% 60% 40% / 50% 50% 50% 50%;
+}
+
+.bow-left { transform: rotate(-15deg); margin-right: -10px; }
+.bow-right { transform: rotate(15deg) scaleX(-1); margin-left: -10px; }
+
+.bow-center {
+  width: 25px;
+  height: 25px;
+  background: #db2777;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Eyes Container */
+.eyes-container {
+  display: flex;
+  gap: 60px;
+  margin-bottom: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye {
+  width: 130px;
+  height: 130px;
+  background: radial-gradient(circle, #ffffff 10%, #f0f0f0 100%);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2), inset 0 5px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.4s ease;
+  border: 4px solid rgba(255, 255, 255, 0.5);
+}
+
+.pupil {
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, #2d2d2d 0%, #000000 100%);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.pupil::after {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  width: 15px;
+  height: 15px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+}
+
+/* Mouth Element */
+.mouth {
+  width: 140px;
+  height: 20px;
+  border-bottom: 8px solid #ffffff;
+  border-radius: 0 0 100px 100px; /* Default slight smile */
+  margin-top: 30px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  opacity: 0.9;
+  position: relative;
+}
+
+.mouth.speaking {
+  animation: speaking-mouth 0.2s infinite alternate;
+}
+
+@keyframes speaking-mouth {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(1.5); }
+}
+
+/* Eyebrows */
+.eyebrow {
+  position: absolute;
+  top: 15px;
+  left: 10%;
+  width: 80%;
+  height: 8px;
+  background: #333;
   border-radius: 4px;
-  animation: pulse 0.2s ease-in-out;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 5;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
+/* Thinking Indicator */
+.thinking-container {
+  position: absolute;
+  top: 100px;
+  right: 200px;
+  display: none; /* Hidden by default */
+  flex-direction: column;
+  align-items: center;
+  animation: float 3s ease-in-out infinite;
+  z-index: 100;
 }
 
-/* Emotion States */
-.emotion-idle .eye {
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 5px 10px rgba(0, 0, 0, 0.1);
+.emotion-thinking .thinking-container {
+  display: flex; /* Show only when thinking */
 }
 
-.emotion-happy .eyes-container {
-  animation: happy-blink 0.3s ease-out;
+
+.thought-cloud {
+  width: 90px;
+  height: 70px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #0f766e;
+  font-weight: bold;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  position: relative;
 }
 
-.emotion-sad .eye {
-  filter: brightness(0.9);
+.thought-cloud::after {
+  content: '';
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 50%;
+  top: -10px;
+  right: -200px;
 }
 
-.emotion-thinking .pupil {
-  animation: thinking 2s ease-in-out infinite;
+.thought-dot {
+  background: white;
+  border-radius: 50%;
+  margin-top: 10px;
 }
 
-.emotion-listening .eyes-container {
-  animation: listening-focus 1s ease-in-out infinite;
+.dot-1 { width: 15px; height: 15px; margin-right: 40px; }
+.dot-2 { width: 10px; height: 10px; margin-right: 60px; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
 }
 
-.emotion-speaking .audio-bar {
-  animation: speak-pulse 0.15s ease-in-out;
+/* Emotion States Overrides */
+.emotion-happy .mouth {
+  border-bottom: 12px solid #4CAF50;
+  border-radius: 0 0 150px 150px;
+  height: 70px;
+  width: 160px;
+  transform: translateY(-10px);
 }
+
+.emotion-sad .mouth {
+  border-bottom: none;
+  border-top: 12px solid #f44336;
+  border-radius: 150px 150px 0 0;
+  height: 50px;
+  width: 140px;
+  transform: translateY(20px);
+}
+
+.emotion-angry .mouth {
+  border: none;
+  border-bottom: 10px solid #f43f5e;
+  border-radius: 0;
+  height: 0px;
+  width: 120px;
+  transform: translateY(15px);
+  opacity: 1;
+}
+
+.emotion-angry .eyebrow {
+  opacity: 1 !important;
+  background: #f43f5e;
+  height: 14px;
+}
+
+.emotion-angry .eye-left .eyebrow { transform: rotate(30deg); top: 25px; }
+.emotion-angry .eye-right .eyebrow { transform: rotate(-30deg); top: 25px; }
+
+.emotion-thinking .mouth {
+  width: 40px;
+  height: 40px;
+  border: 6px solid #ffffff;
+  border-radius: 50%;
+  transform: scale(0.8);
+}
+
+
+/* Speaking Animation (Pinterest Reference Style) */
+@keyframes speak-talk {
+  0%, 100% { height: 35px; }
+  50% { height: 65px; }
+}
+
+.mouth.speaking,
+.robot-ui.speaking .mouth {
+  display: block !important;
+  animation: speak-talk 0.15s infinite ease-in-out !important;
+  background: #4a0e0e !important; /* Deep maroon cavity */
+  border: 4px solid #000 !important; /* Bold black outline */
+  width: 130px !important;
+  height: 50px !important;
+  border-radius: 10px 10px 60px 60px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  transform: translateY(15px) !important;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+
+.mouth-teeth {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 18px;
+  background: #ffffff;
+  border-bottom: 2px solid #000;
+  z-index: 2;
+  display: none;
+}
+
+.mouth-tongue {
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 35px;
+  background: #ff8a8a; /* Soft pink tongue */
+  border-radius: 50% 50% 0 0;
+  z-index: 1;
+  display: none;
+}
+
+.mouth.speaking .mouth-teeth,
+.mouth.speaking .mouth-tongue {
+  display: block !important;
+}
+
+
 
 @keyframes happy-blink {
-  0% {
-    transform: scaleY(1);
-  }
-  50% {
-    transform: scaleY(0.1);
-  }
-  100% {
-    transform: scaleY(1);
-  }
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.1); }
 }
 
-@keyframes thinking {
-  0%, 100% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  50% {
-    transform: translate(-50%, -50%) rotate(20deg);
-  }
-}
-
-@keyframes listening-focus {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes speak-pulse {
-  0%, 100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-}
 
 /* Status Bar */
 .status-bar {
@@ -191,10 +388,68 @@
 /* Emotion Display */
 .emotion-display {
   position: absolute;
-  top: 30px;
-  font-size: 24px;
+  top: 60px; /* Moved higher to avoid overlap */
+  font-size: 28px;
   font-weight: bold;
-  letter-spacing: 2px;
-  opacity: 0.8;
+  letter-spacing: 5px;
+  opacity: 0.5;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ============================================================
+   TEST HARNESS STYLES (Standalone Test Support)
+   ============================================================ */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.controls button.active {
+  background: #db2777 !important;
+  border-color: #f472b6;
+  box-shadow: 0 0 15px rgba(219, 39, 119, 0.4);
 }

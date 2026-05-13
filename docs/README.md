@@ -1,35 +1,35 @@
 # NovaCare Documentation Index
 
-Central home for all repository documentation.
+Welcome to the centralized documentation for the NovaCare project.
 
-> NOTE: This file is created as part of a non-destructive professionalization refactor. It consolidates existing docs via links and (later) copy/move operations.
+## 📂 Documentation Structure
 
-## Contents
+### [🏗️ Architecture](./architecture/)
+- [System Overview](./architecture/overview.md)
+- [Database Schema](./architecture/database.md)
+- [Design Guidelines](./architecture/design_guidelines.md)
+- [Implementation Summary](./architecture/IMPLEMENTATION_SUMMARY.md)
 
-- [Architecture](architecture/)
-- [APIs](APIs/)
-- [Setup](setup/)
-- [Deployment](deployment/)
-- [Hardware](hardware/)
-- [Troubleshooting](troubleshooting/)
-- [Research](research/)
-- [Design Guidelines](design_guidelines/)
+### [🚀 Setup & Development](./setup/)
+- [How to Run](./setup/HOW_TO_RUN.md)
+- [Axiom Setup](./setup/AXIOM_SETUP.md)
+- [Development Rules](./setup/dev_rules.md)
+- [Navigation Guide](./setup/NAVIGATION_GUIDE.md)
 
-## Quick Links (existing docs)
+### [🔌 API Services](./APIs/)
+- [Services Documentation](./APIs/services.md)
 
-- `docs/architecture.md` — System architecture overview
-- `docs/product_spec.md` — Product requirements & spec
-- `docs/API_Services_Documentation.md` — API services documentation
-- `docs/database_integration.md` — Database integration details
-- `docs/SERBot_Integration_Guide.md` — SERBot integration guide
-- `docs/design_guidelines.md` — Design rules
-- `docs/dev_rules.md` — Development rules
-- `optimized_runtime/` — Advanced robotics runtime docs
+### [🤖 Hardware Integration](./hardware/)
+- [SERBot Integration Guide](./hardware/SERBot_Integration_Guide.md)
+- [SERBot Manual](./hardware/serbot_manual.pdf)
 
-## Documentation Standards
+### [🗺️ Roadmap & Research](./roadmap/)
+- [Project Roadmap](./roadmap/overview.md)
+- [Migration Map](./roadmap/MIGRATION_MAP.md)
+- [Research Reports](./research/PHASE1_ANALYSIS_REPORT.md)
 
-All new/updated docs should:
-- live under `docs/`
-- follow consistent headings: `Purpose`, `Overview`, `Dependencies`, `Startup`, `API Usage`, `Deployment`, `Troubleshooting`
-- avoid secrets
+### [🔧 Troubleshooting](./troubleshooting/)
+- Common issues and solutions.
 
+---
+*For general project information, see the [Root README](../README.md).*

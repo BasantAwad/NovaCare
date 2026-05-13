@@ -83,31 +83,43 @@ const RobotUI: React.FC = () => {
 
   return (
     <div className={`robot-ui ${getEmotionClass(robotState.emotion)}`}>
+      {/* Thinking Indicator */}
+      {robotState.emotion === 'thinking' && (
+        <div className="thinking-container">
+          <div className="thought-cloud">?</div>
+          <div className="thought-dot dot-1"></div>
+          <div className="thought-dot dot-2"></div>
+        </div>
+      )}
+
+      {/* Decorative Bow */}
+      <div className="bow-container">
+        <div className="bow-tie">
+          <div className="bow-left"></div>
+          <div className="bow-center"></div>
+          <div className="bow-right"></div>
+        </div>
+      </div>
+
       {/* Eyes Container */}
       <div className="eyes-container">
         <div className="eye eye-left">
+          <div className="eyebrow"></div>
           <div className={`pupil ${robotState.listening ? 'listening' : ''}`}></div>
         </div>
         <div className="eye eye-right">
+          <div className="eyebrow"></div>
           <div className={`pupil ${robotState.listening ? 'listening' : ''}`}></div>
         </div>
       </div>
 
-      {/* Audio Visualization */}
-      {(robotState.speaking || robotState.listening) && (
-        <div className="audio-visualization">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="audio-bar"
-              style={{
-                height: `${robotState.audio_level * (20 + i * 10)}px`,
-                animationDelay: `${i * 0.1}s`,
-              }}
-            ></div>
-          ))}
-        </div>
-      )}
+      {/* Mouth Element */}
+      <div className={`mouth ${robotState.speaking ? 'speaking' : ''}`}>
+        <div className="mouth-teeth"></div>
+        <div className="mouth-tongue"></div>
+      </div>
+
+
 
       {/* Status Indicators */}
       <div className="status-bar">

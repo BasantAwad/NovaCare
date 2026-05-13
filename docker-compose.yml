@@ -28,7 +28,7 @@ services:
   # 🖐️ ASL Service: Sign Language Recognition
   asl-service:
     build:
-      context: ./services/asl-model
+      context: ./services/asl
       dockerfile: Dockerfile
     container_name: novacare-asl
     restart: always
@@ -39,7 +39,7 @@ services:
   # 🧠 LLM Service: Chatbot & Emotion AI
   llm-service:
     build:
-      context: ./services/llm-backend
+      context: ./services/llm
       dockerfile: Dockerfile
     container_name: novacare-llm
     restart: always
@@ -50,7 +50,7 @@ services:
   # 🖥️ Frontend: Next.js Dashboard
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/frontend
       dockerfile: Dockerfile
     container_name: novacare-frontend
     restart: always
@@ -65,3 +65,4 @@ services:
 # Note: network_mode: "host" is used to simplify inter-service communication
 # and hardware discovery on the Jetson Nano.
 # ---------------------------------------------------------------------------
+
