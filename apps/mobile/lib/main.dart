@@ -5,6 +5,11 @@ import 'package:provider/provider.dart';
 import 'providers/rover_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ble_provider.dart';
+import 'providers/alert_provider.dart';
+import 'providers/reminder_provider.dart';
+import 'providers/translation_provider.dart';
+import 'services/notification_service.dart';
+import 'services/voice_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
@@ -15,6 +20,9 @@ import 'screens/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  await NotificationService().init();
+  await VoiceService().init();
+
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -33,12 +41,19 @@ class NovaCareApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => RoverProvider()),
         ChangeNotifierProvider(create: (_) => BleProvider()),
+        ChangeNotifierProvider(create: (_) => AlertProvider()),
+        ChangeNotifierProvider(create: (_) => ReminderProvider()),
+        ChangeNotifierProvider(create: (_) => TranslationProvider()),
       ],
-      child: Consumer<SettingsProvider>(
-        builder: (context, settings, _) {
+      child: Consumer2<SettingsProvider, TranslationProvider>(
+        builder: (context, settings, translation, _) {
+          // Sync voice enabled state
+          VoiceService().setEnabled(settings.voiceFeedbackEnabled);
+
           return MaterialApp(
             title: 'NovaCare Assistant',
             debugShowCheckedModeBanner: false,
+            locale: translation.locale,
             theme: AppTheme.lightTheme(),
             darkTheme: AppTheme.darkTheme(),
             themeMode: settings.themeMode,
@@ -69,6 +84,8 @@ class _MainNavigationHolderState extends State<MainNavigationHolder> {
 
   @override
   Widget build(BuildContext context) {
+    final translation = context.watch<TranslationProvider>();
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -76,17 +93,47 @@ class _MainNavigationHolderState extends State<MainNavigationHolder> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+          final labels = [
+            translation.translate('home'),
+            translation.translate('reminders'),
+            translation.translate('alerts'),
+            translation.translate('settings')
+          ];
+          VoiceService().speak(labels[index]);
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppTheme.accentPink,
         unselectedItemColor: Colors.grey,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.alarm_rounded), label: 'Reminders'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_rounded), label: 'Alerts'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Settings'),
+        items: [
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.home_rounded),
+            label: translation.translate('home'),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.alarm_rounded),
+            label: translation.translate('reminders'),
+          ),
+          BottomNavigationBarItem(
+            icon: Consumer<AlertProvider>(
+              builder: (context, alertProvider, child) {
+                final count = alertProvider.unreadCount;
+                if (count == 0) return const Icon(Icons.notifications_rounded);
+                return Badge(
+                  label: Text(count.toString()),
+                  child: const Icon(Icons.notifications_rounded),
+                );
+              },
+            ),
+            label: translation.translate('alerts'),
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.settings_rounded),
+            label: translation.translate('settings'),
+          ),
         ],
       ),
     );

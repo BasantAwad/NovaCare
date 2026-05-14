@@ -41,13 +41,31 @@ class SettingsProvider extends ChangeNotifier {
 
   // ─── Language / Locale ──────────────────────────────────────────
   Locale _locale = const Locale('en', '');
+  final List<Locale> _supportedLocales = [
+    const Locale('en', ''),
+    const Locale('ar', ''),
+    const Locale('es', ''),
+    const Locale('fr', ''),
+  ];
+
   Locale get locale => _locale;
+  List<Locale> get supportedLocales => _supportedLocales;
 
   bool get isArabic => _locale.languageCode == 'ar';
 
   void setLocale(Locale locale) {
     _locale = locale;
     notifyListeners();
+  }
+
+  String getLanguageName(Locale l) {
+    switch (l.languageCode) {
+      case 'en': return 'English';
+      case 'ar': return 'Arabic';
+      case 'es': return 'Spanish';
+      case 'fr': return 'French';
+      default: return l.languageCode;
+    }
   }
 
   void toggleLanguage() {
@@ -58,25 +76,37 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   // ─── User Profile ──────────────────────────────────────────────
-  String _userName = 'User';
-  String _userId = '';
+  String _userName = 'NovaCare User';
+  String _userId = 'NC-USER-001';
+  String _email = 'user@novacare.com';
+  String _emergencyContact = '+1 234 567 890';
   String _disabilityType = 'None';
+  String? _profileImagePath;
   bool _voiceFeedbackEnabled = false;
 
   String get userName => _userName;
   String get userId => _userId;
+  String get email => _email;
+  String get emergencyContact => _emergencyContact;
   String get disabilityType => _disabilityType;
+  String? get profileImagePath => _profileImagePath;
   bool get voiceFeedbackEnabled => _voiceFeedbackEnabled;
 
   void updateProfile({
     String? name,
     String? id,
+    String? email,
+    String? emergencyContact,
     String? disability,
+    String? profileImagePath,
     bool? voiceFeedback,
   }) {
     if (name != null) _userName = name;
     if (id != null) _userId = id;
+    if (email != null) _email = email;
+    if (emergencyContact != null) _emergencyContact = emergencyContact;
     if (disability != null) _disabilityType = disability;
+    if (profileImagePath != null) _profileImagePath = profileImagePath;
     if (voiceFeedback != null) _voiceFeedbackEnabled = voiceFeedback;
     notifyListeners();
   }

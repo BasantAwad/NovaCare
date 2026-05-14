@@ -1,13 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/rover_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/translation_provider.dart';
 import '../widgets/status_card.dart';
 import '../widgets/quick_action_button.dart';
 import 'sos_screen.dart';
 import 'rover_control_screen.dart';
-
 import 'rover_summon_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -16,175 +18,211 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final rover = context.watch<RoverProvider>();
+    final settings = context.watch<SettingsProvider>();
+    final translation = context.watch<TranslationProvider>();
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Responsive Header
+                  _buildHeader(context, settings, translation),
+
+                  const SizedBox(height: 24),
+
+                  // Robot Connection Status Card
+                  _buildConnectionCard(context, rover),
+
+                  const SizedBox(height: 24),
+
+                  // Vital Statistics
+                  Text(
+                    translation.translate('vital_stats'),
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Flexible Grid
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: constraints.maxWidth > 600 ? 4 : 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.1,
                     children: [
-                      Text('Good Morning,', style: theme.textTheme.bodyLarge),
-                      Text('NovaCare User', style: theme.textTheme.displayLarge),
+                      StatusCard(
+                        icon: Icons.favorite,
+                        label: translation.translate('heart_rate'),
+                        value: '${rover.heartRate} BPM',
+                        color: Colors.redAccent,
+                      ),
+                      StatusCard(
+                        icon: Icons.battery_charging_full,
+                        label: translation.translate('battery'),
+                        value: '${rover.batteryLevel}%',
+                        color: Colors.green,
+                      ),
+                      StatusCard(
+                        icon: Icons.location_on,
+                        label: translation.translate('location'),
+                        value: rover.roverLocation,
+                        color: Colors.blueAccent,
+                      ),
+                      StatusCard(
+                        icon: Icons.thermostat,
+                        label: translation.translate('temperature'),
+                        value: '${rover.temperature}°C',
+                        color: Colors.orangeAccent,
+                      ),
                     ],
                   ),
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                    child: Icon(Icons.person_outline, color: theme.colorScheme.primary, size: 30),
+
+                  const SizedBox(height: 24),
+
+                  // Emergency Section
+                  Text(
+                    translation.translate('emergency'),
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 12),
+                  QuickActionButton(
+                    icon: Icons.warning_rounded,
+                    label: 'SOS EMERGENCY',
+                    subtitle: 'Trigger alarm & notify caregivers',
+                    color: theme.colorScheme.error,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SosScreen()),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  QuickActionButton(
+                    icon: Icons.smart_toy_rounded,
+                    label: translation.translate('summon').toUpperCase(),
+                    subtitle: 'Call the assistant to your location',
+                    color: theme.colorScheme.primary,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RoverSummonScreen()),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  QuickActionButton(
+                    icon: Icons.gamepad_rounded,
+                    label: translation.translate('controls').toUpperCase(),
+                    subtitle: 'Manual movement & docking',
+                    color: Colors.indigo,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const RoverControlScreen()),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
                 ],
               ),
-
-              const SizedBox(height: 32),
-
-              // Robot Connection Status Card
-              _buildConnectionCard(context, rover),
-
-              const SizedBox(height: 32),
-
-              // Quick Stats Grid
-              Text('Vital Statistics', style: theme.textTheme.headlineMedium),
-              const SizedBox(height: 16),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.4,
-                children: [
-                  StatusCard(
-                    icon: Icons.favorite,
-                    label: 'Heart Rate',
-                    value: '${rover.heartRate} BPM',
-                    color: Colors.redAccent,
-                  ),
-                  StatusCard(
-                    icon: Icons.battery_charging_full,
-                    label: 'Robot Battery',
-                    value: '${rover.batteryLevel}%',
-                    color: Colors.green,
-                  ),
-                  StatusCard(
-                    icon: Icons.location_on,
-                    label: 'Robot Location',
-                    value: rover.roverLocation,
-                    color: Colors.blueAccent,
-                  ),
-                  StatusCard(
-                    icon: Icons.thermostat,
-                    label: 'Temperature',
-                    value: '${rover.temperature}°C',
-                    color: Colors.orangeAccent,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // Emergency Section
-              Text('Emergency & Assistance', style: theme.textTheme.headlineMedium),
-              const SizedBox(height: 16),
-              QuickActionButton(
-                icon: Icons.warning_rounded,
-                label: 'SOS EMERGENCY',
-                subtitle: 'Trigger alarm & notify caregivers',
-                color: theme.colorScheme.error,
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SosScreen()),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Robot Summon Section
-              QuickActionButton(
-                icon: Icons.smart_toy_rounded,
-                label: 'SUMMON ROBOT',
-                subtitle: 'Call the assistant to your location',
-                color: theme.colorScheme.primary,
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RoverSummonScreen()),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Remote Controls Entry
-              QuickActionButton(
-                icon: Icons.gamepad_rounded,
-                label: 'ROVER CONTROLS',
-                subtitle: 'Manual movement & docking',
-                color: Colors.indigo,
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RoverControlScreen()),
-                ),
-              ),
-
-              const SizedBox(height: 80), // Padding for bottom
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
+  Widget _buildHeader(BuildContext context, SettingsProvider settings, TranslationProvider translation) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                translation.translate('good_morning'),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              Text(
+                settings.userName,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ),
+          child: Hero(
+            tag: 'profile_pic',
+            child: CircleAvatar(
+              radius: 28,
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              backgroundImage: settings.profileImagePath != null
+                  ? FileImage(File(settings.profileImagePath!))
+                  : null,
+              child: settings.profileImagePath == null
+                  ? Icon(Icons.person, color: Theme.of(context).colorScheme.primary, size: 30)
+                  : null,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildConnectionCard(BuildContext context, RoverProvider rover) {
-    final theme = Theme.of(context);
     final isOnline = rover.isRoverOnline;
+    final color = isOnline ? Colors.green : Colors.red;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isOnline ? Colors.green.shade50 : Colors.red.shade50,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isOnline ? Colors.green.shade200 : Colors.red.shade200,
-        ),
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isOnline ? Colors.green : Colors.red,
-              shape: BoxShape.circle,
-            ),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(
               isOnline ? Icons.check_circle : Icons.error,
               color: Colors.white,
+              size: 20,
             ),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isOnline ? 'Rover is Online' : 'Rover is Offline',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: isOnline ? Colors.green.shade800 : Colors.red.shade800,
-                  fontWeight: FontWeight.bold,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isOnline ? 'Rover is Online' : 'Rover is Offline',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ),
-              Text(
-                isOnline ? 'Active and monitoring' : 'Check connection status',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isOnline ? Colors.green.shade700 : Colors.red.shade700,
+                Text(
+                  isOnline ? 'Active and monitoring' : 'Check connection status',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),

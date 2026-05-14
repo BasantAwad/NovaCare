@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/rover_provider.dart';
+import '../providers/translation_provider.dart';
+import '../services/voice_service.dart';
 
 class RoverControlScreen extends StatelessWidget {
   const RoverControlScreen({super.key});
@@ -9,74 +11,85 @@ class RoverControlScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final rover = context.watch<RoverProvider>();
+    final translation = context.watch<TranslationProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rover Controls'),
+        title: Text(translation.translate('controls')),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          // Telemetry Header
-          _buildTelemetryHeader(context, rover),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Column(
+            children: [
+              // Telemetry Header
+              _buildTelemetryHeader(context, rover),
 
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Directional Pad
-                  _buildDPad(context, rover, theme),
-
-                  const SizedBox(height: 60),
-
-                  // Action Grid
-                  GridView.count(
-                    shrinkWrap: true,
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 2.5,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildActionButton(
-                        context,
-                        Icons.home_rounded,
-                        'Dock',
-                        Colors.blueGrey,
-                        () => rover.goHome(),
-                      ),
-                      _buildActionButton(
-                        context,
-                        Icons.stop_circle_rounded,
-                        'Stop All',
-                        Colors.red,
-                        () => rover.cancelCurrentMode(),
+                      // Directional Pad (Arrows)
+                      _buildDPad(context, rover, theme),
+
+                      const SizedBox(height: 48),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildActionButton(
+                              context,
+                              Icons.home_rounded,
+                              'Dock',
+                              Colors.blueGrey,
+                              () {
+                                VoiceService().speak("Moving to charging dock");
+                                rover.goHome();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildActionButton(
+                              context,
+                              Icons.stop_circle_rounded,
+                              'Stop',
+                              Colors.red,
+                              () {
+                                VoiceService().speak("Stopping all movement");
+                                rover.cancelCurrentMode();
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
 
-          // Footer Info
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              'Manual control is limited for safety. The robot will automatically avoid obstacles.',
-              style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
+              // Footer Info
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Manual control is limited for safety. The robot will automatically avoid obstacles.',
+                  style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildTelemetryHeader(BuildContext context, RoverProvider rover) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
@@ -96,7 +109,7 @@ class RoverControlScreen extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        Icon(icon, color: theme.colorScheme.primary, size: 24),
+        Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(height: 4),
         Text(value, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
         Text(label, style: theme.textTheme.bodySmall),
@@ -105,57 +118,71 @@ class RoverControlScreen extends StatelessWidget {
   }
 
   Widget _buildDPad(BuildContext context, RoverProvider rover, ThemeData theme) {
+    double buttonSize = 90;
+
     return Column(
       children: [
-        _dPadButton(theme, Icons.arrow_upward_rounded, () => print('Forward')),
-        const SizedBox(height: 16),
+        // Up Arrow
+        _dPadButton(theme, Icons.keyboard_arrow_up_rounded, "Forward", () {
+          VoiceService().speak("Moving forward");
+        }),
+
+        const SizedBox(height: 12),
+
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _dPadButton(theme, Icons.arrow_back_rounded, () => print('Left')),
-            const SizedBox(height: 80, width: 80), // Center Gap
-            _dPadButton(theme, Icons.arrow_forward_rounded, () => print('Right')),
+            // Left Arrow
+            _dPadButton(theme, Icons.keyboard_arrow_left_rounded, "Left", () {
+              VoiceService().speak("Turning left");
+            }),
+
+            SizedBox(width: buttonSize + 12), // Gap in center
+
+            // Right Arrow
+            _dPadButton(theme, Icons.keyboard_arrow_right_rounded, "Right", () {
+              VoiceService().speak("Turning right");
+            }),
           ],
         ),
-        const SizedBox(height: 16),
-        _dPadButton(theme, Icons.arrow_downward_rounded, () => print('Backward')),
+
+        const SizedBox(height: 12),
+
+        // Down Arrow
+        _dPadButton(theme, Icons.keyboard_arrow_down_rounded, "Backward", () {
+          VoiceService().speak("Moving backward");
+        }),
       ],
     );
   }
 
-  Widget _dPadButton(ThemeData theme, IconData icon, VoidCallback onPressed) {
-    return GestureDetector(
-      onTapDown: (_) => onPressed(),
+  Widget _dPadButton(ThemeData theme, IconData icon, String label, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        width: 80,
-        height: 80,
+        width: 90,
+        height: 90,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade300, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 2),
         ),
-        child: Icon(icon, size: 40, color: theme.colorScheme.primary),
+        child: Icon(icon, size: 56, color: theme.colorScheme.primary),
       ),
     );
   }
 
   Widget _buildActionButton(BuildContext context, IconData icon, String label, Color color, VoidCallback onPressed) {
     return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 24, color: Colors.white),
+      label: Text(label, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        padding: EdgeInsets.zero,
-        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      label: Text(label, style: const TextStyle(fontSize: 14)),
     );
   }
 }
