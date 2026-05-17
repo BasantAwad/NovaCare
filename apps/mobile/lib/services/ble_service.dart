@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 /// Service layer for BLE communication with the rover's ESP32 module.
 /// Wraps flutter_blue_plus for clean integration with providers.
@@ -17,42 +20,79 @@ class BleService {
   bool _isScanning = false;
   bool get isScanning => _isScanning;
 
+  BluetoothDevice? _connectedDevice;
+  StreamSubscription<List<ScanResult>>? _scanSubscription;
+
   /// Start BLE scan for NovaCare rover devices
   Future<List<Map<String, String>>> scanForDevices({
     Duration timeout = const Duration(seconds: 4),
   }) async {
     _isScanning = true;
 
-    // TODO: Replace with actual flutter_blue_plus scan
-    // await FlutterBluePlus.startScan(
-    //   withServices: [Guid(serviceUuid)],
-    //   timeout: timeout,
-    // );
-    //
-    // final results = await FlutterBluePlus.scanResults.first;
-    // return results.map((r) => {
-    //   'name': r.device.platformName,
-    //   'id': r.device.remoteId.str,
-    //   'rssi': r.rssi.toString(),
-    // }).toList();
+    try {
+      if (await FlutterBluePlus.isSupported == false) {
+        debugPrint('BleService: Bluetooth not supported');
+        return [];
+      }
+      
+      await FlutterBluePlus.startScan(
+        withServices: [Guid(serviceUuid)],
+        timeout: timeout,
+      );
 
-    await Future.delayed(timeout);
-    _isScanning = false;
+      final results = await FlutterBluePlus.scanResults.firstWhere(
+        (results) => results.isNotEmpty,
+        orElse: () => [],
+      );
 
-    // Simulated results
-    return [
-      {'name': 'NovaCare-Rover-01', 'id': 'AA:BB:CC:DD:EE:01', 'rssi': '-55'},
-    ];
+      return results.map((r) => {
+        'name': r.device.platformName.isEmpty ? 'Unknown Device' : r.device.platformName,
+        'id': r.device.remoteId.str,
+        'rssi': r.rssi.toString(),
+      }).toList();
+    } catch (e) {
+      debugPrint('BleService: Scan error - $e');
+      return [];
+    } finally {
+      _isScanning = false;
+    }
+  }
+
+  /// Start continuous scan to monitor RSSI of a specific device
+  /// Returns a stream of RSSI values
+  Stream<int> streamRssi(String deviceId) {
+    // We use a stream controller to emit RSSI updates
+    final controller = StreamController<int>();
+
+    FlutterBluePlus.startScan(
+      withServices: [Guid(serviceUuid)],
+      continuousUpdates: true,
+      continuousDivisor: 1, // Get updates as fast as possible
+    );
+
+    _scanSubscription = FlutterBluePlus.scanResults.listen((results) {
+      for (ScanResult r in results) {
+        if (r.device.remoteId.str == deviceId) {
+          controller.add(r.rssi);
+        }
+      }
+    });
+
+    controller.onCancel = () {
+      _scanSubscription?.cancel();
+      FlutterBluePlus.stopScan();
+    };
+
+    return controller.stream;
   }
 
   /// Connect to a specific device
   Future<bool> connect(String deviceId) async {
     try {
-      // TODO: Replace with actual BLE connection
-      // final device = BluetoothDevice.fromId(deviceId);
-      // await device.connect(autoConnect: false, timeout: const Duration(seconds: 10));
-      // await device.discoverServices();
-
+      final device = BluetoothDevice.fromId(deviceId);
+      await device.connect(autoConnect: false, timeout: const Duration(seconds: 10));
+      _connectedDevice = device;
+      
       debugPrint('BleService: Connected to $deviceId');
       return true;
     } catch (e) {
@@ -63,20 +103,26 @@ class BleService {
 
   /// Disconnect from current device
   Future<void> disconnect(String deviceId) async {
-    // TODO: Replace with actual BLE disconnection
-    // final device = BluetoothDevice.fromId(deviceId);
-    // await device.disconnect();
+    if (_connectedDevice != null && _connectedDevice!.remoteId.str == deviceId) {
+      await _connectedDevice!.disconnect();
+      _connectedDevice = null;
+    } else {
+      final device = BluetoothDevice.fromId(deviceId);
+      await device.disconnect();
+    }
     debugPrint('BleService: Disconnected from $deviceId');
   }
 
   /// Write a command to the ESP32 command characteristic
   Future<bool> writeCommand(String command) async {
+    if (_connectedDevice == null) return false;
+    
     try {
-      // TODO: Replace with actual characteristic write
-      // final services = await device.discoverServices();
-      // final service = services.firstWhere((s) => s.uuid.toString() == serviceUuid);
-      // final char = service.characteristics.firstWhere((c) => c.uuid.toString() == commandCharUuid);
-      // await char.write(utf8.encode(command));
+      final services = await _connectedDevice!.discoverServices();
+      final service = services.firstWhere((s) => s.uuid.toString() == serviceUuid);
+      final char = service.characteristics.firstWhere((c) => c.uuid.toString() == commandCharUuid);
+      
+      await char.write(utf8.encode(command));
 
       debugPrint('BleService: Wrote command - $command');
       return true;
@@ -87,20 +133,24 @@ class BleService {
   }
 
   /// Subscribe to telemetry notifications from ESP32
-  Stream<List<int>>? subscribeTelemetry() {
-    // TODO: Replace with actual characteristic notification subscription
-    // final services = await device.discoverServices();
-    // final service = services.firstWhere((s) => s.uuid.toString() == serviceUuid);
-    // final char = service.characteristics.firstWhere((c) => c.uuid.toString() == telemetryCharUuid);
-    // await char.setNotifyValue(true);
-    // return char.onValueReceived;
-
-    debugPrint('BleService: Subscribed to telemetry');
-    return null;
+  Future<Stream<List<int>>?> subscribeTelemetry() async {
+    if (_connectedDevice == null) return null;
+    
+    try {
+      final services = await _connectedDevice!.discoverServices();
+      final service = services.firstWhere((s) => s.uuid.toString() == serviceUuid);
+      final char = service.characteristics.firstWhere((c) => c.uuid.toString() == telemetryCharUuid);
+      
+      await char.setNotifyValue(true);
+      debugPrint('BleService: Subscribed to telemetry');
+      return char.onValueReceived;
+    } catch (e) {
+      debugPrint('BleService: Subscribe failed - $e');
+      return null;
+    }
   }
 
   /// Parse telemetry bytes from ESP32
-  /// Expected format: "BAT:85|HR:72|LOC:Living Room|TEMP:36.5"
   static Map<String, dynamic> parseTelemetry(List<int> bytes) {
     final data = String.fromCharCodes(bytes);
     final parts = data.split('|');

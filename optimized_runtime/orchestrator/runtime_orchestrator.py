@@ -18,6 +18,7 @@ from datetime import datetime
 from enum import Enum
 
 from ..state import get_robot_state, EmotionType, RobotMode
+from ..adapters import get_service_registry
 from ..communication import get_websocket_server
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ class RuntimeOrchestrator:
     def __init__(self):
         self.state = get_robot_state()
         self.ws_server = get_websocket_server()
+        self.registry = get_service_registry()
         
         # Pipeline management
         self.task_queue: asyncio.PriorityQueue[Task] = asyncio.PriorityQueue()
@@ -105,6 +107,19 @@ class RuntimeOrchestrator:
         try:
             # Start WebSocket server
             await self.ws_server.start()
+
+            # Register generic handlers (mobile-triggered operations)
+            try:
+                self.ws_server.register_handler("play_sound", self._handle_play_sound)
+                logger.info("Registered play_sound websocket handler")
+                self.ws_server.register_handler("play_audio", self._handle_play_audio)
+                logger.info("Registered play_audio websocket handler")
+            except Exception as e:
+                logger.warning(f"Could not register play_sound handler: {e}")
+            
+            # Initialize SummonController
+            from ..summon.summon_controller import get_summon_controller
+            await get_summon_controller().initialize(self.ws_server)
             
             # Initialize state
             await self.state.set_mode(RobotMode.IDLE)
@@ -220,6 +235,44 @@ class RuntimeOrchestrator:
         except Exception as e:
             logger.error(f"TTS error: {e}")
             self.metrics["tasks_failed"] += 1
+
+    async def _handle_play_sound(self, payload: Dict[str, Any]):
+        """Handle play_sound requests from mobile UI via WebSocket"""
+        try:
+            freq = int(payload.get("frequency", 440))
+            duration = float(payload.get("duration", 0.5))
+        except Exception:
+            freq = 440
+            duration = 0.5
+
+        robot_adapter = self.registry.get("robot")
+        if robot_adapter:
+            try:
+                await robot_adapter.play_sound(freq, duration)
+                logger.info(f"Played sound via robot adapter: {freq}Hz for {duration}s")
+            except Exception as e:
+                logger.error(f"play_sound failed: {e}")
+        else:
+            logger.warning("play_sound requested but robot adapter unavailable")
+
+    async def _handle_play_audio(self, payload: Dict[str, Any]):
+        """Handle play_audio requests (base64) and forward to robot service"""
+        name = payload.get("name", "phone_audio")
+        mime = payload.get("mime", "audio/mpeg")
+        audio_b64 = payload.get("audio_base64")
+        if not audio_b64:
+            logger.error("play_audio missing audio_base64 payload")
+            return
+
+        robot_adapter = self.registry.get("robot")
+        if robot_adapter:
+            try:
+                await robot_adapter.play_audio(name, audio_b64, mime)
+                logger.info("Forwarded play_audio to robot service")
+            except Exception as e:
+                logger.error(f"play_audio failed: {e}")
+        else:
+            logger.warning("play_audio requested but robot adapter unavailable")
     
     # ========== CAMERA PIPELINE ==========
     
@@ -419,13 +472,17 @@ class RuntimeOrchestrator:
     
     def get_metrics(self) -> Dict[str, Any]:
         """Get current orchestrator metrics"""
+        from ..telemetry import get_telemetry
         uptime = None
         if self.start_time:
             uptime = (datetime.now() - self.start_time).total_seconds()
+        
+        system_metrics = get_telemetry().get_metrics()
         
         return {
             **self.metrics,
             "uptime_seconds": uptime,
             "is_running": self._running,
             "websocket_connections": self.ws_server.connection_count,
+            "system_resources": system_metrics,
         }

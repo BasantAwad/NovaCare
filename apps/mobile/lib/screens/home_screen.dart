@@ -6,6 +6,8 @@ import '../providers/settings_provider.dart';
 import '../providers/translation_provider.dart';
 import '../widgets/status_card.dart';
 import '../widgets/quick_action_button.dart';
+import '../widgets/play_sound_button.dart';
+import '../widgets/audio_share_widget.dart';
 import 'sos_screen.dart';
 import 'rover_control_screen.dart';
 import 'rover_summon_screen.dart';
@@ -129,6 +131,17 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // Play sound + upload audio quick actions
+                  Row(
+                    children: const [
+                      PlaySoundButton(frequency: 880, duration: 0.4, label: 'Beep'),
+                      SizedBox(width: 12),
+                      AudioShareWidget(),
+                    ],
+                  ),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -168,18 +181,15 @@ class HomeScreen extends StatelessWidget {
             context,
             MaterialPageRoute(builder: (_) => const SettingsScreen()),
           ),
-          child: Hero(
-            tag: 'profile_pic',
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              backgroundImage: settings.profileImagePath != null
-                  ? FileImage(File(settings.profileImagePath!))
-                  : null,
-              child: settings.profileImagePath == null
-                  ? Icon(Icons.person, color: Theme.of(context).colorScheme.primary, size: 30)
-                  : null,
-            ),
+          child: CircleAvatar(
+            radius: 28,
+            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            backgroundImage: settings.profileImagePath != null
+                ? FileImage(File(settings.profileImagePath!))
+                : null,
+            child: settings.profileImagePath == null
+                ? Icon(Icons.person, color: Theme.of(context).colorScheme.primary, size: 30)
+                : null,
           ),
         ),
       ],

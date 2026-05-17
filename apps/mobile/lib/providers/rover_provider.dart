@@ -63,18 +63,25 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> goHome() async {
+  Future<void> goHome(String robotIp) async {
     _isProcessing = true;
     notifyListeners();
     
-    await _robotService.returnToDock();
+    await _robotService.returnToDock(robotIp);
     
     _isProcessing = false;
     notifyListeners();
   }
 
-  Future<void> cancelCurrentMode() async {
-    await _robotService.sendMovementCommand(RobotMovement.stop);
+  Future<void> moveRover(RobotMovement direction, String robotIp) async {
+    _roverSpeed = direction == RobotMovement.stop ? 0.0 : 0.5;
+    await _robotService.sendMovementCommand(direction, robotIp);
+    notifyListeners();
+  }
+
+  Future<void> cancelCurrentMode(String robotIp) async {
+    _roverSpeed = 0.0;
+    await _robotService.sendMovementCommand(RobotMovement.stop, robotIp);
     notifyListeners();
   }
 

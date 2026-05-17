@@ -17,7 +17,7 @@ import urllib.request
 import numpy as np
 
 # Robot camera REST API URL (robot_service.py on port 9000)
-ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://10.115.32.247:9000/api/camera/frame")
+ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://10.34.19.247:9000/api/camera/frame")
 
 
 # ===========================================================================
@@ -25,7 +25,7 @@ ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://10.115.32.247:9000/api/
 # ===========================================================================
 class CameraEmotionPoller:
     """
-    Polls camera frames for emotion detection.
+    Polls camera frames for emotion detection and fall detection.
 
     Integration priority:
       1. Robot camera via REST API (ROBOT_CAMERA_URL)
@@ -38,6 +38,7 @@ class CameraEmotionPoller:
         self.running = False
         self.thread = None
         self.analyzer = None
+        self.fall_detector = None
         self._use_robot_camera = True  # Try robot camera first
         self._local_cap = None
 
@@ -52,6 +53,20 @@ class CameraEmotionPoller:
             print("Warning: emotion_detection module not found.")
             return
 
+        try:
+            import sys
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            fd_dir = os.path.join(parent_dir, "fall-detection")
+            if fd_dir not in sys.path:
+                sys.path.insert(0, fd_dir)
+            from fall_detection import FallDetector
+            self.fall_detector = FallDetector()
+            print("✓ FallDetector successfully loaded and initialized in CameraEmotionPoller")
+        except Exception as e:
+            print(f"Warning: Could not initialize FallDetector: {e}")
+            self.fall_detector = None
+
         self.running = True
         self.thread = threading.Thread(target=self._poll_camera, daemon=True)
         self.thread.start()
@@ -60,6 +75,7 @@ class CameraEmotionPoller:
         """Fetch a frame from the robot camera REST API."""
         try:
             req = urllib.request.Request(ROBOT_CAMERA_URL, method="GET")
+            req.add_header("X-API-Key", "novacare-secure-key-2026")
             with urllib.request.urlopen(req, timeout=3) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             if data.get("status") == "success" and data.get("image"):
@@ -105,6 +121,34 @@ class CameraEmotionPoller:
                         self.latest_confidence = result["confidence"]
                 except Exception as e:
                     print(f"Emotion polling error: {e}")
+
+            # Run fall detection on the exact same frame
+            if frame is not None and self.fall_detector is not None:
+                try:
+                    fall_result = self.fall_detector.analyze_frame(frame)
+                    if fall_result.get("fall_detected"):
+                        print(f"🚨 [Fall Detected] Confidence: {fall_result.get('confidence')}")
+                        # Issue verbal speech alert on the robot!
+                        try:
+                            speak_url = ROBOT_CAMERA_URL.replace("/api/camera/frame", "/api/tts/speak")
+                            speak_data = json.dumps({
+                                "text": "Warning: Fall detected! Please remain calm. I am notifying your caretaker immediately."
+                            }).encode("utf-8")
+                            speak_req = urllib.request.Request(
+                                speak_url,
+                                data=speak_data,
+                                headers={
+                                    "Content-Type": "application/json",
+                                    "X-API-Key": "novacare-secure-key-2026"
+                                },
+                                method="POST"
+                            )
+                            with urllib.request.urlopen(speak_req, timeout=3) as speak_resp:
+                                pass
+                        except Exception as se:
+                            print(f"Error triggering robot verbal fall alert: {se}")
+                except Exception as fe:
+                    print(f"Fall detection execution error: {fe}")
 
             time.sleep(0.5)
 

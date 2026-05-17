@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- Microphone Permission -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Microphone permission removed: app no longer records audio from device -->
 
     <!-- Internet for Firebase -->
     <uses-permission android:name="android.permission.INTERNET" />

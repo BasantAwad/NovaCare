@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/ble_service.dart';
 
 /// BLE connection state for the ESP32 rover controller.
 enum BleConnectionStatus { idle, scanning, connecting, connected, disconnected, error }
 
 /// Manages Bluetooth Low Energy communication with the rover's ESP32 module.
 class BleProvider extends ChangeNotifier {
+  final BleService _bleService = BleService();
+
   BleConnectionStatus _status = BleConnectionStatus.idle;
   BleConnectionStatus get status => _status;
 
@@ -14,7 +18,7 @@ class BleProvider extends ChangeNotifier {
   String? _connectedDeviceId;
   String? get connectedDeviceId => _connectedDeviceId;
 
-  int _rssi = 0;
+  int _rssi = -100;
   int get rssi => _rssi;
 
   List<Map<String, String>> _discoveredDevices = [];
@@ -22,20 +26,15 @@ class BleProvider extends ChangeNotifier {
 
   bool get isConnected => _status == BleConnectionStatus.connected;
 
+  StreamSubscription<int>? _rssiSubscription;
+
   /// Start scanning for nearby BLE devices
   Future<void> startScan() async {
     _status = BleConnectionStatus.scanning;
     _discoveredDevices = [];
     notifyListeners();
 
-    // TODO: Replace with actual flutter_blue_plus scanning
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Simulated discovered devices
-    _discoveredDevices = [
-      {'name': 'NovaCare-Rover-01', 'id': 'AA:BB:CC:DD:EE:01'},
-      {'name': 'NovaCare-Rover-02', 'id': 'AA:BB:CC:DD:EE:02'},
-    ];
+    _discoveredDevices = await _bleService.scanForDevices();
 
     _status = BleConnectionStatus.idle;
     notifyListeners();
@@ -46,22 +45,39 @@ class BleProvider extends ChangeNotifier {
     _status = BleConnectionStatus.connecting;
     notifyListeners();
 
-    // TODO: Replace with actual BLE connection logic
-    await Future.delayed(const Duration(seconds: 1));
+    final success = await _bleService.connect(deviceId);
 
-    _connectedDeviceId = deviceId;
-    _connectedDeviceName = deviceName;
-    _rssi = -55;
-    _status = BleConnectionStatus.connected;
+    if (success) {
+      _connectedDeviceId = deviceId;
+      _connectedDeviceName = deviceName;
+      _status = BleConnectionStatus.connected;
+      _rssi = -100; // Reset
+      
+      // Start streaming RSSI
+      _rssiSubscription?.cancel();
+      _rssiSubscription = _bleService.streamRssi(deviceId).listen((newRssi) {
+        _rssi = newRssi;
+        notifyListeners();
+      });
+      
+    } else {
+      _status = BleConnectionStatus.error;
+    }
+    
     notifyListeners();
   }
 
   /// Disconnect from current device
   Future<void> disconnect() async {
-    // TODO: Replace with actual BLE disconnection
+    if (_connectedDeviceId != null) {
+      await _bleService.disconnect(_connectedDeviceId!);
+    }
+    _rssiSubscription?.cancel();
+    _rssiSubscription = null;
+    
     _connectedDeviceId = null;
     _connectedDeviceName = null;
-    _rssi = 0;
+    _rssi = -100;
     _status = BleConnectionStatus.disconnected;
     notifyListeners();
   }
@@ -69,14 +85,10 @@ class BleProvider extends ChangeNotifier {
   /// Send a command via BLE characteristic
   Future<bool> sendCommand(String command) async {
     if (_status != BleConnectionStatus.connected) return false;
-
-    // TODO: Replace with actual BLE write to characteristic
-    await Future.delayed(const Duration(milliseconds: 200));
-    debugPrint('BLE Command sent: $command');
-    return true;
+    return await _bleService.writeCommand(command);
   }
 
-  /// Update RSSI signal strength
+  /// Update RSSI signal strength manually
   void updateRssi(int value) {
     _rssi = value;
     notifyListeners();
@@ -87,5 +99,11 @@ class BleProvider extends ChangeNotifier {
     if (_rssi >= -70) return 'Good';
     if (_rssi >= -85) return 'Fair';
     return 'Weak';
+  }
+
+  @override
+  void dispose() {
+    _rssiSubscription?.cancel();
+    super.dispose();
   }
 }

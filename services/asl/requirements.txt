@@ -19,9 +19,9 @@ uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 pydantic>=2.5.0
 
-# Training & Evaluation
-tensorboard>=2.15.0
-scikit-learn>=1.3.0
-tqdm>=4.66.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
+# Training & Evaluation (Commented out for runtime deployment)
+# tensorboard>=2.15.0
+# scikit-learn>=1.3.0
+# tqdm>=4.66.0
+# matplotlib>=3.7.0
+# seaborn>=0.12.0

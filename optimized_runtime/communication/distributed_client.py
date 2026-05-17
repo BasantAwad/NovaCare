@@ -28,7 +28,7 @@ class DistributedClient:
                 logger.info("Connected to remote AI services")
                 
                 # Start listener loop
-                asyncio.create_task(self._listener_loop())
+                asyncio.ensure_future(self._listener_loop())
                 break
             except Exception as e:
                 logger.error(f"Connection failed: {e}. Retrying in 5s...")

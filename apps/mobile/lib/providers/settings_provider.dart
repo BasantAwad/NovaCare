@@ -83,6 +83,7 @@ class SettingsProvider extends ChangeNotifier {
   String _disabilityType = 'None';
   String? _profileImagePath;
   bool _voiceFeedbackEnabled = false;
+  String _robotIp = '10.34.19.247';
 
   String get userName => _userName;
   String get userId => _userId;
@@ -91,6 +92,7 @@ class SettingsProvider extends ChangeNotifier {
   String get disabilityType => _disabilityType;
   String? get profileImagePath => _profileImagePath;
   bool get voiceFeedbackEnabled => _voiceFeedbackEnabled;
+  String get robotIp => _robotIp;
 
   void updateProfile({
     String? name,
@@ -100,6 +102,7 @@ class SettingsProvider extends ChangeNotifier {
     String? disability,
     String? profileImagePath,
     bool? voiceFeedback,
+    String? robotIp,
   }) {
     if (name != null) _userName = name;
     if (id != null) _userId = id;
@@ -108,6 +111,7 @@ class SettingsProvider extends ChangeNotifier {
     if (disability != null) _disabilityType = disability;
     if (profileImagePath != null) _profileImagePath = profileImagePath;
     if (voiceFeedback != null) _voiceFeedbackEnabled = voiceFeedback;
+    if (robotIp != null) _robotIp = robotIp;
     notifyListeners();
   }
 

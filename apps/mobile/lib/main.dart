@@ -8,6 +8,7 @@ import 'providers/ble_provider.dart';
 import 'providers/alert_provider.dart';
 import 'providers/reminder_provider.dart';
 import 'providers/translation_provider.dart';
+import 'providers/summon_provider.dart';
 import 'services/notification_service.dart';
 import 'services/voice_service.dart';
 import 'theme/app_theme.dart';
@@ -44,6 +45,7 @@ class NovaCareApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AlertProvider()),
         ChangeNotifierProvider(create: (_) => ReminderProvider()),
         ChangeNotifierProvider(create: (_) => TranslationProvider()),
+        ChangeNotifierProvider(create: (_) => SummonProvider()),
       ],
       child: Consumer2<SettingsProvider, TranslationProvider>(
         builder: (context, settings, translation, _) {
@@ -74,6 +76,18 @@ class MainNavigationHolder extends StatefulWidget {
 
 class _MainNavigationHolderState extends State<MainNavigationHolder> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-connect to robot on startup using saved settings
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final settings = context.read<SettingsProvider>();
+      final summon = context.read<SummonProvider>();
+      final ip = settings.robotIp;
+      await summon.connectToRobot(robotHost: ip, port: 9999);
+    });
+  }
 
   final List<Widget> _screens = [
     const HomeScreen(),

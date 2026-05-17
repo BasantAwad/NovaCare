@@ -8,6 +8,7 @@ Handles incoming commands from frontend.
 
 import asyncio
 import json
+import os
 from typing import Set, Callable, Any, Optional
 from datetime import datetime
 import logging
@@ -25,6 +26,14 @@ class WebSocketServer:
     """
     
     def __init__(self, host: str = "0.0.0.0", port: int = 9999):
+        # Allow runtime override of websocket port via environment
+        env_port = os.getenv("RUNTIME_PORT") or os.getenv("NOVACARE_WS_PORT")
+        if env_port:
+            try:
+                port = int(env_port)
+            except Exception:
+                pass
+
         self.host = host
         self.port = port
         self.active_connections: Set[Any] = set()
@@ -50,13 +59,57 @@ class WebSocketServer:
             """Handle new WebSocket connection"""
             await self._handle_connection(websocket)
         
-        self.server = await websockets.serve(
-            handler,
-            self.host,
-            self.port,
-            ping_interval=20,
-            ping_timeout=20,
-        )
+        # Try to bind to the configured port, with graceful fallback
+        try:
+            self.server = await websockets.serve(
+                handler,
+                self.host,
+                self.port,
+                ping_interval=20,
+                ping_timeout=20,
+            )
+        except OSError as e:
+            logger.warning(f"Port {self.port} unavailable: {e}; attempting fallback ports")
+            bound = False
+            # Try a small range of alternative ports
+            for candidate in range(self.port + 1, self.port + 11):
+                try:
+                    self.server = await websockets.serve(
+                        handler,
+                        self.host,
+                        candidate,
+                        ping_interval=20,
+                        ping_timeout=20,
+                    )
+                    self.port = candidate
+                    bound = True
+                    break
+                except OSError:
+                    continue
+
+            if not bound:
+                # Last resort: bind to an ephemeral port
+                self.server = await websockets.serve(
+                    handler,
+                    self.host,
+                    0,
+                    ping_interval=20,
+                    ping_timeout=20,
+                )
+                # update to the actual bound port
+                if getattr(self.server, "sockets", None):
+                    try:
+                        self.port = self.server.sockets[0].getsockname()[1]
+                    except Exception:
+                        pass
+
+        # Update port if server bound to an OS-selected port
+        if getattr(self.server, "sockets", None) and self.port == 0:
+            try:
+                self.port = self.server.sockets[0].getsockname()[1]
+            except Exception:
+                pass
+
         self._running = True
         logger.info(f"WebSocket server started on ws://{self.host}:{self.port}")
     
@@ -67,6 +120,20 @@ class WebSocketServer:
             await self.server.wait_closed()
         self._running = False
         logger.info("WebSocket server stopped")
+    
+    def register_handler(self, message_type: str, handler: Callable):
+        """
+        Register a handler for a specific message type.
+        
+        This allows external modules (e.g., SummonController) to register
+        handlers for custom message types without modifying the server.
+        
+        Args:
+            message_type: The WebSocket message 'type' field to handle
+            handler: Async or sync callable that receives the payload dict
+        """
+        self.message_handlers[message_type] = handler
+        logger.info(f"Registered handler for message type: {message_type}")
     
     async def _handle_connection(self, websocket):
         """Handle a new WebSocket connection"""

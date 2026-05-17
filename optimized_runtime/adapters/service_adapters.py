@@ -17,7 +17,7 @@ Adapters handle:
 import asyncio
 import logging
 import httpx
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -189,6 +189,15 @@ class RobotServiceAdapter(ServiceAdapter):
         )
         return response is not None
 
+    async def play_audio(self, name: str, audio_base64: str, mime: str = "audio/mpeg") -> bool:
+        """Upload base64 audio to robot service and play it"""
+        response = await self._make_request(
+            "POST",
+            "/api/play_audio",
+            json={"name": name, "audio_base64": audio_base64, "mime": mime},
+        )
+        return response is not None
+
 
 class TTSServiceAdapter(ServiceAdapter):
     """Adapter for TTS Service (edge-tts-proxy)"""
@@ -254,7 +263,7 @@ class ServiceRegistry:
         return self.adapters.get(name)
     
     @property
-    def available_services(self) -> list[str]:
+    def available_services(self) -> List[str]:
         """Get list of available services"""
         return [name for name, adapter in self.adapters.items() if adapter.is_available]
 

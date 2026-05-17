@@ -24,17 +24,14 @@ class SettingsScreen extends StatelessWidget {
         children: [
           _buildSectionHeader(context, 'Account'),
           ListTile(
-            leading: Hero(
-              tag: 'profile_pic',
-              child: CircleAvatar(
-                backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                backgroundImage: settings.profileImagePath != null
-                    ? FileImage(File(settings.profileImagePath!))
-                    : null,
-                child: settings.profileImagePath == null
-                    ? Icon(Icons.person, color: theme.colorScheme.primary)
-                    : null,
-              ),
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              backgroundImage: settings.profileImagePath != null
+                  ? FileImage(File(settings.profileImagePath!))
+                  : null,
+              child: settings.profileImagePath == null
+                  ? Icon(Icons.person, color: theme.colorScheme.primary)
+                  : null,
             ),
             title: Text(settings.userName, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(settings.userId),
@@ -78,9 +75,15 @@ class SettingsScreen extends StatelessWidget {
 
           _buildSectionHeader(context, 'Robot Configuration'),
           ListTile(
-            title: const Text('Robot ID'),
-            subtitle: const Text('SERBOT-NC-001'),
-            trailing: const Icon(Icons.qr_code_scanner),
+            title: const Text('Robot IP Address'),
+            subtitle: Text(settings.robotIp),
+            trailing: const Icon(Icons.edit_rounded),
+            onTap: () => _showIpInputDialog(context, settings),
+          ),
+          const ListTile(
+            title: Text('Robot ID'),
+            subtitle: Text('SERBOT-NC-001'),
+            trailing: Icon(Icons.qr_code_scanner),
           ),
 
           const SizedBox(height: 40),
@@ -89,6 +92,47 @@ class SettingsScreen extends StatelessWidget {
               'NovaCare Assistant v1.0.0',
               style: theme.textTheme.bodySmall,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showIpInputDialog(BuildContext context, SettingsProvider settings) {
+    final controller = TextEditingController(text: settings.robotIp);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Robot IP Address'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter the IP address of the rover (Jetson Nano) running the orchestrator runtime.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Host IP / Name',
+                hintText: 'e.g. 192.168.1.100',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.text,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                settings.updateProfile(robotIp: controller.text.trim());
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

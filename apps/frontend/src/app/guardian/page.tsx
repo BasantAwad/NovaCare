@@ -98,7 +98,7 @@ export default function GuardianDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Robot configuration
-  const ROBOT_IP = "10.115.32.247";
+  const ROBOT_IP = "10.34.19.247";
   const VIDEO_FEED_URL = `http://${ROBOT_IP}:5000/video_feed`;
 
   // Dynamic state fetched from backend

@@ -36,6 +36,7 @@ import sys
 import time
 import signal
 import threading
+import tempfile
 
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -62,12 +63,44 @@ def check_api_key():
     """Ensure all API endpoints are authenticated."""
     if request.method == "OPTIONS":
         return
-    if request.path == "/health":
+    if request.path in ["/health", "/", "/ui", "/optimized_runtime/robot_ui/RobotUI.css"]:
         return
         
     key = request.headers.get("X-API-Key")
     if key != API_KEY and request.args.get("api_key") != API_KEY:
         return jsonify({"error": "Unauthorized"}), 401
+
+# ---------------------------------------------------------------------------
+# Robot UI Endpoints
+# ---------------------------------------------------------------------------
+@app.get("/")
+@app.get("/ui")
+def robot_ui():
+    """Serve the active robot face UI."""
+    try:
+        ui_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_robot_ui.html")
+        with open(ui_path, "r", encoding="utf-8") as f:
+            return f.read(), 200, {"Content-Type": "text/html"}
+    except Exception as e:
+        return f"Error loading Robot UI: {e}", 500
+
+@app.get("/optimized_runtime/robot_ui/RobotUI.css")
+def robot_ui_css():
+    """Serve the styles for the robot face UI."""
+    try:
+        # Dynamically resolve optimized_runtime/robot_ui/RobotUI.css
+        # Works with flat 'robot/' and nested 'services/robot/' structures
+        curr_dir = os.path.dirname(os.path.abspath(__file__))
+        base_dir = os.path.dirname(curr_dir)
+        css_path = os.path.join(base_dir, "optimized_runtime", "robot_ui", "RobotUI.css")
+        if not os.path.exists(css_path):
+            parent_of_parent = os.path.dirname(base_dir)
+            css_path = os.path.join(parent_of_parent, "optimized_runtime", "robot_ui", "RobotUI.css")
+            
+        with open(css_path, "r", encoding="utf-8") as f:
+            return f.read(), 200, {"Content-Type": "text/css"}
+    except Exception as e:
+        return f"Error loading Robot UI Stylesheet: {e}", 500
 
 # ---------------------------------------------------------------------------
 # Robot instance (lazy init on first request)
@@ -149,7 +182,7 @@ def move():
                         "valid": list(DIRECTION_MAP.keys())}), 400
 
     # Check for obstacles before moving forward
-    if direction == "forward" and robot().lidar.is_obstacle_ahead():
+    if direction == "forward" and robot().camera.is_obstacle_ahead():
         robot().motion.stop()
         return jsonify({
             "status": "blocked",
@@ -253,6 +286,43 @@ def tts_speak():
     # Speak asynchronously so the response returns immediately
     success = robot().audio.speak(text, lang=lang, block=False)
     return jsonify({"status": "speaking" if success else "tts_unavailable", "text": text})
+
+
+@app.post("/api/play_audio")
+def play_audio():
+    """Accept base64 audio and play it on the robot speaker.
+
+    Body: {"name": str, "audio_base64": str, "mime": str}
+    """
+    data = request.get_json(silent=True) or {}
+    audio_b64 = data.get("audio_base64")
+    name = data.get("name", f"phone_audio_{int(time.time())}")
+    mime = data.get("mime", "audio/mpeg")
+
+    if not audio_b64:
+        return jsonify({"error": "audio_base64 required"}), 400
+
+    import base64
+    try:
+        raw = base64.b64decode(audio_b64)
+    except Exception as e:
+        return jsonify({"error": f"invalid base64: {e}"}), 400
+
+    # Write to temp file and play
+    try:
+        tf = os.path.join(tempfile.gettempdir(), f"{name}")
+        # choose extension heuristically
+        ext = ".mp3" if "mpeg" in mime or "mp3" in mime else ".wav"
+        tf = tf + ext
+        with open(tf, "wb") as f:
+            f.write(raw)
+
+        # Play asynchronously so client gets immediate response
+        t = threading.Thread(target=robot().audio._play_file, args=(tf,), daemon=True)
+        t.start()
+        return jsonify({"status": "playing", "file": os.path.basename(tf)})
+    except Exception as e:
+        return jsonify({"error": f"playback failed: {e}"}), 500
 
 
 @app.post("/api/stt/listen")

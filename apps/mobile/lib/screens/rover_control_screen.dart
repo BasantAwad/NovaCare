@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/rover_provider.dart';
 import '../providers/translation_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/voice_service.dart';
+import '../services/robot_service.dart';
 
 class RoverControlScreen extends StatelessWidget {
   const RoverControlScreen({super.key});
@@ -12,6 +14,7 @@ class RoverControlScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final rover = context.watch<RoverProvider>();
     final translation = context.watch<TranslationProvider>();
+    final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +35,7 @@ class RoverControlScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Directional Pad (Arrows)
-                      _buildDPad(context, rover, theme),
+                      _buildDPad(context, rover, theme, settings),
 
                       const SizedBox(height: 48),
 
@@ -47,7 +50,7 @@ class RoverControlScreen extends StatelessWidget {
                               Colors.blueGrey,
                               () {
                                 VoiceService().speak("Moving to charging dock");
-                                rover.goHome();
+                                rover.goHome(settings.robotIp);
                               },
                             ),
                           ),
@@ -60,7 +63,7 @@ class RoverControlScreen extends StatelessWidget {
                               Colors.red,
                               () {
                                 VoiceService().speak("Stopping all movement");
-                                rover.cancelCurrentMode();
+                                rover.cancelCurrentMode(settings.robotIp);
                               },
                             ),
                           ),
@@ -117,7 +120,7 @@ class RoverControlScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDPad(BuildContext context, RoverProvider rover, ThemeData theme) {
+  Widget _buildDPad(BuildContext context, RoverProvider rover, ThemeData theme, SettingsProvider settings) {
     double buttonSize = 90;
 
     return Column(
@@ -125,6 +128,7 @@ class RoverControlScreen extends StatelessWidget {
         // Up Arrow
         _dPadButton(theme, Icons.keyboard_arrow_up_rounded, "Forward", () {
           VoiceService().speak("Moving forward");
+          rover.moveRover(RobotMovement.forward, settings.robotIp);
         }),
 
         const SizedBox(height: 12),
@@ -135,6 +139,7 @@ class RoverControlScreen extends StatelessWidget {
             // Left Arrow
             _dPadButton(theme, Icons.keyboard_arrow_left_rounded, "Left", () {
               VoiceService().speak("Turning left");
+              rover.moveRover(RobotMovement.left, settings.robotIp);
             }),
 
             SizedBox(width: buttonSize + 12), // Gap in center
@@ -142,6 +147,7 @@ class RoverControlScreen extends StatelessWidget {
             // Right Arrow
             _dPadButton(theme, Icons.keyboard_arrow_right_rounded, "Right", () {
               VoiceService().speak("Turning right");
+              rover.moveRover(RobotMovement.right, settings.robotIp);
             }),
           ],
         ),
@@ -151,6 +157,7 @@ class RoverControlScreen extends StatelessWidget {
         // Down Arrow
         _dPadButton(theme, Icons.keyboard_arrow_down_rounded, "Backward", () {
           VoiceService().speak("Moving backward");
+          rover.moveRover(RobotMovement.backward, settings.robotIp);
         }),
       ],
     );
