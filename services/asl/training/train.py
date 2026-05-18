@@ -200,7 +200,7 @@ class Trainer:
         # Save best
         if is_best:
             torch.save(checkpoint, self.checkpoint_dir / "best_model.pt")
-            print(f"  💾 Saved best model (val_acc: {self.best_val_acc:.2f}%)")
+            print(f"  [SAVED] Saved best model (val_acc: {self.best_val_acc:.2f}%)")
     
     def train(self, epochs: int) -> dict:
         """Full training loop"""
@@ -257,7 +257,7 @@ class Trainer:
             
             # Early stopping
             if self.early_stopping(val_acc):
-                print(f"\n⏹ Early stopping triggered at epoch {epoch}")
+                print(f"\n[STOP] Early stopping triggered at epoch {epoch}")
                 break
             
             print()

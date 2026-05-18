@@ -1,6 +1,6 @@
 import paramiko
+from shared.configs.robot_config import ROBOT_IP as ROVER_IP
 
-ROVER_IP = "10.34.19.247"
 ROVER_USER = "root"
 ROVER_PASS = "0000"
 

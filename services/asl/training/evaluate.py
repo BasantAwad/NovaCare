@@ -18,6 +18,8 @@ from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support
 )
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
@@ -194,14 +196,14 @@ def analyze_errors(
     # Sort by frequency
     sorted_errors = sorted(error_pairs.items(), key=lambda x: x[1], reverse=True)
     
-    print("\n📊 Top Misclassification Pairs:")
+    print("\n[INFO] Top Misclassification Pairs:")
     print("-" * 40)
     for (true, pred), count in sorted_errors[:top_k]:
-        print(f"  {true} → {pred}: {count} times")
+        print(f"  {true} -> {pred}: {count} times")
     
     # Confidence analysis on errors
     error_confidences = probabilities[error_indices].max(axis=1)
-    print(f"\n📉 Error Confidence Statistics:")
+    print(f"\n[INFO] Error Confidence Statistics:")
     print(f"  Mean confidence on errors: {error_confidences.mean():.3f}")
     print(f"  Median confidence on errors: {np.median(error_confidences):.3f}")
     print(f"  High-confidence errors (>0.9): {(error_confidences > 0.9).sum()}")
@@ -259,7 +261,7 @@ def main():
     print("=" * 60)
     
     # Detailed report
-    print("\n📋 Classification Report:")
+    print("\n[REPORT] Classification Report:")
     print(classification_report(
         y_test, results["predictions"],
         labels=list(range(data_config.num_classes)),
@@ -298,7 +300,7 @@ def main():
     with open(checkpoint_dir / "evaluation_results.json", "w") as f:
         json.dump(save_results, f, indent=2)
     
-    print(f"\n✅ Results saved to {checkpoint_dir}")
+    print(f"\n[SUCCESS] Results saved to {checkpoint_dir}")
 
 
 if __name__ == "__main__":

@@ -59,6 +59,23 @@ Run the unified launcher to install dependencies and start all services:
 ### 3. Manual Startup
 If you wish to run services individually, refer to the [Setup Guide](docs/setup/HOW_TO_RUN.md).
 
+### 4. SERBot Integration (Deploy + Runtime)
+
+To deploy the optimized runtime to the SERBot device and start local services from your development machine, use the provided PowerShell integration script. It prefers the `ROBOT_IP` environment variable but accepts a CLI argument.
+
+Windows example (uses env var override):
+```powershell
+$env:ROBOT_IP="192.168.137.206"
+.\run_serbot_integration.ps1
+```
+
+The integration script will:
+- Start local laptop services (ASL, LLM) when not using Docker.
+- SCP the `optimized_runtime` bundle to the robot and attempt to start it.
+- Prefer starting `docker-compose` on the robot if Docker is available, otherwise fall back to the runtime `startup.sh`.
+
+Ensure the robot has Docker if you want the robot UI and runtime started via containers.
+
 ## 📚 Documentation Index
 
 | Category | Description | Link |

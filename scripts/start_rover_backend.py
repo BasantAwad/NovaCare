@@ -2,7 +2,7 @@ import paramiko
 import time
 import sys
 
-ROVER_IP = "10.34.19.247"
+from shared.configs.robot_config import ROBOT_IP as ROVER_IP
 ROVER_USER = "root"
 ROVER_PASS = "0000"
 REMOTE_DIR = "/root/novacare"

@@ -226,6 +226,12 @@ class SummonController:
             message="Summon cancelled",
         )
 
+    async def _handle_rssi_update(self, payload: Dict[str, Any]):
+        """Handle incoming rssi_update from mobile."""
+        rssi = int(payload.get("rssi", -100))
+        heading = float(payload.get("heading", -1.0))
+        self.rssi_tracker.update(rssi, heading_deg=heading)
+
     async def _camera_polling_loop(self):
         """Asynchronous background loop to poll camera frames at a low frequency."""
         from services.robot.robot_hal import get_robot

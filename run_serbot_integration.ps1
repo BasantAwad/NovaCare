@@ -2,7 +2,7 @@
 
 param(
   [Parameter(Mandatory=$false)]
-  [string]$RobotIp = "10.34.19.247",
+  [string]$RobotIp = $null,
   [Parameter(Mandatory=$false)]
   [string]$RobotUser = "root",
   [Parameter(Mandatory=$false)]
@@ -13,6 +13,12 @@ param(
 
 
 $ErrorActionPreference = "Stop"
+
+# Allow environment variable `ROBOT_IP` to override default when provided,
+# otherwise use the previous default IP as a fallback.
+if (-not $RobotIp -or $RobotIp -eq "") {
+  if ($env:ROBOT_IP) { $RobotIp = $env:ROBOT_IP } else { $RobotIp = "192.168.137.206" }
+}
 
 # Coerce DeployOnly to a real boolean even if PowerShell passed it as a string
 if ($DeployOnly -is [bool]) {
@@ -48,21 +54,57 @@ if (-not $DeployOnlyBool) {
   # ASL
   $aslDir = Join-Path $RepoRoot "services\asl"
   if (!(Test-Path (Join-Path $aslDir "venv"))) {
-    throw "ASL venv not found at $aslDir\venv. Create it and install requirements.txt first."
+    Write-Host "ASL venv not found at $aslDir\venv - creating..." -ForegroundColor Yellow
+    $venvPath = Join-Path $aslDir "venv"
+    try {
+      python -m venv $venvPath
+    } catch {
+      try { py -3 -m venv $venvPath } catch { throw "Could not create virtualenv - ensure Python 3 is installed and on PATH." }
+    }
+    $pipExe = Join-Path $venvPath "Scripts\pip.exe"
+    if (Test-Path (Join-Path $aslDir "requirements.txt")) {
+      if (Test-Path $pipExe) { & $pipExe install -r (Join-Path $aslDir "requirements.txt") } else { & (Join-Path $venvPath "Scripts\python.exe") -m pip install -r (Join-Path $aslDir "requirements.txt") }
+    } else {
+      Write-Host "No requirements.txt in $aslDir - skipping pip install" -ForegroundColor Yellow
+    }
   }
   Start-Process powershell -NoNewWindow -ArgumentList '-Command', ("cd `"$aslDir`"; & .\venv\Scripts\Activate.ps1; python -m api.main --port 8000")
 
   # LLM
   $llmDir = Join-Path $RepoRoot "services\llm"
   if (!(Test-Path (Join-Path $llmDir "venv"))) {
-    throw "LLM venv not found at $llmDir\venv. Create it and install requirements.txt first."
+    Write-Host "LLM venv not found at $llmDir\venv - creating..." -ForegroundColor Yellow
+    $venvPath = Join-Path $llmDir "venv"
+    try {
+      python -m venv $venvPath
+    } catch {
+      try { py -3 -m venv $venvPath } catch { throw "Could not create virtualenv - ensure Python 3 is installed and on PATH." }
+    }
+    $pipExe = Join-Path $venvPath "Scripts\pip.exe"
+    if (Test-Path (Join-Path $llmDir "requirements.txt")) {
+      if (Test-Path $pipExe) { & $pipExe install -r (Join-Path $llmDir "requirements.txt") } else { & (Join-Path $venvPath "Scripts\python.exe") -m pip install -r (Join-Path $llmDir "requirements.txt") }
+    } else {
+      Write-Host "No requirements.txt in $llmDir - skipping pip install" -ForegroundColor Yellow
+    }
   }
   Start-Process powershell -NoNewWindow -ArgumentList '-Command', ("cd `"$llmDir`"; & .\venv\Scripts\Activate.ps1; python start_server.py")
 
   # Robot service (HAL REST API)
   $robotDir = Join-Path $RepoRoot "services\robot"
   if (!(Test-Path (Join-Path $robotDir "venv"))) {
-    throw "Robot venv not found at $robotDir\venv. Create it and install requirements.txt first."
+    Write-Host "Robot venv not found at $robotDir\venv - creating..." -ForegroundColor Yellow
+    $venvPath = Join-Path $robotDir "venv"
+    try {
+      python -m venv $venvPath
+    } catch {
+      try { py -3 -m venv $venvPath } catch { throw "Could not create virtualenv - ensure Python 3 is installed and on PATH." }
+    }
+    $pipExe = Join-Path $venvPath "Scripts\pip.exe"
+    if (Test-Path (Join-Path $robotDir "requirements.txt")) {
+      if (Test-Path $pipExe) { & $pipExe install -r (Join-Path $robotDir "requirements.txt") } else { & (Join-Path $venvPath "Scripts\python.exe") -m pip install -r (Join-Path $robotDir "requirements.txt") }
+    } else {
+      Write-Host "No requirements.txt in $robotDir - skipping pip install" -ForegroundColor Yellow
+    }
   }
   Start-Process powershell -NoNewWindow -ArgumentList '-Command', ("cd `"$robotDir`"; & .\venv\Scripts\Activate.ps1; python robot_service.py")
 
