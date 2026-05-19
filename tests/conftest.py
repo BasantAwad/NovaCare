@@ -90,11 +90,12 @@ async def seed_entities(db_conn, tx, test_rover_id, test_doctor_id, test_caregiv
     user_doc = "U_TST_DOC_00000000000000000000000"      # <=36
     user_cg = "U_TST_CG_00000000000000000000000"        # <=36
 
-    # Insert users
+    # Insert users (idempotent)
     await db_conn.execute(
         """
         INSERT INTO users (id, email, hashed_password, google_id, first_name, last_name, is_email_verified, is_active, created_at, updated_at)
         VALUES ($1,$2,NULL,NULL,'Test','Rover',TRUE,TRUE, NOW(), NOW())
+        ON CONFLICT (id) DO NOTHING
         """,
         user_rover,
         "rover.tst@example.com",
@@ -103,6 +104,7 @@ async def seed_entities(db_conn, tx, test_rover_id, test_doctor_id, test_caregiv
         """
         INSERT INTO users (id, email, hashed_password, google_id, first_name, last_name, is_email_verified, is_active, created_at, updated_at)
         VALUES ($1,$2,NULL,NULL,'Test','Doctor',TRUE,TRUE, NOW(), NOW())
+        ON CONFLICT (id) DO NOTHING
         """,
         user_doc,
         "doctor.tst@example.com",
@@ -111,10 +113,12 @@ async def seed_entities(db_conn, tx, test_rover_id, test_doctor_id, test_caregiv
         """
         INSERT INTO users (id, email, hashed_password, google_id, first_name, last_name, is_email_verified, is_active, created_at, updated_at)
         VALUES ($1,$2,NULL,NULL,'Test','Caregiver',TRUE,TRUE, NOW(), NOW())
+        ON CONFLICT (id) DO NOTHING
         """,
         user_cg,
         "caregiver.tst@example.com",
     )
+
 
     # Minimal lookup rows for enums/FKs
     # verification_statuses: pick 'pending' row if exists, else insert.
