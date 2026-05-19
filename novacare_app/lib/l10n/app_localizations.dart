@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// Simple localization system supporting English and Arabic.
 class AppLocalizations {
@@ -12,7 +13,9 @@ class AppLocalizations {
 
   static const List<LocalizationsDelegate> localizationsDelegates = [
     _AppLocalizationsDelegate(),
-    // Add Flutter's built-in delegates
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
   ];
 
   bool get isArabic => locale.languageCode == 'ar';

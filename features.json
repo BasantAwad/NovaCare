@@ -1,0 +1,141 @@
+{
+  "app_features": {
+    "global_navigation": {
+      "bottom_navigation_bar": [
+        "Home",
+        "Reminders",
+        "Alerts",
+        "Settings",
+        "TODO: Add Companion/AI Chat Screen to navigation"
+      ]
+    },
+    "TODO_global_ui_constraints": "TODO: Define strict accessibility constraints (72px minimum touch targets, dynamic font scaling, Arabic RTL layout support, WCAG AAA color contrast).",
+    "home_screen": {
+      "TODO_connection_state": "TODO: Implement global status bar for Connection Indicator (BLE/Firebase) and Active Mode (Idle/Following/Navigating).",
+      "telemetry_dashboard": [
+        {
+          "data_point": "Heart Rate",
+          "unit": "BPM"
+        },
+        {
+          "data_point": "Robot Battery",
+          "unit": "%"
+        },
+        {
+          "data_point": "Robot Location",
+          "unit": "Text/String"
+        },
+        {
+          "data_point": "Temperature",
+          "unit": "°C"
+        }
+      ],
+      "emergency_and_assistance_actions": [
+        {
+          "action": "SOS EMERGENCY",
+          "description": "Trigger alarm & notify caregivers."
+        },
+        {
+          "action": "SUMMON ROBOT",
+          "description": "Call the assistant to your location."
+        },
+        {
+          "action": "ROVER CONTROLS",
+          "description": "Manual movement & docking (Navigates to Rover Controls screen)."
+        }
+      ],
+      "TODO_autonomous_modes": "TODO: Add 'Follow Me' (User Tracking) and 'Auto-Dock' autonomous ROS navigation toggles."
+    },
+    "rover_controls_screen": {
+      "TODO_live_feed": "TODO: Integrate WebRTC / ROS Web Video Server live camera feed with YOLOv8 bounding box overlays.",
+      "telemetry_dashboard": [
+        {
+          "data_point": "Power",
+          "unit": "%"
+        },
+        {
+          "data_point": "Speed",
+          "unit": "m/s"
+        },
+        {
+          "data_point": "Obstacles",
+          "unit": "Status (e.g., Active/Clear)"
+        },
+        "TODO: Add LiDAR Proximity data point (halts < 0.5m)."
+      ],
+      "manual_controls": {
+        "directional_pad": [
+          "Up (Forward)",
+          "Down (Backward)",
+          "Left",
+          "Right"
+        ]
+      },
+      "quick_actions": [
+        {
+          "action": "Dock",
+          "description": "Commands the robot to return to its charging station.",
+          "color_hint": "Gray/Blue"
+        },
+        {
+          "action": "Stop",
+          "description": "Immediately halts all robot movement.",
+          "color_hint": "Red"
+        }
+      ],
+      "TODO_visual_assistance": "TODO: Add visual assistance triggers (e.g., 'Describe Scene', 'Read Text') for visually impaired users."
+    },
+    "TODO_companion_screen": "TODO: Create a dedicated Medical & Companionship LLM Chat Interface supporting Text, Voice (STT), and Sign Language inputs.",
+    "reminders_screen": {
+      "features": [
+        "List of custom reminders showing Time, Subtitle/Label, and Ringtone type.",
+        "Toggle switches for each reminder to turn them on or off.",
+        "Medication Reminders section (fetches schedule from the database).",
+        "Floating Action Button (+) to create a new reminder."
+      ]
+    },
+    "alerts_screen": {
+      "features": [
+        "List of historical system alerts and notifications (e.g., Obstacles, Low Battery, SOS triggered).",
+        "Empty state UI ('No alerts at the moment') featuring a large bell icon."
+      ]
+    },
+    "settings_screen": {
+      "account": [
+        {
+          "setting": "User Profile",
+          "description": "Displays User Name and User ID. Tapping it navigates to the edit profile screen."
+        },
+        "TODO: Add Guardian Access management for linked caregiver accounts."
+      ],
+      "accessibility": [
+        {
+          "setting": "High Contrast Mode",
+          "description": "Improve visibility for easier reading (Toggle)."
+        }
+      ],
+      "preferences": [
+        {
+          "setting": "Language",
+          "description": "Changes app language (e.g., English, Arabic)."
+        },
+        {
+          "setting": "Voice Feedback",
+          "description": "Enable robotic voice responses (Toggle)."
+        }
+      ],
+      "robot_configuration": [
+        {
+          "setting": "Robot ID",
+          "description": "Displays the connected Robot's ID (e.g., SERBOT-NC-001) with a QR code scanner icon to pair."
+        }
+      ]
+    },
+    "global_background_features": [
+      "Haptic Feedback (Light/Medium/Heavy) tied to interactions.",
+      "Background BLE connection persistence and telemetry polling.",
+      "Firebase sync for remote guardian access and medication schedule updates.",
+      "TODO: Implement Safety Critical Background Loop for BlazePose/YOLOv8 fall and hazard detection alerts."
+    ]
+  }
+}

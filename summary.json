@@ -1,0 +1,73 @@
+{
+  "project_name": "NovaCare Mobile App",
+  "project_type": "Mobile Application (AI & Robotics Companion)",
+  "workspace_path": "/Users/muhammedfarrag/NovaCare/NovaCare/novacare_app",
+  "description": "A highly advanced Flutter-based mobile application acting as a companion interface for the NovaCare assistive rover project. Designed meticulously for users with disabilities, it provides manual rover controls, real-time health telemetry, autonomous AI features, and medical companionship.",
+  "tech_stack": {
+    "framework": "Flutter (SDK >=3.2.0 <4.0.0)",
+    "language": "Dart",
+    "state_management": "Provider",
+    "cloud_backend": "Firebase (Realtime Database, Messaging, Auth)",
+    "local_connectivity": "Bluetooth Low Energy (BLE) via flutter_blue_plus",
+    "ai_and_robotics_integrations": "WebRTC, ROS Web Video Server, BlazePose/YOLOv8 (Vision), Local LLMs, STT/TTS (Voice), Sign Language Recognition"
+  },
+  "architecture_pattern": "Provider Pattern",
+  "state_management_providers": [
+    {
+      "name": "SettingsProvider",
+      "description": "Handles app-wide configurations such as theme (Light/Dark/High Contrast), localization (English/Arabic), user profiles, and Caregiver/Guardian access linking."
+    },
+    {
+      "name": "RoverProvider",
+      "description": "Manages rover telemetry data (Battery, Heart Rate, Location, Temp, LiDAR proximity) and dispatches commands (Manual Movement, Auto-Dock, Follow Me)."
+    },
+    {
+      "name": "BleProvider",
+      "description": "Handles BLE scanning, connection state, and interaction with ESP32 services."
+    }
+  ],
+  "communication_layers": {
+    "ble": "Short-range, low-latency command execution and real-time telemetry from ESP32.",
+    "firebase": "Long-range command execution, persistent telemetry, alerts, and guardian access sync.",
+    "ros_webrtc": "Live camera feed streaming for visual assistance and object detection."
+  },
+  "core_features_and_redesign_goals": {
+    "ui_ux_accessibility": [
+      "Strict WCAG AAA color contrast compliance.",
+      "72px minimum touch target size for all interactive elements.",
+      "Dynamic font scaling and full RTL support for Arabic layout.",
+      "Voice feedback toggles for visually impaired users."
+    ],
+    "telemetry_and_controls": [
+      "Real-time vital and rover monitoring: Heart Rate, Battery, Location, Temp.",
+      "Dedicated Rover Controls screen with a directional pad, speed, power, and obstacle/LiDAR proximity alerts.",
+      "Autonomous modes: 'Follow Me' (User Tracking) and 'Auto-Dock'."
+    ],
+    "emergency_and_health": [
+      "SOS Emergency trigger that sounds an alarm and notifies linked caregivers.",
+      "Medication Request and scheduling (Reminders screen synced via Firebase).",
+      "Safety Critical Background Loop utilizing BlazePose/YOLOv8 for fall and hazard detection alerts."
+    ],
+    "ai_companionship_and_vision": [
+      "Dedicated Medical & Companionship LLM Chat Interface supporting Text, Voice (STT), and Sign Language inputs.",
+      "Visual Assistance features like 'Describe Scene' and 'Read Text' using live camera feeds with YOLOv8 overlays."
+    ]
+  },
+  "folder_structure": {
+    "lib/main.dart": "App entry point",
+    "lib/l10n/": "App localizations (English & Arabic)",
+    "lib/providers/": "State management implementations",
+    "lib/screens/": "Application screens (Home, Controls, Reminders, Alerts, Settings, Chat)",
+    "lib/services/": "Wrappers for external hardware/network (BLE, Firebase, WebRTC/ROS)",
+    "lib/theme/": "Theme definitions and semantic colors",
+    "lib/widgets/": "Reusable components (action buttons, telemetry cards, live feed overlays)"
+  },
+  "key_dependencies": {
+    "firebase_core": "^3.8.1",
+    "firebase_database": "^11.2.1",
+    "flutter_blue_plus": "^1.35.3",
+    "provider": "^6.1.2",
+    "permission_handler": "^11.3.1",
+    "geolocator": "^13.0.2"
+  }
+}

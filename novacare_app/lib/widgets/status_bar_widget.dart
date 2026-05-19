@@ -3,9 +3,14 @@ import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../l10n/app_localizations.dart';
 
-/// Displays the rover's current status (online/offline, mode) as a compact bar.
+/// Compact rover status strip (online state + current mode).
+///
+/// Refactored to NovaCare design tokens. Logic preserved from the previous
+/// implementation — still driven by [RoverProvider.isRoverOnline] /
+/// [currentMode].
 class StatusBarWidget extends StatelessWidget {
   const StatusBarWidget({super.key});
 
@@ -13,53 +18,35 @@ class StatusBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final rover = context.watch<RoverProvider>();
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    final modeLabel = _getModeLabel(rover.currentMode, l10n);
-    final modeColor = _getModeColor(rover.currentMode);
+    final online = rover.isRoverOnline;
+    final modeLabel = _modeLabel(rover.currentMode, l10n);
+    final modeColor = _modeColor(rover.currentMode);
+    final showMode = rover.currentMode != RoverMode.idle;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        gradient: rover.isRoverOnline
-            ? LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: isDark
-                    ? [const Color(0xFF064E3B), const Color(0xFF0F172A)]
-                    : [const Color(0xFFECFDF5), const Color(0xFFF0FDF4)],
-              )
-            : LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: isDark
-                    ? [const Color(0xFF3F0000), const Color(0xFF0F172A)]
-                    : [const Color(0xFFFEF2F2), const Color(0xFFFFF1F2)],
-              ),
-        borderRadius: BorderRadius.circular(16),
+        color: online ? AppColors.success2 : AppColors.danger2,
+        borderRadius: BorderRadius.circular(Radii.md),
         border: Border.all(
-          color: rover.isRoverOnline
-              ? AppColors.successGreen.withOpacity(0.3)
-              : AppColors.batteryLow.withOpacity(0.3),
-          width: 1,
+          color: online
+              ? AppColors.success.withOpacity(0.3)
+              : AppColors.danger.withOpacity(0.3),
         ),
       ),
       child: Row(
         children: [
-          // Status dot
           Container(
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: rover.isRoverOnline
-                  ? AppColors.onlineStatus
-                  : AppColors.offlineStatus,
               shape: BoxShape.circle,
-              boxShadow: rover.isRoverOnline
+              color: online ? AppColors.success : AppColors.danger,
+              boxShadow: online
                   ? [
                       BoxShadow(
-                        color: AppColors.onlineStatus.withOpacity(0.4),
+                        color: AppColors.success.withOpacity(0.4),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -68,60 +55,39 @@ class StatusBarWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Status text
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${l10n.translate('rover_status')}: ${rover.isRoverOnline ? l10n.translate('online') : l10n.translate('offline')}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  '${l10n.translate('rover_status')}: '
+                  '${online ? l10n.translate('online') : l10n.translate('offline')}',
+                  style: AppText.bodyStrong(),
                 ),
-                if (rover.currentMode != RoverMode.idle) ...[
+                if (showMode) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    modeLabel,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: modeColor,
-                    ),
-                  ),
+                  Text(modeLabel, style: AppText.caption(color: modeColor)),
                 ],
               ],
             ),
           ),
-
-          // Mode badge
-          if (rover.currentMode != RoverMode.idle)
+          if (showMode)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: modeColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(Radii.pill),
                 border: Border.all(color: modeColor.withOpacity(0.3)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _getModeIcon(rover.currentMode),
-                    size: 14,
-                    color: modeColor,
-                  ),
+                  Icon(_modeIcon(rover.currentMode), size: 14, color: modeColor),
                   const SizedBox(width: 4),
                   Text(
                     'Active',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: modeColor,
-                    ),
+                    style: AppText.caption(color: modeColor)
+                        .copyWith(fontWeight: FontWeight.w700, fontSize: 11),
                   ),
                 ],
               ),
@@ -131,48 +97,27 @@ class StatusBarWidget extends StatelessWidget {
     );
   }
 
-  String _getModeLabel(RoverMode mode, AppLocalizations l10n) {
-    switch (mode) {
-      case RoverMode.idle:
-        return l10n.translate('idle');
-      case RoverMode.followingUser:
-        return l10n.translate('following');
-      case RoverMode.navigatingHome:
-        return l10n.translate('navigating_home');
-      case RoverMode.deliveringMedicine:
-        return l10n.translate('delivering');
-      case RoverMode.emergency:
-        return l10n.translate('emergency_mode');
-    }
-  }
+  String _modeLabel(RoverMode m, AppLocalizations l10n) => switch (m) {
+        RoverMode.idle => l10n.translate('idle'),
+        RoverMode.followingUser => l10n.translate('following'),
+        RoverMode.navigatingHome => l10n.translate('navigating_home'),
+        RoverMode.deliveringMedicine => l10n.translate('delivering'),
+        RoverMode.emergency => l10n.translate('emergency_mode'),
+      };
 
-  Color _getModeColor(RoverMode mode) {
-    switch (mode) {
-      case RoverMode.idle:
-        return AppColors.neutralGray400;
-      case RoverMode.followingUser:
-        return AppColors.followBlue;
-      case RoverMode.navigatingHome:
-        return AppColors.homeTeal;
-      case RoverMode.deliveringMedicine:
-        return AppColors.medicationPurple;
-      case RoverMode.emergency:
-        return AppColors.sosRed;
-    }
-  }
+  Color _modeColor(RoverMode m) => switch (m) {
+        RoverMode.idle => AppColors.inkMuted,
+        RoverMode.followingUser => AppColors.brandTeal,
+        RoverMode.navigatingHome => AppColors.brandLeaf,
+        RoverMode.deliveringMedicine => AppColors.accent,
+        RoverMode.emergency => AppColors.danger,
+      };
 
-  IconData _getModeIcon(RoverMode mode) {
-    switch (mode) {
-      case RoverMode.idle:
-        return Icons.pause_circle_rounded;
-      case RoverMode.followingUser:
-        return Icons.directions_walk_rounded;
-      case RoverMode.navigatingHome:
-        return Icons.home_rounded;
-      case RoverMode.deliveringMedicine:
-        return Icons.medication_rounded;
-      case RoverMode.emergency:
-        return Icons.emergency_rounded;
-    }
-  }
+  IconData _modeIcon(RoverMode m) => switch (m) {
+        RoverMode.idle => Icons.pause_circle_rounded,
+        RoverMode.followingUser => Icons.directions_walk_rounded,
+        RoverMode.navigatingHome => Icons.home_rounded,
+        RoverMode.deliveringMedicine => Icons.medication_rounded,
+        RoverMode.emergency => Icons.emergency_rounded,
+      };
 }

@@ -80,6 +80,20 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Summon the rover to the user's current location.
+  /// TODO(backend): publish a ROS goal pose via MQTT/Firebase to the robot.
+  Future<void> summonRobot() async {
+    _isProcessingCommand = true;
+    _currentMode = RoverMode.followingUser;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    _lastCommandStatus = 'Summoning SERBOT-NC-001 to you';
+    _isProcessingCommand = false;
+    notifyListeners();
+  }
+
   /// Request medication delivery
   Future<void> requestMedication() async {
     _isProcessingCommand = true;

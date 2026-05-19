@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
 
-/// Animated splash screen with NovaCare branding.
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
+import '../widgets/nova_logo.dart';
+import 'main_navigation.dart';
+
+/// Branded splash screen — warm cream canvas, breathing NovaCare logo,
+/// transitions into the main tabbed shell after 2.5s.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,202 +16,179 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late AnimationController _scaleController;
-  late AnimationController _pulseController;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _pulseAnimation;
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..forward();
+
+  late final AnimationController _breathe = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3600),
+  )..repeat(reverse: true);
 
   @override
   void initState() {
     super.initState();
+    // TODO(backend): wait for Firebase.initializeApp() + BLE permissions
+    // resolution here instead of a fixed timer.
+    Future.delayed(const Duration(milliseconds: 2500), _goHome);
+  }
 
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
+  void _goHome() {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (_, a, __) => FadeTransition(
+          opacity: a,
+          child: const MainNavigation(),
+        ),
+      ),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
-    );
-
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _scaleAnimation = CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.elasticOut,
-    );
-
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    // Start animations
-    _fadeController.forward();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _scaleController.forward();
-    });
-
-    // Navigate after splash
-    Future.delayed(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const HomeScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
-      }
-    });
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
-    _scaleController.dispose();
-    _pulseController.dispose();
+    _intro.dispose();
+    _breathe.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF0F172A), const Color(0xFF1E1B4B)]
-                : [const Color(0xFF2563EB), const Color(0xFF7C3AED)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(flex: 2),
+      backgroundColor: AppColors.canvas,
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_intro, _breathe]),
+          builder: (context, _) {
+            final introT = Curves.easeOutCubic.transform(_intro.value);
+            final breatheT = Curves.easeInOut.transform(_breathe.value);
 
-              // ─── Animated Logo ──────────────────────────────
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: child,
-                      );
-                    },
-                    child: Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.1),
-                            blurRadius: 40,
-                            spreadRadius: 10,
+            return Column(
+              children: [
+                const Spacer(flex: 3),
+                Opacity(
+                  opacity: introT,
+                  child: Transform.translate(
+                    offset: Offset(0, 16 * (1 - introT)),
+                    child: Transform.scale(
+                      scale: 0.96 + 0.04 * breatheT,
+                      child: Container(
+                        width: 168,
+                        height: 168,
+                        decoration: BoxDecoration(
+                          color: AppColors.paper,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.line,
+                            width: 2,
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.health_and_safety_rounded,
-                        size: 72,
-                        color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accent
+                                  .withOpacity(0.18 + 0.12 * breatheT),
+                              blurRadius: 40 + 20 * breatheT,
+                              spreadRadius: 4 + 4 * breatheT,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(18),
+                        child: const NovaLogo(size: 130),
                       ),
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // ─── Title ──────────────────────────────────────
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  children: [
-                    const Text(
-                      'NovaCare',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your Assistive Companion',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.8),
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Spacer(flex: 2),
-
-              // ─── Loading Indicator ──────────────────────────
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.7),
+                const SizedBox(height: 28),
+                Opacity(
+                  opacity: introT,
+                  child: Column(
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: AppText.display1().copyWith(fontSize: 38),
+                          children: const [
+                            TextSpan(
+                              text: 'Nova',
+                              style: TextStyle(color: AppColors.inkTeal),
+                            ),
+                            TextSpan(
+                              text: 'Care',
+                              style: TextStyle(color: AppColors.accent),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Initializing...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.6),
+                      const SizedBox(height: 4),
+                      Text(
+                        'ASSISTIVE ROBOTICS',
+                        style: AppText.eyebrow().copyWith(fontSize: 11),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 48),
-            ],
-          ),
+                const Spacer(flex: 4),
+                Opacity(
+                  opacity: introT,
+                  child: const _LoadingDots(),
+                ),
+                const SizedBox(height: 48),
+              ],
+            );
+          },
         ),
       ),
+    );
+  }
+}
+
+class _LoadingDots extends StatefulWidget {
+  const _LoadingDots();
+
+  @override
+  State<_LoadingDots> createState() => _LoadingDotsState();
+}
+
+class _LoadingDotsState extends State<_LoadingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(3, (i) {
+            final phase = (_c.value + i * 0.18) % 1.0;
+            final opacity = (0.4 + 0.6 * (1 - (phase * 2 - 1).abs())).clamp(0.0, 1.0);
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Opacity(
+                opacity: opacity,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.inkTeal,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

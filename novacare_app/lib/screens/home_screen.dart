@@ -4,14 +4,22 @@ import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
 import '../l10n/app_localizations.dart';
-import '../widgets/status_bar_widget.dart';
-import '../widgets/action_button_widget.dart';
-import '../widgets/telemetry_card_widget.dart';
-import '../widgets/connection_indicator.dart';
-import 'settings_screen.dart';
+import '../widgets/nova_logo.dart';
+import '../widgets/nc_primitives.dart';
+import '../widgets/nc_bottom_nav.dart';
+import '../widgets/telemetry_card_widget.dart'
+    show NcTile, NcTileValue, NcBattFillBar, NcTempBar, NcRadarDot, NcEcgWaveform;
+import '../widgets/action_button_widget.dart' show NcBtnCard, NcBtnCardVariant;
+import 'rover_controls_screen.dart';
+import 'summon_screen.dart';
+import 'main_navigation.dart';
 
-/// Main dashboard screen with big action buttons and rover telemetry.
+/// HomeScreen — top of the tab stack.
+///
+/// Driven by [RoverProvider] (mock telemetry for now; real BLE/Firebase
+/// streams wire in via TODOs below). Matches the layout in SKILL §4.1.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -19,356 +27,321 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  late AnimationController _staggerController;
-
+class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _staggerController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..forward();
-
-    // Start simulated telemetry updates
+    // TODO(backend): replace startSimulatedUpdates() with a real BLE
+    // notification subscription via BleService.subscribeTelemetry().
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RoverProvider>().startSimulatedUpdates();
     });
   }
 
   @override
-  void dispose() {
-    _staggerController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final rover = context.watch<RoverProvider>();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // ─── App Bar ─────────────────────────────────────
-            SliverAppBar(
-              floating: true,
-              snap: true,
-              backgroundColor: theme.scaffoldBackgroundColor,
-              title: Row(
+      backgroundColor: AppColors.canvas,
+      body: Column(
+        children: [
+          NcAppBar(
+            leading: const NovaWordmark(),
+            status: rover.isRoverOnline
+                ? NcConnectionStatus.online
+                : NcConnectionStatus.offline,
+            statusLabel: rover.isRoverOnline ? 'Live' : 'Offline',
+            battery: rover.batteryLevel,
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.health_and_safety_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                  // ─── Hero greeting ─────────────────────────────
+                  Text(_greeting(), style: AppText.display1()),
+                  const SizedBox(height: 4),
+                  Text(
+                    'SERBOT-NC-001 is nearby and ready.',
+                    style: AppText.body(color: AppColors.inkMuted),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.translate('app_title'),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        l10n.translate('app_subtitle'),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                // Connection indicator
-                const ConnectionIndicator(),
-                const SizedBox(width: 4),
-                // Settings gear icon
-                IconButton(
-                  icon: Icon(
-                    Icons.settings_rounded,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                  tooltip: l10n.translate('settings'),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
 
-            // ─── Rover Status Bar ────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 0,
-                child: const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: StatusBarWidget(),
-                ),
-              ),
-            ),
-
-            // ─── Telemetry Cards ─────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TelemetryCardWidget(
-                          icon: Icons.battery_charging_full_rounded,
-                          label: l10n.translate('battery'),
-                          value: '${rover.batteryLevel}%',
-                          color: AppColors.batteryColor(rover.batteryLevel),
-                          progress: rover.batteryLevel / 100,
-                        ),
+                  // ─── Telemetry grid ────────────────────────────
+                  NcSectionHead(
+                    title: 'Telemetry',
+                    action: GestureDetector(
+                      onTap: () {
+                        // TODO(feature): full telemetry history screen with
+                        // charts (HR trend, battery curve, temp log).
+                      },
+                      child: Text(
+                        'View all',
+                        style: AppText.caption(color: AppColors.brandTeal)
+                            .copyWith(fontWeight: FontWeight.w700),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TelemetryCardWidget(
-                          icon: Icons.favorite_rounded,
-                          label: l10n.translate('heart_rate'),
-                          value: '${rover.heartRate}',
-                          subtitle: l10n.translate('bpm'),
-                          color: AppColors.heartRateColor(rover.heartRate),
-                          progress: rover.heartRate / 160,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 2,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TelemetryCardWidget(
-                          icon: Icons.location_on_rounded,
-                          label: l10n.translate('location'),
-                          value: rover.roverLocation,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TelemetryCardWidget(
-                          icon: Icons.thermostat_rounded,
-                          label: l10n.translate('temperature'),
-                          value: '${rover.temperature.toStringAsFixed(1)}°C',
-                          color: AppColors.warningAmber,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ─── Section Title ───────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 3,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                  child: Text(
-                    'Quick Actions',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface,
                     ),
                   ),
-                ),
-              ),
-            ),
+                  _telemetryGrid(rover, l10n),
 
-            // ─── SOS Emergency Button (PROMINENT) ────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: ActionButtonWidget(
-                    icon: Icons.emergency_rounded,
-                    label: l10n.translate('sos_emergency'),
-                    subtitle: l10n.translate('sos_desc'),
-                    color: AppColors.sosRed,
-                    backgroundColor: isDark ? AppColors.sosBgDark : AppColors.sosBg,
-                    isLarge: true,
-                    isEmergency: true,
-                    isLoading: rover.isProcessingCommand &&
+                  // ─── Quick actions ─────────────────────────────
+                  const NcSectionHead(title: 'Quick actions'),
+                  NcBtnCard(
+                    variant: NcBtnCardVariant.sos,
+                    icon: const Icon(Icons.emergency_rounded),
+                    title: l10n.translate('sos_emergency'),
+                    subtitle: 'Notify caregivers & sound alarm',
+                    loading: rover.isProcessingCommand &&
                         rover.currentMode == RoverMode.emergency,
-                    onPressed: () => _showSOSConfirmation(context, rover, l10n),
+                    onTap: () => _confirmSos(context, rover, l10n),
                   ),
-                ),
-              ),
-            ),
-
-            // ─── Action Button Grid ──────────────────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 5,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      // Medication Button
-                      Expanded(
-                        child: ActionButtonWidget(
-                          icon: Icons.medication_rounded,
-                          label: l10n.translate('medication'),
-                          subtitle: l10n.translate('medication_desc'),
-                          color: AppColors.medicationPurple,
-                          backgroundColor: isDark
-                              ? AppColors.medicationBgDark
-                              : AppColors.medicationBg,
-                          isLoading: rover.isProcessingCommand &&
-                              rover.currentMode == RoverMode.deliveringMedicine,
-                          onPressed: () async {
-                            HapticFeedback.mediumImpact();
-                            await rover.requestMedication();
-                            _showCommandStatus(context, rover);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Home / Dock Button
-                      Expanded(
-                        child: ActionButtonWidget(
-                          icon: Icons.home_rounded,
-                          label: l10n.translate('home_dock'),
-                          subtitle: l10n.translate('home_dock_desc'),
-                          color: AppColors.homeTeal,
-                          backgroundColor: isDark
-                              ? AppColors.homeBgDark
-                              : AppColors.homeBg,
-                          isLoading: rover.isProcessingCommand &&
-                              rover.currentMode == RoverMode.navigatingHome,
-                          onPressed: () async {
-                            HapticFeedback.mediumImpact();
-                            await rover.goHome();
-                            _showCommandStatus(context, rover);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ─── Follow Me Button ────────────────────────────
-            SliverToBoxAdapter(
-              child: _buildStaggeredChild(
-                index: 6,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  child: ActionButtonWidget(
-                    icon: Icons.directions_walk_rounded,
-                    label: l10n.translate('follow_me'),
-                    subtitle: l10n.translate('follow_me_desc'),
-                    color: AppColors.followBlue,
-                    backgroundColor: isDark
-                        ? AppColors.followBgDark
-                        : AppColors.followBg,
-                    isActive: rover.currentMode == RoverMode.followingUser,
-                    isLoading: rover.isProcessingCommand &&
+                  const SizedBox(height: 10),
+                  NcBtnCard(
+                    variant: NcBtnCardVariant.brand,
+                    icon: const Icon(Icons.front_hand_rounded),
+                    title: 'Summon robot',
+                    subtitle: 'Call SERBOT-NC-001 to you',
+                    loading: rover.isProcessingCommand &&
                         rover.currentMode == RoverMode.followingUser,
-                    onPressed: () async {
+                    onTap: () async {
                       HapticFeedback.mediumImpact();
-                      await rover.toggleFollowMe();
-                      _showCommandStatus(context, rover);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SummonScreen(),
+                          fullscreenDialog: true,
+                        ),
+                      );
                     },
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  NcBtnCard(
+                    variant: NcBtnCardVariant.brand,
+                    icon: const Icon(Icons.videogame_asset_rounded),
+                    title: 'Rover controls',
+                    subtitle: 'D-pad, live feed, dock & avoid',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RoverControlsScreen(),
+                          fullscreenDialog: true,
+                        ),
+                      );
+                    },
+                  ),
+
+                  // ─── Autonomous ────────────────────────────────
+                  NcSectionHead(
+                    title: 'Autonomous',
+                    action: const NcChip(label: 'Beta', style: NcChipStyle.beta),
+                  ),
+                  NcGroup(
+                    children: [
+                      NcRow(
+                        icon: const Icon(Icons.directions_walk_rounded),
+                        title: l10n.translate('follow_me'),
+                        subtitle: l10n.translate('follow_me_desc'),
+                        trailing: NcSwitch(
+                          value: rover.currentMode == RoverMode.followingUser,
+                          onChanged: (_) async {
+                            HapticFeedback.mediumImpact();
+                            await rover.toggleFollowMe();
+                            if (mounted) _toast(context, rover);
+                          },
+                          semanticLabel: l10n.translate('follow_me'),
+                        ),
+                      ),
+                      NcRow(
+                        icon: const Icon(Icons.home_rounded),
+                        title: l10n.translate('home_dock'),
+                        subtitle: l10n.translate('home_dock_desc'),
+                        trailing: NcSwitch(
+                          value: rover.currentMode == RoverMode.navigatingHome,
+                          onChanged: (_) async {
+                            HapticFeedback.mediumImpact();
+                            // TODO(backend): toggle AprilTag dock-detection
+                            // ROS node via BLE write.
+                            await rover.goHome();
+                            if (mounted) _toast(context, rover);
+                          },
+                          semanticLabel: l10n.translate('home_dock'),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                ],
               ),
             ),
-
-            // Bottom padding
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 40),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStaggeredChild({required int index, required Widget child}) {
-    final begin = (index * 0.1).clamp(0.0, 0.7);
-    final end = (begin + 0.4).clamp(0.0, 1.0);
+  // ──────────────────────────────────────────────────────────────────
+  //  Telemetry grid
+  // ──────────────────────────────────────────────────────────────────
+  Widget _telemetryGrid(RoverProvider rover, AppLocalizations l10n) {
+    final battColor = AppColors.batteryColor(rover.batteryLevel);
+    // Rough runtime estimate: assume ~7h on a full charge.
+    final minutesLeft = (rover.batteryLevel / 100 * 7 * 60).round();
+    final battEta =
+        '${minutesLeft ~/ 60}h ${(minutesLeft % 60).toString().padLeft(2, '0')}m left';
 
-    return AnimatedBuilder(
-      animation: _staggerController,
-      builder: (context, _) {
-        final value = Curves.easeOutCubic.transform(
-          (((_staggerController.value - begin) / (end - begin))
-              .clamp(0.0, 1.0)),
-        );
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 30 * (1 - value)),
-            child: child,
+    return Column(
+      children: [
+        SizedBox(
+          height: 184,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: NcTile(
+                  label: l10n.translate('heart_rate'),
+                  decoration: const Icon(
+                    Icons.favorite_rounded,
+                    color: AppColors.danger,
+                    size: 18,
+                  ),
+                  value: NcTileValue(
+                    value: '${rover.heartRate}',
+                    unit: 'bpm',
+                  ),
+                  footer: const NcEcgWaveform(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: NcTile(
+                  label: 'Robot battery',
+                  value: NcTileValue(value: '${rover.batteryLevel}', unit: '%'),
+                  decoration: Icon(
+                    Icons.battery_full_rounded,
+                    color: battColor,
+                    size: 18,
+                  ),
+                  footer: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(battEta, style: AppText.caption()),
+                      const SizedBox(height: 6),
+                      NcBattFillBar(
+                        percent: rover.batteryLevel / 100,
+                        color: battColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 184,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: NcTile(
+                  label: l10n.translate('location'),
+                  decoration: const NcRadarDot(),
+                  value: NcTileValue(value: rover.roverLocation),
+                  footer: Text(
+                    _zoneLabel(rover.roverLocation),
+                    style: AppText.caption(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: NcTile(
+                  label: l10n.translate('temperature'),
+                  decoration: Icon(
+                    Icons.thermostat_rounded,
+                    color: _tempColor(rover.temperature),
+                    size: 18,
+                  ),
+                  value: NcTileValue(
+                    value: rover.temperature.toStringAsFixed(1),
+                    unit: '°C',
+                  ),
+                  footer: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_tempLabel(rover.temperature), style: AppText.caption()),
+                      const SizedBox(height: 6),
+                      NcTempBar(tempC: rover.temperature),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  void _showSOSConfirmation(
-    BuildContext context,
-    RoverProvider rover,
-    AppLocalizations l10n,
-  ) {
-    HapticFeedback.heavyImpact();
+  // TODO(backend): derive zone + comfort labels from real sensor metadata
+  // instead of these heuristics.
+  String _zoneLabel(String room) {
+    switch (room.toLowerCase()) {
+      case 'kitchen':
+        return 'Zone 02 · West';
+      case 'living room':
+        return 'Zone 01 · Main';
+      case 'bedroom':
+        return 'Zone 03 · East';
+      default:
+        return 'Zone — · Home';
+    }
+  }
 
+  String _tempLabel(double c) {
+    if (c < 18) return 'Cool';
+    if (c < 25) return 'Comfortable';
+    if (c < 29) return 'Warm';
+    return 'Hot';
+  }
+
+  Color _tempColor(double c) {
+    if (c < 18) return AppColors.info;
+    if (c < 25) return AppColors.success;
+    if (c < 29) return AppColors.accent;
+    return AppColors.danger;
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  void _confirmSos(BuildContext context, RoverProvider rover, AppLocalizations l10n) {
+    HapticFeedback.heavyImpact();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.lg),
+        ),
+        backgroundColor: AppColors.paper,
         title: Row(
           children: [
-            const Icon(Icons.emergency_rounded, color: AppColors.sosRed, size: 28),
-            const SizedBox(width: 12),
-            Text(l10n.translate('sos_emergency')),
+            const Icon(Icons.emergency_rounded, color: AppColors.danger),
+            const SizedBox(width: 10),
+            Text(l10n.translate('sos_emergency'), style: AppText.display3()),
           ],
         ),
-        content: Text(
-          l10n.translate('sos_confirm'),
-          style: const TextStyle(fontSize: 16, height: 1.5),
-        ),
+        content: Text(l10n.translate('sos_confirm'), style: AppText.body()),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -376,16 +349,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.sosRed,
+              backgroundColor: AppColors.danger,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(Radii.sm),
               ),
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
+              // TODO(backend): write SOS to Firebase /sos, send FCM push to
+              // caregivers, and trigger robot siren via BLE.
               await rover.sendEmergency();
-              if (context.mounted) _showCommandStatus(context, rover);
+              if (context.mounted) _toast(context, rover);
             },
             child: Text(l10n.translate('confirm')),
           ),
@@ -394,29 +369,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _showCommandStatus(BuildContext context, RoverProvider rover) {
-    if (rover.lastCommandStatus != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  rover.lastCommandStatus!,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-          backgroundColor: AppColors.successGreen,
-          duration: const Duration(seconds: 2),
+  void _toast(BuildContext context, RoverProvider rover) {
+    final msg = rover.lastCommandStatus;
+    if (msg == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: AppText.bodyStrong(color: Colors.white)),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.success,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.md),
         ),
-      );
-    }
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }

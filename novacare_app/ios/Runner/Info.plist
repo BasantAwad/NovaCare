@@ -50,7 +50,11 @@
 
 	<!-- Camera Permission -->
 	<key>NSCameraUsageDescription</key>
-	<string>NovaCare may use the camera for visual marker detection in Follow Me mode.</string>
+	<string>NovaCare may use the camera for visual marker detection in Follow Me mode, and to update your profile picture.</string>
+
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NovaCare needs access to your photo library so you can choose a profile picture.</string>
 
 	<!-- Microphone Permission -->
 	<key>NSMicrophoneUsageDescription</key>
@@ -63,5 +67,9 @@
 		<string>location</string>
 		<string>remote-notification</string>
 	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

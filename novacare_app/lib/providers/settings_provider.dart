@@ -56,22 +56,30 @@ class SettingsProvider extends ChangeNotifier {
   String _userId = '';
   String _disabilityType = 'None';
   bool _voiceFeedbackEnabled = false;
+  bool _largeTextEnabled = false;
+  String _profileImagePath = '';
 
   String get userName => _userName;
   String get userId => _userId;
   String get disabilityType => _disabilityType;
   bool get voiceFeedbackEnabled => _voiceFeedbackEnabled;
+  bool get largeTextEnabled => _largeTextEnabled;
+  String get profileImagePath => _profileImagePath;
 
   void updateProfile({
     String? name,
     String? id,
     String? disability,
     bool? voiceFeedback,
+    bool? largeTextEnabled,
+    String? profileImagePath,
   }) {
     if (name != null) _userName = name;
     if (id != null) _userId = id;
     if (disability != null) _disabilityType = disability;
     if (voiceFeedback != null) _voiceFeedbackEnabled = voiceFeedback;
+    if (largeTextEnabled != null) _largeTextEnabled = largeTextEnabled;
+    if (profileImagePath != null) _profileImagePath = profileImagePath;
     notifyListeners();
   }
 
