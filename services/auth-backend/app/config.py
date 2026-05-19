@@ -2,9 +2,11 @@
 NovaCare Auth Backend — Configuration
 """
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = Path(__file__).resolve().parents[3] / '.env'
+load_dotenv(env_path)
 
 
 class Config:

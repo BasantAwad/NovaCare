@@ -5,8 +5,10 @@ Simplified entry point that uses the app factory pattern.
 import os
 from dotenv import load_dotenv
 
-# Load environment variables FIRST before importing any modules
-load_dotenv()
+# Load environment variables from the repository root .env file.
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_env_path = os.path.abspath(os.path.join(current_dir, '..', '.env'))
+load_dotenv(root_env_path)
 
 from backend import create_app
 

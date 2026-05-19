@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 import sys
 import os
 
-# Load environment variables from .env file
+# Load environment variables from the repository root .env file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-env_path = os.path.join(current_dir, '.env')
-load_dotenv(env_path)
+root_env_path = os.path.abspath(os.path.join(current_dir, '..', '..', '.env'))
+load_dotenv(root_env_path)
 
 # Add the current directory to the path (since we're now inside NovaCare)
 sys.path.insert(0, current_dir)

@@ -1,0 +1,7 @@
+pytest
+pytest-asyncio
+asyncpg
+sqlalchemy>=2.0
+python-dotenv
+psycopg[binary]
+

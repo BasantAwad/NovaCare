@@ -6,11 +6,10 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file in parent directory
+# Load environment variables from the repository root .env file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-env_path = os.path.join(parent_dir, ".env")
-load_dotenv(env_path, override=True)
+root_env_path = os.path.abspath(os.path.join(current_dir, '..', '..', '..', '.env'))
+load_dotenv(root_env_path, override=True)
 
 API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
