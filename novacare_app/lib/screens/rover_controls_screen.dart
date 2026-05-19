@@ -26,10 +26,24 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
   bool _autonomous = false;
 
   @override
+  void initState() {
+    super.initState();
+
+    // Auto-connect to the local TCP test rover server if the BLE provider
+    // already has an endpoint configured.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final ble = context.read<BleProvider>();
+      if (!ble.isTcpConnected) {
+        await ble.connectToTcp();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final rover = context.watch<RoverProvider>();
     final ble = context.watch<BleProvider>();
-    final connected = rover.isConnected || ble.isConnected;
+    final connected = rover.isConnected || ble.isAnyConnected;
 
     return Theme(
       data: ThemeData.dark().copyWith(
@@ -95,19 +109,27 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                 child: _DPad(
                   activeDir: _activeDir,
                   autonomous: _autonomous,
-                  onPress: (dir) {
+                  onPress: (dir) async {
                     HapticFeedback.selectionClick();
                     setState(() => _activeDir = dir);
-                    // TODO(backend): write cmd_vel frame via
-                    // BleService.writeCommand("MOVE:$dir") on every tap.
+                    // Send a MOVE command over the available transport.
+                    try {
+                      await ble.sendCommand('MOVE:$dir');
+                    } catch (e) {
+                      // swallow – communication providers will log errors in debug
+                    }
+
                     Future.delayed(const Duration(milliseconds: 200), () {
                       if (mounted) setState(() => _activeDir = null);
                     });
                   },
-                  onToggleAutonomous: () {
+                  onToggleAutonomous: () async {
                     HapticFeedback.mediumImpact();
                     setState(() => _autonomous = !_autonomous);
-                    // TODO(backend): publish auto-nav goal via Firebase/MQTT.
+                      // Notify rover about autonomous toggle and open the rover camera.
+                      try {
+                        await ble.sendCommand(_autonomous ? 'AUTONOMOUS:ON' : 'AUTONOMOUS:OFF');
+                      } catch (_) {}
                   },
                 ),
               ),
@@ -130,6 +152,8 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                           label: 'Dock',
                           onTap: () async {
                             HapticFeedback.mediumImpact();
+                            // send a DOCK command if possible and update state
+                            await ble.sendCommand('DOCK');
                             await rover.goHome();
                           },
                         ),
@@ -140,12 +164,11 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                           icon: Icons.stop_rounded,
                           label: 'Stop',
                           danger: true,
-                          onTap: () {
+                          onTap: () async {
                             HapticFeedback.heavyImpact();
+                            // send immediate STOP / EMERGENCY to rover if connected
+                            await ble.sendCommand('STOP');
                             rover.cancelCurrentMode();
-                            // TODO(backend): send emergency-stop frame
-                            // (BLE writeWithoutResponse) — must bypass any
-                            // command queue.
                           },
                         ),
                       ),
@@ -192,10 +215,12 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                         NcSwitch(
                           value: _autoAvoid,
                           dark: true,
-                          onChanged: (v) {
+                          onChanged: (v) async {
                             setState(() => _autoAvoid = v);
-                            // TODO(backend): toggle LiDAR safety guard on
-                            // robot side via BLE.
+                            final ble = context.read<BleProvider>();
+                            await ble.sendCommand(v
+                                ? 'OBSTACLE_AVOIDANCE:ON'
+                                : 'OBSTACLE_AVOIDANCE:OFF');
                           },
                           semanticLabel: 'Avoid obstacles',
                         ),

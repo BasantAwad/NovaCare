@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
+import '../providers/ble_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../l10n/app_localizations.dart';
@@ -147,7 +148,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: rover.currentMode == RoverMode.followingUser,
                           onChanged: (_) async {
                             HapticFeedback.mediumImpact();
-                            await rover.toggleFollowMe();
+                            final ble = context.read<BleProvider>();
+                            final enableFollow = rover.currentMode != RoverMode.followingUser;
+                            final command = enableFollow ? 'FOLLOW_USER:ON' : 'FOLLOW_USER:OFF';
+                            final success = await ble.sendCommand(command);
+                            if (success) {
+                              await rover.toggleFollowMe();
+                            } else {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Unable to start follow mode.')),
+                                );
+                              }
+                            }
                             if (mounted) _toast(context, rover);
                           },
                           semanticLabel: l10n.translate('follow_me'),
@@ -161,9 +174,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           value: rover.currentMode == RoverMode.navigatingHome,
                           onChanged: (_) async {
                             HapticFeedback.mediumImpact();
-                            // TODO(backend): toggle AprilTag dock-detection
-                            // ROS node via BLE write.
-                            await rover.goHome();
+                            final ble = context.read<BleProvider>();
+                            final enableHome = rover.currentMode != RoverMode.navigatingHome;
+                            final command = enableHome ? 'RETURN_HOME' : 'STOP';
+                            final success = await ble.sendCommand(command);
+                            if (success) {
+                              if (enableHome) {
+                                await rover.goHome();
+                              } else {
+                                rover.cancelCurrentMode();
+                              }
+                            } else {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Unable to send home command.')),
+                                );
+                              }
+                            }
                             if (mounted) _toast(context, rover);
                           },
                           semanticLabel: l10n.translate('home_dock'),

@@ -232,6 +232,28 @@ class SettingsScreen extends StatelessWidget {
                         onTap: () => _openBleSheet(context, ble, l10n),
                       ),
                       NcRow(
+                        icon: const Icon(Icons.cloud_rounded),
+                        title: 'Rover server',
+                        subtitle: ble.isTcpConnected
+                            ? '${ble.tcpEndpoint} · Connected'
+                            : ble.tcpErrorMessage != null
+                                ? '${ble.tcpEndpoint} · Error'
+                                : ble.tcpEndpoint,
+                        trailing: ble.tcpStatus == TcpConnectionStatus.connecting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : NcChip(
+                                label: ble.isTcpConnected ? 'Disconnect' : 'Connect',
+                                style: ble.isTcpConnected
+                                    ? NcChipStyle.success
+                                    : NcChipStyle.info,
+                              ),
+                        onTap: () => _openTcpSheet(context, ble, l10n),
+                      ),
+                      NcRow(
                         icon: const Icon(Icons.qr_code_2_rounded),
                         title: 'Pair with QR code',
                         subtitle: 'Scan the QR sticker on the rover',
@@ -430,6 +452,121 @@ class SettingsScreen extends StatelessWidget {
     );
     // Kick off a scan as soon as the sheet opens.
     if (ble.status != BleConnectionStatus.scanning) ble.startScan();
+  }
+
+  void _openTcpSheet(
+    BuildContext context,
+    BleProvider ble,
+    AppLocalizations l10n,
+  ) {
+    final hostController = TextEditingController(text: ble.tcpEndpoint.split(':').first);
+    final portController = TextEditingController(text: ble.tcpEndpoint.split(':').last);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.paper,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final state = ctx.watch<BleProvider>();
+        final isConnecting = state.tcpStatus == TcpConnectionStatus.connecting;
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 12,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: SizedBox(
+                    width: 40,
+                    height: 4,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.inkLight,
+                        borderRadius: BorderRadius.all(Radius.circular(2)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Rover server',
+                  style: AppText.display3(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: hostController,
+                  decoration: const InputDecoration(
+                    labelText: 'Host',
+                    prefixIcon: Icon(Icons.cloud_circle_rounded),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: portController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Port',
+                    prefixIcon: Icon(Icons.dns_rounded),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (state.tcpErrorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      state.tcpErrorMessage!,
+                      style: AppText.caption(color: AppColors.danger),
+                    ),
+                  ),
+                if (state.tcpLastResponse != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Last response: ${state.tcpLastResponse}',
+                      style: AppText.caption(color: AppColors.inkMuted),
+                    ),
+                  ),
+                ElevatedButton(
+                  onPressed: isConnecting
+                      ? null
+                      : () {
+                          final host = hostController.text.trim();
+                          final port = int.tryParse(portController.text) ?? int.parse(ble.tcpEndpoint.split(':').last);
+                          ble.updateTcpEndpoint(host.isNotEmpty ? host : ble.tcpEndpoint.split(':').first, port);
+                          if (state.isTcpConnected) {
+                            ble.disconnectTcp();
+                          } else {
+                            ble.connectToTcp(host: host.isNotEmpty ? host : ble.tcpEndpoint.split(':').first, port: port);
+                          }
+                        },
+                  child: Text(
+                    state.isTcpConnected ? 'Disconnect' : 'Connect',
+                  ),
+                ),
+                if (!state.isTcpConnected)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      'Use a local command server like 127.0.0.1:5555 or a remote SerBot TCP endpoint.',
+                      style: AppText.caption(color: AppColors.inkMuted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _pickTheme(

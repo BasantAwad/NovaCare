@@ -1,0 +1,1 @@
+ C:\\Users\\Pc\\NovaCare-1\\apps\\mobile\\.dart_tool\\flutter_build\\f86a80ff49d8db35d189cc792b76a764\\native_assets.json: 
