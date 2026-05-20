@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaCare Robot UI - Active Face</title>
+    <!-- Linking to the original production CSS -->
+    <link rel="stylesheet" href="optimized_runtime/robot_ui/RobotUI.css">
+    <!-- Styling is strictly managed in RobotUI.css -->
+</head>
+
+<body>
+    <!-- The structure here MUST match RobotUI.tsx exactly for the CSS to work -->
+    <div id="ui-root" class="robot-ui emotion-idle">
+        
+        <!-- Thinking Indicator -->
+        <div class="thinking-container">
+            <div class="thought-cloud">?</div>
+            <div class="thought-dot dot-1"></div>
+            <div class="thought-dot dot-2"></div>
+        </div>
+
+        <!-- Decorative Bow -->
+        <div class="bow-container">
+            <div class="bow-tie">
+                <div class="bow-left"></div>
+                <div class="bow-center"></div>
+                <div class="bow-right"></div>
+            </div>
+        </div>
+
+        <!-- Eyes Container -->
+        <div class="eyes-container">
+            <div class="eye eye-left">
+                <div class="eyebrow"></div>
+                <div class="pupil"></div>
+            </div>
+            <div class="eye eye-right">
+                <div class="eyebrow"></div>
+                <div class="pupil"></div>
+            </div>
+        </div>
+
+        <!-- Mouth Element -->
+        <div class="mouth" id="robot-mouth">
+            <div class="mouth-teeth"></div>
+            <div class="mouth-tongue"></div>
+        </div>
+
+
+        <!-- Status Indicators -->
+        <div class="status-bar">
+            <div class="status-indicator disconnected">○ Disconnected</div>
+            <div class="battery-indicator">🔋 --%</div>
+        </div>
+
+        <!-- Emotion Text -->
+        <div class="emotion-display" id="emotion-text">IDLE</div>
+    </div>
+
+    <script>
+        let isSpeaking = false;
+        let isListening = false;
+
+        function setEmotion(emotion) {
+            const root = document.getElementById('ui-root');
+            const text = document.getElementById('emotion-text');
+            
+            // Map to the classes defined in RobotUI.css
+            const emotionClass = 'emotion-' + emotion;
+            
+            // Reset classes but keep functional ones
+            root.className = 'robot-ui ' + emotionClass;
+            if (text) {
+                text.innerText = emotion.toUpperCase();
+            }
+            
+            if (isSpeaking) root.classList.add('speaking');
+            if (isListening) {
+                const pupils = document.querySelectorAll('.pupil');
+                pupils.forEach(p => p.classList.add('listening'));
+            }
+        }
+
+        function toggleSpeaking() {
+            isSpeaking = !isSpeaking;
+            const btn = document.getElementById('speak-btn');
+            const root = document.getElementById('ui-root');
+            const mouth = document.getElementById('robot-mouth');
+            if (btn) btn.classList.toggle('active');
+            
+            if (isSpeaking) {
+                root.classList.add('speaking');
+                if (mouth) mouth.classList.add('speaking');
+            } else {
+                root.classList.remove('speaking');
+                if (mouth) mouth.classList.remove('speaking');
+            }
+        }
+
+        function toggleListening() {
+            isListening = !isListening;
+            const btn = document.getElementById('listen-btn');
+            const pupils = document.querySelectorAll('.pupil');
+            if (btn) btn.classList.toggle('active');
+            
+            pupils.forEach(p => {
+                if (isListening) p.classList.add('listening');
+                else p.classList.remove('listening');
+            });
+        }
+
+        // Random steady look
+        setInterval(() => {
+            if (!isListening) {
+                const pupils = document.querySelectorAll('.pupil');
+                const x = (Math.random() - 0.5) * 30;
+                const y = (Math.random() - 0.5) * 20;
+                pupils.forEach(p => {
+                    p.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+                });
+            }
+        }, 5000);
+
+        // ==========================================
+        // WebSocket Real-Time Sync
+        // ==========================================
+        function connectWebSocket() {
+            // Determine WebSocket host: same IP/hostname as the loaded page, port 9999
+            const wsHost = window.location.hostname || 'localhost';
+            const wsPort = '9999';
+            const wsUrl = `ws://${wsHost}:${wsPort}`;
+            
+            console.log(`Connecting to WebSocket server at ${wsUrl}...`);
+            const statusIndicator = document.querySelector('.status-indicator');
+            
+            const ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('Connected to WebSocket server!');
+                if (statusIndicator) {
+                    statusIndicator.className = 'status-indicator connected';
+                    statusIndicator.innerText = '● Connected';
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from WebSocket server. Reconnecting in 2 seconds...');
+                if (statusIndicator) {
+                    statusIndicator.className = 'status-indicator disconnected';
+                    statusIndicator.innerText = '○ Disconnected';
+                }
+                setTimeout(connectWebSocket, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'state_update') {
+                        const { emotion, audio, hardware } = message.data;
+                        
+                        // Update emotion
+                        if (emotion) {
+                            setEmotion(emotion);
+                        }
+                        
+                        // Update speaking state
+                        const speaking = audio?.speaking || false;
+                        if (speaking !== isSpeaking) {
+                            toggleSpeaking();
+                        }
+                        
+                        // Update listening state
+                        const listening = audio?.listening || false;
+                        if (listening !== isListening) {
+                            toggleListening();
+                        }
+                        
+                        // Update battery level
+                        if (hardware && typeof hardware.battery_level === 'number') {
+                            const batteryIndicator = document.querySelector('.battery-indicator');
+                            if (batteryIndicator) {
+                                batteryIndicator.innerText = `🔋 ${Math.round(hardware.battery_level)}%`;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to parse WebSocket message:', e);
+                }
+            };
+        }
+        
+        // Start WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>

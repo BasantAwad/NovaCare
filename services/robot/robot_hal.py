@@ -96,6 +96,11 @@ class CameraHAL:
         self._open()
 
     def _open(self):
+        if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
+            print("✓ CameraHAL in LIGHTWEIGHT mode (no hardware camera)")
+            self._cap = None
+            return
+
         if _pop_Util is not None:
             try:
                 _pop_Util.enable_imshow()
@@ -151,6 +156,33 @@ class CameraHAL:
             return None
         _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
         return buf.tobytes()
+
+    def is_obstacle_ahead(self) -> bool:
+        """
+        Lightweight Canny-edge density heuristic for camera-based obstacle avoidance.
+        Returns True if an obstacle is detected in front of the robot.
+        """
+        try:
+            ret, frame = self.read_frame()
+            if not ret or frame is None:
+                return False
+            h, w = frame.shape[:2]
+            # Lower 55% region of interest (ROI)
+            roi = frame[int(h * 0.45):, :]
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            blur = cv2.GaussianBlur(gray, (5, 5), 0)
+            edges = cv2.Canny(blur, 50, 150)
+            third = edges.shape[1] // 3
+            left_density = np.count_nonzero(edges[:, :third]) / (edges.shape[0] * max(1, third))
+            center_density = np.count_nonzero(edges[:, third:2*third]) / (edges.shape[0] * max(1, third))
+            right_density = np.count_nonzero(edges[:, 2*third:]) / (edges.shape[0] * max(1, third))
+            
+            # center_density > 0.03 or max(left, right) > 0.05 indicates an obstacle
+            obstacle = center_density > 0.03 or max(left_density, right_density) > 0.05
+            return bool(obstacle)
+        except Exception as e:
+            print(f"Error in CameraHAL.is_obstacle_ahead: {e}")
+            return False
 
     def release(self):
         with self._lock:
@@ -302,12 +334,37 @@ class AudioHAL:
         self._audio_player = None
         os.makedirs(TTS_TEMP_DIR, exist_ok=True)
 
+        if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
+            print("✓ AudioHAL in LIGHTWEIGHT mode (no hardware AudioPlay)")
+            return
+
         if _AudioPlay is not None:
             try:
-                self._audio_player = _AudioPlay()
-                print("✓ AudioPlay initialized (robot speaker)")
+                # Some pop.AudioPlay versions require a positional 'file' argument.
+                # We satisfy this by initializing with an empty temporary WAV file,
+                # then cleaning it up immediately to avoid Segmentation Fault.
+                tmp_name = None
+                try:
+                    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                        tmp_name = tmp.name
+                    self._audio_player = _AudioPlay(tmp_name)
+                    print("✓ AudioPlay initialized with dummy file (robot speaker)")
+                except Exception:
+                    # Fallback to no-argument constructor if signature is different
+                    try:
+                        self._audio_player = _AudioPlay()
+                        print("✓ AudioPlay initialized empty (robot speaker)")
+                    except Exception as inner_e:
+                        print(f"⚠ AudioPlay inner init failed: {inner_e}")
+                        self._audio_player = None
+                finally:
+                    if tmp_name and os.path.exists(tmp_name):
+                        try:
+                            os.remove(tmp_name)
+                        except Exception:
+                            pass
             except Exception as e:
-                print(f"⚠ AudioPlay init failed: {e}")
+                print(f"⚠ AudioPlay outer init failed: {e}")
 
     @property
     def tts_available(self) -> bool:
@@ -424,6 +481,10 @@ class LidarHAL:
         self._lidar = None
         self._lock = threading.Lock()
 
+        if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
+            print("✓ LidarHAL in LIGHTWEIGHT mode (no hardware LiDAR)")
+            return
+
         if LIDAR_ENABLED and _Rplidar is not None:
             try:
                 self._lidar = _Rplidar()
@@ -472,6 +533,51 @@ class LidarHAL:
                 if 0 < point["distance_mm"] < distance_mm:
                     return True
         return False
+
+    def get_distance_at(self, target_angle: float, cone_degrees: int = 15) -> float:
+        """
+        Get the minimum distance (in mm) to an obstacle at a specific angle.
+        Returns float('inf') if no obstacle is in that cone.
+        """
+        scan = self.get_scan()
+        if not scan:
+            return float('inf')
+            
+        min_dist = float('inf')
+        half_cone = cone_degrees / 2
+        
+        for point in scan:
+            angle = point["angle"]
+            dist = point["distance_mm"]
+            
+            # Normalize angles to handle 0/360 wrap-around
+            diff = abs((angle - target_angle + 180) % 360 - 180)
+            if diff <= half_cone and dist > 0:
+                if dist < min_dist:
+                    min_dist = dist
+                    
+        return min_dist
+
+    def get_closest_obstacle(self) -> Tuple[float, float]:
+        """
+        Finds the closest obstacle.
+        Returns (angle_degrees, distance_mm).
+        Returns (0.0, float('inf')) if no obstacles detected.
+        """
+        scan = self.get_scan()
+        if not scan:
+            return 0.0, float('inf')
+            
+        min_dist = float('inf')
+        best_angle = 0.0
+        
+        for point in scan:
+            dist = point["distance_mm"]
+            if 0 < dist < min_dist:
+                min_dist = dist
+                best_angle = point["angle"]
+                
+        return best_angle, min_dist
 
     def shutdown(self):
         if self._lidar:

@@ -1,0 +1,26 @@
+import paramiko
+import sys
+
+from shared.configs.robot_config import ROBOT_IP as ROVER_IP
+ROVER_USER = "root"
+ROVER_PASS = "0000"
+
+def main():
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(ROVER_IP, username=ROVER_USER, password=ROVER_PASS)
+
+    print("=== UFW STATUS ===")
+    stdin, stdout, stderr = ssh.exec_command("ufw status")
+    print(stdout.read().decode('utf-8'))
+    print(stderr.read().decode('utf-8'))
+
+    print("=== IPTABLES PORTS (9000, 9999) ===")
+    stdin, stdout, stderr = ssh.exec_command("iptables -L -n -v | grep -E '9000|9999'")
+    print(stdout.read().decode('utf-8'))
+    print(stderr.read().decode('utf-8'))
+
+    ssh.close()
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,19 @@
+# Python dependencies for NovaCare Optimized Runtime
+
+# ===== ASYNC & NETWORKING =====
+websockets>=12.0          # WebSocket server
+httpx>=0.24.0             # Async HTTP client
+asyncio-contextmanager>=1.0.0
+
+# ===== MONITORING & SYSTEM =====
+psutil>=5.9.0             # System monitoring
+python-dotenv>=1.0.0      # Environment config
+
+# ===== LOGGING & DEBUGGING =====
+loguru>=0.7.0             # Better logging (optional)
+pydantic>=2.0.0           # Data validation
+
+# ===== VISION & HARDWARE =====
+opencv-python>=4.8.0      # Camera access
+numpy>=1.24.0             # Fast array processing
+
