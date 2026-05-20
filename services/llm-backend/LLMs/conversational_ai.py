@@ -213,6 +213,28 @@ class ConversationalAI:
         return self._default_profile
 
     def chat(self, user_message: str, profile: Optional[str] = None) -> dict:
+        prefix_to_add = ""
+        try:
+            import sys
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+            from mental_health_integration import get_orchestrator
+            orchestrator = get_orchestrator()
+            bypass, hf_reply, prefix = orchestrator.process(user_message, conversation_history=self.history)
+            
+            if bypass:
+                self.history.append({"user": user_message, "assistant": hf_reply})
+                self.last_profile = "quality"
+                self.last_route = "huggingface_mental_health"
+                return hf_reply
+            elif prefix:
+                prefix_to_add = prefix
+        except Exception as e:
+            print(f"Warning: MentalHealthOrchestrator failed: {e}")
+
         self._ensure_configured()
         route = self._normalize_profile(profile)
         self.last_profile = route

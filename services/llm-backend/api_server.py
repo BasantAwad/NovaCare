@@ -87,14 +87,21 @@ def chat():
         chat_data = ai.chat(user_message, profile=llm_profile)
         
         print(f"📤 [API Route] POST /api/chat - Response returned. Route={ai.last_route}, Profile={ai.last_profile}")
-        # Return response
-        return jsonify({
+        # Build response with mental-health metadata if available
+        resp_data = {
             'response': chat_data['response'],
             'actions': chat_data.get('actions', []),
             'status': 'success',
             'llm_profile': ai.last_profile,
             'llm_route': ai.last_route,
-        })
+        }
+        # Attach mental health metadata if the pipeline triggered
+        if ai.last_route and 'therapy' in str(ai.last_route):
+            resp_data['mental_health'] = {
+                'pipeline_triggered': True,
+                'route': ai.last_route,
+            }
+        return jsonify(resp_data)
     
     except Exception as e:
         print(f"❌ [API Error] {str(e)}")
@@ -368,12 +375,85 @@ def get_battery():
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
+# ---------------------------------------------------------------------------
+# Mental Health Pipeline endpoints
+# ---------------------------------------------------------------------------
+
+@app.route('/api/mental-health/analyze', methods=['POST'])
+def mental_health_analyze():
+    """
+    Run the mental-health pipeline on a message WITHOUT going through the main chat.
+    Useful for frontends that want to get pattern/risk data independently.
+    Expects JSON: { "message": str, "emotion": str (opt), "emotion_confidence": float (opt) }
+    """
+    try:
+        from mental_health_pipeline import get_pipeline
+        pipeline = get_pipeline()
+
+        if not pipeline.is_available:
+            return jsonify({'error': 'Mental health pipeline not configured', 'status': 'unavailable'}), 503
+
+        data = request.json or {}
+        message = data.get('message', '').strip()
+        if not message:
+            return jsonify({'error': 'No message provided'}), 400
+
+        result = pipeline.process(
+            user_message=message,
+            emotion=data.get('emotion', 'neutral'),
+            emotion_confidence=data.get('emotion_confidence', 0.0),
+        )
+        return jsonify({
+            'triggered': result.triggered,
+            'pattern': result.pattern,
+            'risk_level': result.risk_level,
+            'response': result.response,
+            'route': result.route,
+            'stages': result.stages_log,
+            'status': 'success',
+        })
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@app.route('/api/mental-health/session', methods=['GET'])
+def mental_health_session():
+    """Return a summary of mental-health patterns detected in this session."""
+    try:
+        from mental_health_pipeline import get_pipeline
+        pipeline = get_pipeline()
+        return jsonify(pipeline.get_session_summary())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/mental-health/health', methods=['GET'])
+def mental_health_health():
+    """Check if the mental-health pipeline is available."""
+    try:
+        from mental_health_pipeline import get_pipeline
+        pipeline = get_pipeline()
+        return jsonify({
+            'status': 'available' if pipeline.is_available else 'unavailable',
+            'groq_configured': bool(os.getenv('GROQ_API_KEY')),
+            'cerebras_configured': bool(os.getenv('CEREBRAS_API_KEY')),
+            'sambanova_configured': bool(os.getenv('SAMBANOVA_API_KEY')),
+            'gemini_configured': bool(os.getenv('GEMINI_API_KEY')),
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("=" * 50)
     print("NovaBot API Server")
     print("=" * 50)
     print("Starting server on http://localhost:5000")
     print("API Endpoints:")
-    print("  - Chat: POST /api/chat (JSON: message; optional llm_profile=fast|quality or prefer_quality=true)")
+    print("  - Chat: POST /api/chat")
     print("  - Emotion: POST /api/emotion/detect")
     print("  - Emotion Health: GET /api/emotion/health")
+    print("  - Mental Health Analyze: POST /api/mental-health/analyze")
+    print("  - Mental Health Session: GET /api/mental-health/session")
+    print("  - Mental Health Health: GET /api/mental-health/health")

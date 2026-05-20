@@ -95,7 +95,12 @@ function formatTimeAgo(timestamp: string): string {
 
 export default function GuardianDashboard() {
   const [alertOpen, setAlertOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Robot configuration
+  const ROBOT_IP = "10.115.32.247";
+  const VIDEO_FEED_URL = `http://${ROBOT_IP}:5000/video_feed`;
 
   // Real-time signaling
   const { navigateToPatient, lastEvent, isConnected } = useSignaling("guardian_001", "guardian");
@@ -202,16 +207,9 @@ export default function GuardianDashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigateToPatient()}
-            disabled={!isConnected}
-            className={cn(
-              "flex items-center gap-4 p-6 hover:bg-success-50 dark:hover:bg-success-900/30 transition-colors group",
-              !isConnected && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-success-100 dark:bg-success-900/50 flex items-center justify-center group-hover:bg-success group-hover:text-white transition-colors">
-              <Navigation className={cn("w-7 h-7 text-success group-hover:text-white", isConnected && "animate-pulse")} />
+          <button className="flex items-center gap-4 p-6 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors group">
+            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors">
+              <Video className="w-7 h-7 text-purple-500 group-hover:text-white" />
             </div>
             <div className="text-left">
               <p className="font-semibold text-text-primary dark:text-white">Navigate to Patient</p>
@@ -475,6 +473,10 @@ export default function GuardianDashboard() {
               variant="secondary"
               size="lg"
               leftIcon={<Video className="w-5 h-5" />}
+              onClick={() => {
+                setAlertOpen(false);
+                setCameraOpen(true);
+              }}
             >
               Request Video
             </Button>
@@ -483,6 +485,47 @@ export default function GuardianDashboard() {
             </Button>
           </div>
         </div>
+      </Modal>
+      {/* Live Robot Camera Modal */}
+      <Modal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} size="xl">
+        <ModalHeader>
+          <div className="flex items-center gap-2 text-purple-500">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span>Live Robot Camera — {patientName}</span>
+          </div>
+        </ModalHeader>
+        <ModalBody className="p-0 bg-black aspect-video flex items-center justify-center overflow-hidden">
+          {cameraOpen && (
+            <img
+              src={VIDEO_FEED_URL}
+              alt="Robot Camera Feed"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const msg = document.createElement('div');
+                  msg.className = 'text-white text-center p-8';
+                  msg.innerHTML = `
+                    <p class="text-xl font-bold mb-2">Camera Unavailable</p>
+                    <p class="text-gray-400">Could not connect to robot at ${ROBOT_IP}</p>
+                    <p class="text-sm mt-4">Make sure test_robot.py is running on the robot.</p>
+                  `;
+                  parent.appendChild(msg);
+                }
+              }}
+            />
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <div className="flex justify-between items-center w-full">
+            <span className="text-sm text-text-muted dark:text-gray-400 italic">
+              Encrypted Privacy-First Stream
+            </span>
+            <Button onClick={() => setCameraOpen(false)}>Close Feed</Button>
+          </div>
+        </ModalFooter>
       </Modal>
     </div>
   );

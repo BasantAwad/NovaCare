@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Camera, Hand, Check, Trash2, Space, Delete as DeleteIcon, Loader2 } from "lucide-react";
+import { X, Camera, Hand, Check, Trash2, Space, Delete as DeleteIcon, Loader2, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { aslAPI, ASLAPIError } from "@/lib/asl-api";
+import { getCameraFrame, checkRobotHealth } from "@/lib/robot-api";
 import type { PredictionResponse } from "@/types/asl-types";
 
 interface ASLRecognitionModalProps {
@@ -29,6 +30,7 @@ export default function ASLRecognitionModal({
     const [error, setError] = useState<string | null>(null);
     const [apiStatus, setApiStatus] = useState<"checking" | "connected" | "error">("checking");
     const [cameraReady, setCameraReady] = useState(false);
+    const [useRobotCamera, setUseRobotCamera] = useState(false);
 
     // For auto-detection after stable recognition
     const [stableLetter, setStableLetter] = useState<string | null>(null);
@@ -48,6 +50,17 @@ export default function ASLRecognitionModal({
                 setError(
                     "ASL API is not running. Please start the API server at http://localhost:8001"
                 );
+            }
+
+            // Check robot camera availability
+            try {
+                const robotHealth = await checkRobotHealth();
+                if (robotHealth.hardware.camera) {
+                    setUseRobotCamera(true);
+                    setCameraReady(true);
+                }
+            } catch {
+                setUseRobotCamera(false);
             }
         };
 
@@ -91,8 +104,19 @@ export default function ASLRecognitionModal({
         setCameraReady(false);
     }, []);
 
-    // Capture frame from video and convert to base64
-    const captureFrame = useCallback((): string | null => {
+    // Capture frame from video or robot camera, return as base64
+    const captureFrame = useCallback(async (): Promise<string | null> => {
+        // Try robot camera first
+        if (useRobotCamera) {
+            try {
+                const frameData = await getCameraFrame();
+                return frameData.image; // already base64
+            } catch {
+                return null;
+            }
+        }
+
+        // Browser webcam fallback
         if (!videoRef.current || !canvasRef.current) return null;
 
         const video = videoRef.current;
@@ -108,7 +132,7 @@ export default function ASLRecognitionModal({
         // Convert to base64 (remove data:image/jpeg;base64, prefix)
         const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
         return dataUrl.split(",")[1];
-    }, []);
+    }, [useRobotCamera]);
 
     // Start continuous prediction
     const startRecognition = useCallback(async () => {
@@ -133,7 +157,7 @@ export default function ASLRecognitionModal({
 
         // Start prediction loop (10 FPS = 100ms interval)
         intervalRef.current = setInterval(async () => {
-            const frameData = captureFrame();
+            const frameData = await captureFrame();
             if (!frameData) return;
 
             try {
@@ -285,7 +309,9 @@ export default function ASLRecognitionModal({
     // Initialize camera when modal opens
     useEffect(() => {
         if (isOpen) {
-            startCamera();
+            if (!useRobotCamera) {
+                startCamera();
+            }
         } else {
             stopCamera();
             stopRecognition();
@@ -295,7 +321,7 @@ export default function ASLRecognitionModal({
             stopCamera();
             stopRecognition();
         };
-    }, [isOpen, startCamera, stopCamera, stopRecognition]);
+    }, [isOpen, startCamera, stopCamera, stopRecognition, useRobotCamera]);
 
     if (!isOpen) return null;
 
@@ -356,6 +382,14 @@ export default function ASLRecognitionModal({
                             </span>
                         </div>
                     </div>
+
+                    {/* Robot Camera Badge */}
+                    {useRobotCamera && (
+                        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-xl">
+                            <Bot className="w-4 h-4 text-green-400" />
+                            <span className="text-xs text-green-400 font-medium">Robot Camera</span>
+                        </div>
+                    )}
 
                     {/* Error Message */}
                     {error && (
