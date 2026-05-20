@@ -1,5 +1,30 @@
 {
-	"medications": [],
+	"medications": [
+		{
+			"id": "med-001",
+			"dosage": "2 tablets",
+			"scheduled_time": "08:00:00",
+			"status": "pending",
+			"taken_at": null,
+			"medication_name": "Lipitor (Atorvastatin)"
+		},
+		{
+			"id": "med-002",
+			"dosage": "1 capsule",
+			"scheduled_time": "10:30:00",
+			"status": "missed",
+			"taken_at": null,
+			"medication_name": "Synthroid (Levothyroxine)"
+		},
+		{
+			"id": "med-003",
+			"dosage": "1 tablet",
+			"scheduled_time": "18:00:00",
+			"status": "taken",
+			"taken_at": "18:15:00",
+			"medication_name": "Metformin"
+		}
+	],
 	"navigation": {
 		"destination": "kitchen",
 		"status": "idle",

@@ -1,5 +1,5 @@
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$WorkDir = Join-Path $Root "frontend"
+$WorkDir = Join-Path $Root "apps\frontend"
 Set-Location $WorkDir
 
 Write-Host "==========================================" -ForegroundColor Cyan

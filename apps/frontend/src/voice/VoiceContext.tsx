@@ -50,6 +50,7 @@ interface VoiceContextType {
   isListening: boolean;
   isSpeaking: boolean;
   transcript: string;
+  interimTranscript: string;
   response: string;
   currentRole: UserRole;
   debugLog: NavDebugEvent[];
@@ -81,6 +82,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [debugLog, setDebugLog] = useState<NavDebugEvent[]>([]);
 
@@ -219,6 +221,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
     setResponse(aiResponse);
     setIsSpeaking(true);
+    setInterimTranscript('');
 
     speechService?.speak(aiResponse, () => {
       setIsSpeaking(false);
@@ -239,8 +242,19 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
     speechService.onStart(() => setIsListening(true));
 
+    // Interim results — stream partial transcript in real time
+    speechService.onInterim((partial: string) => {
+      setInterimTranscript(partial);
+    });
+
+    // Safety: ensure isSpeaking resets if TTS stops for any reason
+    speechService.onSpeakEnd(() => {
+      setIsSpeaking(false);
+    });
+
     speechService.onEnd(() => {
       setIsListening(false);
+      setInterimTranscript('');
       if (isActiveRef.current && !isSpeakingRef.current && continuousListeningRef.current) {
         setTimeout(() => speechService?.startListening(), 100);
       }
@@ -321,6 +335,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         isListening,
         isSpeaking,
         transcript,
+        interimTranscript,
         response,
         currentRole,
         debugLog,

@@ -181,6 +181,38 @@ export async function getMedications(): Promise<ApiResponse<MedicationSchedule[]
   return dashboardFetch<MedicationSchedule[]>("/api/dashboard/medications");
 }
 
+/**
+ * Fetch medication schedules from the LLM backend (novacare_mock_db.json).
+ * This is the primary source for both the medications page and the chat widget
+ * when the auth backend DB is unavailable.
+ */
+export async function getMedicationsFromLLM(): Promise<ApiResponse<MedicationSchedule[]>> {
+  try {
+    const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/medications`);
+    const json = await res.json();
+    return json as ApiResponse<MedicationSchedule[]>;
+  } catch {
+    return { status: "error", error: "Could not connect to LLM backend." };
+  }
+}
+
+/** Mark a medication as taken via the LLM backend (updates novacare_mock_db.json) */
+export async function markMedicationTakenLLM(
+  medicationId: string,
+): Promise<ApiResponse<{ message: string }>> {
+  try {
+    const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/medications/take`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: medicationId }),
+    });
+    const json = await res.json();
+    return json as ApiResponse<{ message: string }>;
+  } catch {
+    return { status: "error", error: "Could not connect to LLM backend." };
+  }
+}
+
 /** Fetch activity logs for the authenticated user's linked rover */
 export async function getActivities(): Promise<ApiResponse<ActivityLog[]>> {
   return dashboardFetch<ActivityLog[]>("/api/dashboard/activities");

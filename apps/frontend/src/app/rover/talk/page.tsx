@@ -11,7 +11,7 @@ import { sendMessage as sendToNovaBot, checkHealth, clearHistory } from "@/lib/n
 import { STTService, TTSService } from "@/lib/speech";
 import { robotSpeak, robotListen, checkRobotHealth } from "@/lib/robot-api";
 import ASLRecognitionModal from "@/components/ASLRecognitionModal";
-import { getMedications, markMedicationTaken, getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
+import { getMedicationsFromLLM, markMedicationTakenLLM, getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
 
 interface Message {
   id: number;
@@ -356,10 +356,10 @@ function MedicationsWidget() {
 
   const fetchMeds = async () => {
     try {
-      const response = await getMedications();
-      if (response.status === "success" && response.data) {
+      const response = await getMedicationsFromLLM();
+      if (response.status === "success" && response.data && response.data.length > 0) {
         setMeds(response.data.map((m: any) => ({
-          id: m.id,
+          id: m.id ?? m.medication_name,
           name: m.medication_name || m.name,
           time: m.scheduled_time,
           dosage: m.dosage,
@@ -381,7 +381,7 @@ function MedicationsWidget() {
     // Optimistic toggle
     setMeds(prev => prev.map(m => m.id === id ? { ...m, checked: !m.checked } : m));
     try {
-      await markMedicationTaken(String(id));
+      await markMedicationTakenLLM(String(id));
       fetchMeds();
     } catch (e) {
       console.error("Failed to mark taken:", e);
