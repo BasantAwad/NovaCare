@@ -1,0 +1,38 @@
+# ===========================================================================
+# NovaCare — Laptop AI Services Deployment
+# ===========================================================================
+
+version: '3.3'
+
+services:
+  # 🧠 LLM Service: Heavy Conversational AI
+  llm-service:
+    build:
+      context: ../services/llm
+      dockerfile: Dockerfile
+    container_name: laptop-llm
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - LLM_API_PORT=5000
+
+  # 🖐️ ASL Service: Heavy Sign Recognition
+  asl-service:
+    build:
+      context: ../services/asl
+      dockerfile: Dockerfile
+    container_name: laptop-asl
+    restart: always
+    ports:
+      - "8001:8001"
+
+  # 😊 Emotion Service: Heavy Multimodal Detection
+  emotion-service:
+    build:
+      context: ../services/emotion
+      dockerfile: Dockerfile
+    container_name: laptop-emotion
+    restart: always
+    ports:
+      - "8002:8002"

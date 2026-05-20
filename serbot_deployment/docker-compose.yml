@@ -1,0 +1,41 @@
+# ===========================================================================
+# NovaCare — SERBot Lightweight Deployment
+# ===========================================================================
+
+version: '3.3'
+
+services:
+  # 🤖 Robot Service: Hardware HAL + REST API
+  robot-service:
+    build:
+      context: ../services/robot
+      dockerfile: Dockerfile
+    container_name: novacare-robot
+    restart: always
+    privileged: true
+    network_mode: "host"
+    volumes:
+      - /dev:/dev
+    environment:
+      - ROBOT_SERVICE_PORT=9000
+
+  # ⚙️ Optimized Runtime: Central Orchestrator & State
+  runtime:
+    build:
+      context: ../optimized_runtime
+      dockerfile: docker/Dockerfile.serbot
+    container_name: novacare-runtime
+    restart: always
+    network_mode: "host"
+    environment:
+      - RUNTIME_PORT=9999
+      - LAPTOP_IP=192.168.1.100 # Example, to be updated
+
+  # 👁️ Robot UI: Face UI
+  robot-ui:
+    build:
+      context: ../optimized_runtime/robot_ui
+      dockerfile: ../docker/Dockerfile.ui
+    container_name: novacare-ui
+    restart: always
+    network_mode: "host"

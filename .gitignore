@@ -1,77 +1,82 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+# ========================================
+# NovaCare Unified Project - .gitignore
+# ========================================
+
+# ---- Python ----
+**/venv/
+**/env/
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.pyo
+**/*.pyd
 .Python
-env/
-venv/
-ENV/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
 *.egg
+*.egg-info/
+dist/
+build/
+*.so
+.frontend-novacare.pem
 
-# Flask
-instance/
-.webassets-cache
-
-# Node.js / Next.js
-node_modules/
+# ---- Node.js / Next.js ----
+**/node_modules/
+**/.next/
+**/*.tsbuildinfo
+**/out/
+next-env.d.ts
 .pnp/
 .pnp.js
-.next/
-out/
 
-# Production build
-build/
-dist/
-
-# TypeScript build info
-tsconfig.tsbuildinfo
-next-env.d.ts
-
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-*.log
-
-# Testing
-coverage/
-
-# Environment variables
+# ---- Environment & Secrets ----
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
+*.pem
+novacare-key.pem
 
-# IDEs
+# ---- Databases ----
+*.db
+*.sqlite3
+instance/
+mock_mysql.db
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ---- IDE ----
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# ---- Large Model Files ----
+# Model checkpoints — too large for git
+services/asl-model/checkpoints/
+services/asl-model/data/asl_alphabet_train/
+services/asl-model/data/asl_alphabet_test/
+services/asl-model/data/raw/
+services/asl-model/data/processed/
+services/asl-model/data/models/
 
-# Misc
-*.pem
+# ---- Build & Cache ----
+*.log
+npm-debug.log*
+package-lock.json
+.webassets-cache
 .vercel
+
+# ---- Test & Scratch Files ----
+database_testing/
+# test_*.py  # Unlocked for robot scripts
+*_test.py
+final_db_test.py
+export_db.py
+setup_mock_db.py
+
+# ---- Generated PDF Reports ----
+*.pdf
+!docs/**/*.pdf
