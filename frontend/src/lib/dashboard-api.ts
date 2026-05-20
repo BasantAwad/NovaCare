@@ -8,8 +8,10 @@
  */
 
 import { getAccessToken } from "./auth-api";
+import { getDynamicUrl } from "./utils";
 
 const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:5001";
+const NOVABOT_API = process.env.NEXT_PUBLIC_NOVABOT_API_URL || "http://localhost:5000";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -140,7 +142,7 @@ async function dashboardFetch<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const url = `${AUTH_API}${path}`;
+  const url = `${getDynamicUrl(AUTH_API)}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
@@ -239,4 +241,50 @@ export async function getBatteryStatus(): Promise<ApiResponse<BatteryStatus>> {
 /** Fetch mood logs for the rover */
 export async function getMoodLogs(): Promise<ApiResponse<MoodLog[]>> {
   return dashboardFetch<MoodLog[]>("/api/dashboard/mood");
+}
+
+/** Get navigation status from the LLM backend */
+export async function getNavigationStatus(): Promise<{
+  status: "success" | "error";
+  data?: {
+    destination: string | null;
+    status: 'navigating' | 'idle' | 'completed' | 'cancelled';
+    progress: number;
+    follow_mode: boolean;
+  };
+}> {
+  try {
+    const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/navigation`);
+    if (!res.ok) throw new Error("Failed to fetch navigation status");
+    return await res.json();
+  } catch (error) {
+    console.error("getNavigationStatus error:", error);
+    return { status: "error" };
+  }
+}
+
+/** Update navigation status on the LLM backend */
+export async function updateNavigation(
+  destination: string | null,
+  status: 'navigating' | 'idle' | 'completed' | 'cancelled',
+  followMode: boolean
+): Promise<{ status: "success" | "error" }> {
+  try {
+    const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/navigation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        destination,
+        status,
+        follow_mode: followMode,
+      }),
+    });
+    if (!res.ok) throw new Error("Failed to update navigation");
+    return await res.json();
+  } catch (error) {
+    console.error("updateNavigation error:", error);
+    return { status: "error" };
+  }
 }

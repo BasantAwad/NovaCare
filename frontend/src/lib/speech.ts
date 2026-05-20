@@ -1,3 +1,5 @@
+import { getDynamicUrl } from "./utils";
+
 /**
  * NovaCare — Speech Services (STT & TTS)
  * 
@@ -87,10 +89,21 @@ interface TTSOptions {
   volume?: number;
 }
 
+function cleanForTts(text: string): string {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .replace(/#{1,6}\s/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .trim();
+}
+
 export class TTSService {
   private synth: SpeechSynthesis | null = null;
   private enabled: boolean = true;
   private options: TTSOptions;
+  private activeAudio: HTMLAudioElement | null = null;
+  private objectUrl: string | null = null;
 
   constructor(options: TTSOptions = {}) {
     if (typeof window !== 'undefined') {
@@ -103,21 +116,66 @@ export class TTSService {
     };
   }
 
-  speak(text: string) {
-    if (!this.synth || !this.enabled) return;
-    
-    // Stop current speaking
-    this.synth.cancel();
+  async speak(text: string) {
+    this.stop();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = this.options.rate!;
-    utterance.pitch = this.options.pitch!;
-    utterance.volume = this.options.volume!;
-    
-    this.synth.speak(utterance);
+    if (!this.enabled || !text.trim()) return;
+
+    const cleanText = cleanForTts(text);
+    const pocketUrl = process.env.NEXT_PUBLIC_POCKET_TTS_URL || "http://localhost:8002";
+
+    if (pocketUrl && typeof window !== "undefined") {
+      try {
+        const body = new URLSearchParams();
+        body.set("text", cleanText);
+        const voiceUrl = process.env.NEXT_PUBLIC_POCKET_TTS_VOICE_URL;
+        if (voiceUrl) {
+          body.set("voice_url", voiceUrl);
+        }
+
+        const res = await fetch(`${getDynamicUrl(pocketUrl)}/tts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+          body: body.toString(),
+          signal: AbortSignal.timeout(10000), // 10s timeout
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        
+        this.objectUrl = URL.createObjectURL(blob);
+        const audio = new Audio(this.objectUrl);
+        this.activeAudio = audio;
+        audio.volume = this.options.volume || 1.0;
+        
+        await audio.play();
+        return;
+      } catch (err) {
+        console.warn("[TTS] Pocket TTS failed, falling back to browser SpeechSynthesis:", err);
+      }
+    }
+
+    // Fallback: standard browser speechSynthesis
+    if (this.synth) {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = this.options.rate!;
+      utterance.pitch = this.options.pitch!;
+      utterance.volume = this.options.volume!;
+      
+      this.synth.speak(utterance);
+    }
   }
 
   stop() {
+    if (this.activeAudio) {
+      this.activeAudio.pause();
+      this.activeAudio.src = "";
+      this.activeAudio = null;
+    }
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
     if (this.synth) {
       this.synth.cancel();
     }

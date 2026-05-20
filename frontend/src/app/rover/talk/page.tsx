@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Mic, MicOff, Send, Volume2, VolumeX, Hand, ArrowLeft, Loader2, WifiOff, RefreshCw,
-  Play, Pause, Compass, CheckCircle2, Phone, PhoneOff, Calendar, AlertOctagon, Music, X, Trash2
+  Play, Pause, Compass, CheckCircle2, Phone, PhoneOff, Calendar, AlertOctagon, Music, X, Trash2, Bot
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -357,7 +357,7 @@ function MedicationsWidget() {
   const fetchMeds = async () => {
     try {
       const response = await getMedications();
-      if (response.status === "success") {
+      if (response.status === "success" && response.data) {
         setMeds(response.data.map((m: any) => ({
           id: m.id,
           name: m.medication_name || m.name,
@@ -736,9 +736,9 @@ export default function TalkPage() {
       if (isTTSEnabled) {
         // Robot TTS: speak through robot's physical speaker
         if (useRobotAudio && robotAvailable) {
-          robotSpeak({ text: response }).catch((err) => {
+          robotSpeak({ text: botResponse }).catch((err) => {
             console.warn('[TTS] Robot speak failed, falling back to browser:', err);
-            ttsRef.current?.speak(response);
+            ttsRef.current?.speak(botResponse);
           });
         } else if (ttsRef.current) {
           // Browser TTS fallback

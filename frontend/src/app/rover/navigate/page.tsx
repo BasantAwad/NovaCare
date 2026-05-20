@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Navigation, MapPin, Home, Utensils, Bath, Sofa, Bed, Coffee, ArrowLeft, Play, Pause, X, UserCheck } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Navigation, MapPin, Home, Utensils, Bath, Sofa, Bed, Coffee, ArrowLeft, Play, Pause, X, UserCheck, AlertTriangle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
@@ -41,6 +41,7 @@ export default function NavigatePage() {
   const [navStatus, setNavStatus] = useState<string>("");
   const [navETA, setNavETA] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // Check robot health on mount
   useEffect(() => {
@@ -83,7 +84,7 @@ export default function NavigatePage() {
     }
   }, [selectedDest]);
 
-  const stopNavigation = useCallback(async async () => {
+  const stopNavigation = useCallback(async () => {
     setIsLoading(true);
     try {
       await stopRobot();
