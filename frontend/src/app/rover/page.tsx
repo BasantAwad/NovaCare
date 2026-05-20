@@ -28,18 +28,12 @@ const mainFeatures = [
     label: "Medications",
     description: "View schedule and reminders",
     color: "from-purple-400 to-purple-600",
-<<<<<<< HEAD
-    textColor: "text-success",
-    // Badge will be set dynamically
     badgeKey: "medsDue",
-=======
-    badge: "2 Due",
     copy: {
       icon: "text-violet-900 dark:text-fuchsia-200",
       title: "text-violet-950 dark:text-violet-50",
       desc: "text-purple-900/90 dark:text-purple-100/90",
     },
->>>>>>> ab44522626a9c47ebbc8e036b2e54f188d77a0f4
   },
   {
     href: "/rover/navigate",
@@ -136,6 +130,8 @@ export default function RoverHomePage() {
     }
 
     fetchQuickStats();
+    const interval = setInterval(fetchQuickStats, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

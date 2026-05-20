@@ -1,0 +1,26 @@
+{
+  "medications": [],
+  "navigation": {
+    "destination": "kitchen",
+    "status": "idle",
+    "progress": 100,
+    "follow_mode": false
+  },
+  "vitals": {
+    "heart_rate": 72,
+    "blood_pressure": "120/80",
+    "oxygen_level": 98,
+    "temperature": 36.6,
+    "measured_at": "10:15 AM"
+  },
+  "hydration": {
+    "glasses": 3,
+    "total_ml": 750,
+    "goal_glasses": 8
+  },
+  "battery": {
+    "battery_percent": 84,
+    "is_charging": false,
+    "estimated_remaining_minutes": 180
+  }
+}

@@ -54,9 +54,11 @@ def health():
 def chat():
     """Chat endpoint - receives user message and returns AI response"""
     try:
+        print(f"\n📥 [API Route] POST /api/chat - Request received from {request.remote_addr}")
         data = request.json
         
         if not data:
+            print("📤 [API Route] POST /api/chat - Error 400: No data provided")
             return jsonify({
                 'error': 'No data provided'
             }), 400
@@ -64,6 +66,7 @@ def chat():
         user_message = data.get('message', '').strip()
         
         if not user_message:
+            print("📤 [API Route] POST /api/chat - Error 400: No message provided")
             return jsonify({
                 'error': 'No message provided'
             }), 400
@@ -81,18 +84,20 @@ def chat():
             ai.initialize()
         
         # Get AI response
-        ai_response = ai.chat(user_message, profile=llm_profile)
+        chat_data = ai.chat(user_message, profile=llm_profile)
         
+        print(f"📤 [API Route] POST /api/chat - Response returned. Route={ai.last_route}, Profile={ai.last_profile}")
         # Return response
         return jsonify({
-            'response': ai_response,
+            'response': chat_data['response'],
+            'actions': chat_data.get('actions', []),
             'status': 'success',
             'llm_profile': ai.last_profile,
             'llm_route': ai.last_route,
         })
     
     except Exception as e:
-        print(f"[API Error] {str(e)}")
+        print(f"❌ [API Error] {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -127,9 +132,11 @@ def detect_emotion():
     Returns: { "emotion": str, "confidence": float, "all_scores": dict, "status": str }
     """
     try:
+        print(f"\n📥 [API Route] POST /api/emotion/detect - Image payload received from {request.remote_addr}")
         data = request.json
         
         if not data:
+            print("📤 [API Route] POST /api/emotion/detect - Error 400: No data provided")
             return jsonify({
                 'error': 'No data provided',
                 'status': 'error'
@@ -138,6 +145,7 @@ def detect_emotion():
         image_data = data.get('image', '').strip()
         
         if not image_data:
+            print("📤 [API Route] POST /api/emotion/detect - Error 400: No image provided")
             return jsonify({
                 'error': 'No image provided',
                 'status': 'error'
@@ -147,6 +155,7 @@ def detect_emotion():
         analyzer = get_emotion_analyzer()
         
         if analyzer is None:
+            print("📤 [API Route] POST /api/emotion/detect - Error 500: Emotion analyzer not available")
             return jsonify({
                 'error': 'Emotion analyzer not available. Please check server logs.',
                 'status': 'error'
@@ -156,6 +165,7 @@ def detect_emotion():
         result = analyzer.predict_from_base64(image_data, detect_face=True)
         
         if 'error' in result and result.get('emotion') == 'unknown':
+            print(f"📤 [API Route] POST /api/emotion/detect - Face detection failed or error occurred: {result.get('error')}")
             return jsonify({
                 'emotion': 'unknown',
                 'confidence': 0.0,
@@ -164,6 +174,7 @@ def detect_emotion():
                 'status': 'error'
             }), 400
         
+        print(f"📤 [API Route] POST /api/emotion/detect - Success! Detected Emotion: '{result.get('emotion')}' (Confidence: {result.get('confidence', 0.0):.2%}, FaceDetected={result.get('face_detected', False)})")
         return jsonify({
             'emotion': result.get('emotion', 'unknown'),
             'confidence': result.get('confidence', 0.0),
@@ -173,7 +184,7 @@ def detect_emotion():
         })
         
     except Exception as e:
-        print(f"[Emotion API Error] {str(e)}")
+        print(f"❌ [Emotion API Error] {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -202,6 +213,159 @@ def emotion_health():
         'device': analyzer.device,
         'labels': list(analyzer.id2label.values()) if hasattr(analyzer, 'id2label') else []
     })
+
+
+@app.route('/api/medications', methods=['GET'])
+def get_medications():
+    """Fetch active medication schedules."""
+    try:
+        from utils.rag_helper import rag_manager
+        meds = rag_manager.get_medications(rover_id="RV001")
+        return jsonify({
+            'status': 'success',
+            'data': meds
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@app.route('/api/medications/take', methods=['POST'])
+def take_medication():
+    """Mark a medication schedule as taken."""
+    try:
+        data = request.json or {}
+        med_id = str(data.get('id', ''))
+        if not med_id:
+            return jsonify({'error': 'No medication ID provided', 'status': 'error'}), 400
+        
+        from utils.rag_helper import rag_manager
+        if rag_manager.use_mock:
+            # Update local mock database JSON file
+            db = rag_manager._read_mock_db()
+            updated = False
+            for m in db.get("medications", []):
+                if str(m.get("id")) == med_id:
+                    from datetime import datetime
+                    m["status"] = "taken"
+                    m["taken_at"] = datetime.now().strftime("%H:%M:%S")
+                    updated = True
+                    break
+            if updated:
+                rag_manager._write_mock_db(db)
+                print(f"[API Route] Mock medication '{med_id}' marked as taken.")
+                return jsonify({'status': 'success', 'message': f'Medication {med_id} taken.'})
+            else:
+                return jsonify({'error': f'Medication {med_id} not found in mock database', 'status': 'error'}), 404
+        else:
+            # Update MySQL live database
+            conn = None
+            cursor = None
+            try:
+                conn = rag_manager.get_connection()
+                cursor = conn.cursor()
+                query = """
+                    UPDATE medication_schedules 
+                    SET status = 'taken', taken_at = NOW() 
+                    WHERE id = %s AND rover_id = 'RV001'
+                """
+                cursor.execute(query, (med_id,))
+                conn.commit()
+                print(f"[API Route] Live SQL medication '{med_id}' marked as taken.")
+                return jsonify({'status': 'success', 'message': f'Medication {med_id} marked taken in SQL.'})
+            except Exception as sql_err:
+                return jsonify({'error': f'SQL error: {sql_err}', 'status': 'error'}), 500
+            finally:
+                if cursor: cursor.close()
+                if conn: conn.close()
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@app.route('/api/navigation', methods=['GET', 'POST'])
+def handle_navigation():
+    """Get or update current navigation status."""
+    from utils.rag_helper import rag_manager
+    if request.method == 'POST':
+        try:
+            data = request.json or {}
+            dest = data.get('destination')
+            status = data.get('status', 'idle')
+            follow_mode = data.get('follow_mode', False)
+            
+            if rag_manager.use_mock:
+                db = rag_manager._read_mock_db()
+                nav = db.get("navigation", {"destination": None, "status": "idle", "progress": 0, "follow_mode": False})
+                
+                nav["destination"] = dest
+                nav["status"] = status
+                nav["follow_mode"] = follow_mode
+                if status == 'navigating':
+                    nav["progress"] = 10  # Start with 10% progress
+                elif status == 'idle':
+                    nav["progress"] = 0
+                
+                db["navigation"] = nav
+                rag_manager._write_mock_db(db)
+                print(f"[API Route] Mock navigation updated: destination={dest}, status={status}, follow_mode={follow_mode}")
+                return jsonify({'status': 'success', 'data': nav})
+            else:
+                # Live database navigation mode (could log audit entries)
+                return jsonify({'status': 'success', 'message': 'MySQL live action logged.'})
+        except Exception as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 500
+    else:
+        # GET request
+        try:
+            if rag_manager.use_mock:
+                db = rag_manager._read_mock_db()
+                nav = db.get("navigation", {"destination": None, "status": "idle", "progress": 0, "follow_mode": False})
+                
+                # Auto-advance progress to simulate robot walking!
+                if nav.get("status") == "navigating" and nav.get("progress", 0) < 100:
+                    nav["progress"] = min(100, nav.get("progress", 0) + 15)
+                    if nav["progress"] == 100:
+                        nav["status"] = "idle"  # Completed!
+                    db["navigation"] = nav
+                    rag_manager._write_mock_db(db)
+                    print(f"[API Route] Simulating navigation progress: {nav['progress']}%")
+                
+                return jsonify({'status': 'success', 'data': nav})
+            else:
+                # Hardcoded or live state fallback
+                return jsonify({
+                    'status': 'success', 
+                    'data': {"destination": None, "status": "idle", "progress": 0, "follow_mode": False}
+                })
+        except Exception as e:
+            return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@app.route('/api/vitals', methods=['GET'])
+def get_vitals():
+    """Fetch patient vital signs."""
+    try:
+        from utils.rag_helper import rag_manager
+        vitals = rag_manager.get_vitals(rover_id="RV001")
+        return jsonify({
+            'status': 'success',
+            'data': vitals
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+
+@app.route('/api/battery', methods=['GET'])
+def get_battery():
+    """Fetch rover battery status."""
+    try:
+        from utils.rag_helper import rag_manager
+        battery = rag_manager.get_battery(rover_id="RV001")
+        return jsonify({
+            'status': 'success',
+            'data': battery
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 
 if __name__ == '__main__':

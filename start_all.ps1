@@ -4,7 +4,7 @@
     NovaCare - Unified Service Launcher (PowerShell)
 .DESCRIPTION
     Starts all 3 NovaCare services in separate terminal windows:
-    1. ASL Model API     (FastAPI, port 8000)
+    1. ASL Model API     (FastAPI, port 8001)
     2. LLM Backend       (Flask,   port 5000)
     3. Frontend           (Next.js, port 3000)
 .NOTES
@@ -23,9 +23,10 @@ function Write-Banner {
     Write-Host "   NovaCare - Starting All Services" -ForegroundColor White
     Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "   [1] ASL Model API     " -NoNewline; Write-Host "(port 8000)" -ForegroundColor Yellow
+    Write-Host "   [1] ASL Model API     " -NoNewline; Write-Host "(port 8001)" -ForegroundColor Yellow
     Write-Host "   [2] LLM Backend       " -NoNewline; Write-Host "(port 5000)" -ForegroundColor Yellow
-    Write-Host "   [3] Frontend           " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
+    Write-Host "   [3] Pocket TTS Server " -NoNewline; Write-Host "(port 8002)" -ForegroundColor Yellow
+    Write-Host "   [4] Frontend           " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host ""
@@ -47,7 +48,7 @@ function Start-Service {
 Write-Banner
 
 # -------------------------------------------------
-# 1. ASL Model API (FastAPI, port 8000)
+# 1. ASL Model API (FastAPI, port 8001)
 # -------------------------------------------------
 $aslDir = Join-Path $Root "services\asl-model"
 $aslCmd = @"
@@ -61,8 +62,8 @@ if (-not (Test-Path 'venv')) {
 } else {
     .\venv\Scripts\Activate.ps1
     Write-Host '[OK] ASL Model venv activated' -ForegroundColor Green
-    Write-Host '[*] Starting FastAPI on port 8000...' -ForegroundColor Cyan
-    python -m api.main --port 8000
+    Write-Host '[*] Starting FastAPI on port 8001...' -ForegroundColor Cyan
+    python -m api.main --host 0.0.0.0 --port 8001
 }
 "@
 Start-Service -Name "ASL Model API" -WorkDir $aslDir -Command $aslCmd -Color "Magenta"
@@ -94,7 +95,14 @@ python start_server.py
 Start-Service -Name "LLM Backend" -WorkDir $llmDir -Command $llmCmd -Color "Blue"
 
 # -------------------------------------------------
-# 3. Frontend (Next.js, port 3000)
+# 3. Pocket TTS Server (port 8002)
+# -------------------------------------------------
+$ttsDir = Join-Path $Root "services\pocket-tts"
+$ttsCmd = ".\start.ps1"
+Start-Service -Name "Pocket TTS Server" -WorkDir $ttsDir -Command $ttsCmd -Color "Cyan"
+
+# -------------------------------------------------
+# 4. Frontend (Next.js, port 3000)
 # -------------------------------------------------
 $feDir = Join-Path $Root "frontend"
 $feCmd = @"
@@ -113,7 +121,7 @@ if (-not (Test-Path '.env.local')) {
     Write-Host '[!] LLM keys: services/llm-backend/.env (Ollama + Hugging Face)' -ForegroundColor Yellow
 }
 Write-Host '[*] Starting Next.js on port 3000...' -ForegroundColor Cyan
-npm run dev
+npm run dev -- --hostname 0.0.0.0
 "@
 Start-Service -Name "Frontend" -WorkDir $feDir -Command $feCmd -Color "Green"
 
@@ -123,7 +131,8 @@ Write-Host "  ============================================" -ForegroundColor Cya
 Write-Host "   All services launched!" -ForegroundColor Green
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "   ASL Model API:  " -NoNewline; Write-Host "http://localhost:8000/docs" -ForegroundColor Yellow
+Write-Host "   ASL Model API:  " -NoNewline; Write-Host "http://localhost:8001/docs" -ForegroundColor Yellow
 Write-Host "   LLM Backend:    " -NoNewline; Write-Host "http://localhost:5000" -ForegroundColor Yellow
+Write-Host "   Pocket TTS:     " -NoNewline; Write-Host "http://localhost:8002" -ForegroundColor Yellow
 Write-Host "   Frontend:       " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Yellow
 Write-Host ""

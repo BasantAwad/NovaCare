@@ -114,7 +114,7 @@ function mapApiToVitals(apiVitals: VitalSign[], sleepData?: SleepLog | null): Vi
   if (latest.temperature != null) {
     vitals.push({ id: "temperature", label: "Temperature", value: Number(latest.temperature), unit: "°C", status: "normal", trend: trend(Number(latest.temperature), prev?.temperature != null ? Number(prev.temperature) : undefined), icon: Thermometer, color: "secondary", range: "36-37.5°C" });
   }
-  
+
   if (sleepData) {
     vitals.push({ id: "sleepQuality", label: "Sleep Last Night", value: Number(sleepData.duration_hours), unit: "hrs", status: "normal", trend: "stable", icon: Moon, color: "purple", range: "7-9 hours" });
   } else {
@@ -139,7 +139,7 @@ function mapApiToAlerts(apiActivities: ActivityLog[]): AlertDisplay[] {
   return apiActivities.slice(0, 5).map((a) => ({
     id: a.id,
     type: a.type,
-    description: a.description,
+    description: a.description || "No description provided",
     time: formatTimeAgo(a.timestamp),
     priority: a.priority || "low",
   }));
@@ -228,7 +228,7 @@ export default function MedicalDashboard() {
             {vitals.map((vital) => {
               const TrendIcon = trendIcons[vital.trend as keyof typeof trendIcons] || Minus;
               const colors = colorClasses[vital.color] || colorClasses.primary;
-              
+
               return (
                 <Card key={vital.id} variant="elevated" className="hover:shadow-soft transition-shadow cursor-pointer">
                   <CardContent>
@@ -361,8 +361,8 @@ export default function MedicalDashboard() {
                         activity.priority === "high"
                           ? "bg-accent-50 dark:bg-accent-900/30 border-accent-200 dark:border-accent-800"
                           : activity.priority === "medium"
-                          ? "bg-secondary-50 dark:bg-secondary-900/30 border-secondary-200 dark:border-secondary-800"
-                          : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700"
+                            ? "bg-secondary-50 dark:bg-secondary-900/30 border-secondary-200 dark:border-secondary-800"
+                            : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700"
                       )}
                     >
                       <div className="flex items-start gap-3">

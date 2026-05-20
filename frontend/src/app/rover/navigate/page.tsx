@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation, MapPin, Home, Utensils, Bath, Sofa, Bed, Coffee, ArrowLeft, Play, Pause, X, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
 
 interface Destination {
   id: string;
@@ -26,22 +27,83 @@ export default function NavigatePage() {
   const [selectedDest, setSelectedDest] = useState<Destination | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [followMode, setFollowMode] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  const startNavigation = () => {
+  // Load and poll navigation status in real time
+  useEffect(() => {
+    async function poll() {
+      try {
+        const res = await getNavigationStatus();
+        if (res.status === "success" && res.data) {
+          const nav = res.data;
+          setFollowMode(nav.follow_mode);
+          
+          if (nav.status === 'navigating') {
+            setIsNavigating(true);
+            const foundDest = destinations.find(d => d.id === nav.destination?.toLowerCase());
+            if (foundDest) {
+              setSelectedDest(foundDest);
+            } else {
+              setSelectedDest({ 
+                id: nav.destination || "kitchen", 
+                name: nav.destination || "Kitchen", 
+                icon: Utensils, 
+                color: "bg-secondary", 
+                distance: "15m" 
+              });
+            }
+            setProgress(nav.progress);
+          } else if (nav.status === 'idle') {
+            setIsNavigating(false);
+            if (!nav.follow_mode) {
+              setSelectedDest(null);
+            }
+            setProgress(0);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to poll navigation status:", error);
+      }
+    }
+
+    poll();
+    const interval = setInterval(poll, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const startNavigation = async () => {
     if (selectedDest) {
       setIsNavigating(true);
+      setProgress(10);
+      try {
+        await updateNavigation(selectedDest.id, 'navigating', false);
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 
-  const stopNavigation = () => {
+  const stopNavigation = async () => {
     setIsNavigating(false);
     setSelectedDest(null);
+    setProgress(0);
+    try {
+      await updateNavigation(null, 'idle', false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const toggleFollowMode = () => {
-    setFollowMode(!followMode);
+  const toggleFollowMode = async () => {
+    const nextFollow = !followMode;
+    setFollowMode(nextFollow);
     setIsNavigating(false);
     setSelectedDest(null);
+    try {
+      await updateNavigation(null, 'idle', nextFollow);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -81,7 +143,7 @@ export default function NavigatePage() {
 
       {/* Active Navigation */}
       {isNavigating && selectedDest && (
-        <div className="bg-primary-50 dark:bg-primary-900/30 border-2 border-primary rounded-3xl p-8">
+        <div className="bg-primary-50 dark:bg-primary-900/30 border-2 border-primary rounded-3xl p-8 animate-scale-in">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", selectedDest.color)}>
@@ -104,10 +166,10 @@ export default function NavigatePage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-text-muted dark:text-gray-400">Progress</span>
-              <span className="font-semibold text-primary">30%</span>
+              <span className="font-semibold text-primary">{progress}%</span>
             </div>
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full w-[30%] transition-all duration-500" />
+              <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
             <p className="text-center text-text-muted dark:text-gray-400 mt-4 text-lg">
               🚶 Walking safely... Please follow me
@@ -153,7 +215,7 @@ export default function NavigatePage() {
           {selectedDest && (
             <button
               onClick={startNavigation}
-              className="w-full py-6 px-8 rounded-3xl bg-primary text-white flex items-center justify-center gap-4 text-2xl font-bold hover:bg-primary-600 transition-colors"
+              className="w-full py-6 px-8 rounded-3xl bg-primary text-white flex items-center justify-center gap-4 text-2xl font-bold hover:bg-primary-600 transition-colors shadow-soft"
             >
               <Play className="w-8 h-8" />
               Go to {selectedDest.name}
@@ -163,13 +225,13 @@ export default function NavigatePage() {
       )}
 
       {/* Safety Information */}
-      <div className="bg-gray-50 rounded-2xl p-6 flex items-start gap-4">
-        <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+      <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl p-6 flex items-start gap-4">
+        <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
           <Navigation className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h3 className="font-semibold text-text-primary mb-1">Safety First</h3>
-          <p className="text-text-muted">
+          <h3 className="font-semibold text-text-primary dark:text-white mb-1">Safety First</h3>
+          <p className="text-text-muted dark:text-gray-400">
             I'll navigate at a safe pace and avoid obstacles. Please ensure the path is clear of any hazards.
             You can stop navigation at any time.
           </p>
