@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 # ── Colors ───────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -47,7 +47,7 @@ banner() {
 asl_script() {
   cat <<'INNER'
 echo "=== NovaCare — ASL Model API ==="
-cd "__ROOT__/services/asl-model"
+cd "__ROOT__/services/asl"
 
 if [ ! -d "venv" ]; then
   echo "[!] No venv found. Creating..."
@@ -69,7 +69,7 @@ INNER
 llm_script() {
   cat <<'INNER'
 echo "=== NovaCare — LLM Backend ==="
-cd "__ROOT__/services/llm-backend"
+cd "__ROOT__/services/llm"
 
 if [ ! -d "venv" ]; then
   echo "[*] Creating venv..."
@@ -96,7 +96,7 @@ INNER
 fe_script() {
   cat <<'INNER'
 echo "=== NovaCare — Frontend ==="
-cd "__ROOT__/frontend"
+cd "__ROOT__/apps/frontend"
 
 if [ ! -d "node_modules" ]; then
   echo "[*] Installing npm dependencies..."

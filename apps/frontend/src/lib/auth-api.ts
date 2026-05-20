@@ -43,6 +43,8 @@ export interface AuthResponseData {
   refresh_token: string;
 }
 
+export type ReferenceData = Record<string, any[]>;
+
 // ---------------------------------------------------------------------------
 // Token Management
 // ---------------------------------------------------------------------------

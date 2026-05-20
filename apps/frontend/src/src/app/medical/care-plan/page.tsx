@@ -221,7 +221,7 @@ export default function CarePlanPage() {
                   <Badge
                     variant={
                       config.color === "primary"
-                        ? "primary"
+                        ? "default"
                         : config.color === "success"
                         ? "success"
                         : config.color === "danger"

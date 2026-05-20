@@ -14,7 +14,7 @@
 #>
 
 $ErrorActionPreference = "Stop"
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = (Get-Item "$PSScriptRoot\..\..").FullName
 
 # ---- Colors & Banner ----
 function Write-Banner {
@@ -50,7 +50,7 @@ Write-Banner
 # -------------------------------------------------
 # 1. ASL Model API (FastAPI, port 8000)
 # -------------------------------------------------
-$aslDir = Join-Path $Root "services\asl-model"
+$aslDir = Join-Path $Root "services\asl"
 $aslCmd = @"
 Write-Host '=== NovaCare - ASL Model API ===' -ForegroundColor Cyan
 if (-not (Test-Path 'venv')) {
@@ -71,7 +71,7 @@ Start-Service -Name "ASL Model API" -WorkDir $aslDir -Command $aslCmd -Color "Ma
 # -------------------------------------------------
 # 2. LLM Backend (Flask, port 5000)
 # -------------------------------------------------
-$llmDir = Join-Path $Root "services\llm-backend"
+$llmDir = Join-Path $Root "services\llm"
 $llmCmd = @"
 Write-Host '=== NovaCare - LLM Backend ===' -ForegroundColor Cyan
 if (-not (Test-Path 'venv')) {
@@ -128,7 +128,7 @@ Start-Service -Name "Robot Service" -WorkDir $robotDir -Command $robotCmd -Color
 # -------------------------------------------------
 # 4. Frontend (Next.js, port 3000)
 # -------------------------------------------------
-$feDir = Join-Path $Root "frontend"
+$feDir = Join-Path $Root "apps\frontend"
 $feCmd = @"
 Write-Host '=== NovaCare - Frontend ===' -ForegroundColor Cyan
 if (-not (Test-Path 'node_modules')) {
@@ -142,7 +142,7 @@ if (-not (Test-Path '.env.local')) {
     Write-Host '[!] WARNING: No .env.local file found!' -ForegroundColor Red
     Write-Host '[!] Create .env.local with at least:' -ForegroundColor Yellow
     Write-Host '    NEXT_PUBLIC_NOVABOT_API_URL=http://localhost:5000' -ForegroundColor Yellow
-    Write-Host '[!] LLM keys: services/llm-backend/.env (Ollama + Hugging Face)' -ForegroundColor Yellow
+    Write-Host '[!] LLM keys: services/llm/.env (Ollama + Hugging Face)' -ForegroundColor Yellow
 }
 Write-Host '[*] Starting Next.js on port 3000...' -ForegroundColor Cyan
 npm run dev

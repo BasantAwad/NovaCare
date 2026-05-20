@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import { VoiceProvider } from "@/voice/VoiceContext";
+import { VoiceAssistantUI } from "@/voice/components/VoiceAssistantUI";
+import { VoiceDebugPanel } from "@/voice/components/VoiceDebugPanel";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,7 +32,11 @@ export default function RootLayout({
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <VoiceProvider>
+              {children}
+              <VoiceAssistantUI />
+              <VoiceDebugPanel />
+            </VoiceProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
