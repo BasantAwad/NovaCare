@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 /// Represents the current state of the NovaCare rover.
 enum RoverConnectionState { disconnected, connecting, connected, error }
@@ -146,21 +148,35 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Simulated Realtime Updates (for demo) ─────────────────────
+  // ─── Realtime Updates from API ─────────────────────
   void startSimulatedUpdates() {
     _connectionState = RoverConnectionState.connected;
     _isRoverOnline = true;
     notifyListeners();
 
-    // Simulate periodic telemetry updates
+    // Poll real telemetry from backend
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 5));
       if (_connectionState != RoverConnectionState.connected) return false;
 
-      // Slight random variations for demo
-      _heartRate = 68 + (DateTime.now().second % 10);
-      _batteryLevel = (_batteryLevel > 5) ? _batteryLevel : 85;
-      _temperature = 36.2 + (DateTime.now().second % 8) * 0.1;
+      try {
+        final uri = Uri.parse("http://10.34.19.241:8001/api/telemetry/vitals/RV001");
+        final response = await http.get(uri).timeout(const Duration(seconds: 3));
+        if (response.statusCode == 200) {
+          final json = jsonDecode(response.body);
+          if (json['success'] == true) {
+            _heartRate = json['data']['heart_rate'] ?? _heartRate;
+            _temperature = (json['data']['temperature'] ?? _temperature).toDouble();
+          }
+        }
+        
+        final batteryUri = Uri.parse("http://10.34.19.241:8001/api/telemetry/battery/RV001");
+        // We haven't implemented GET /battery/RV001 in backend, so we skip it or assume constant
+        // _batteryLevel = 85; 
+      } catch (e) {
+        debugPrint("Failed to fetch telemetry: $e");
+      }
+
       notifyListeners();
       return true;
     });

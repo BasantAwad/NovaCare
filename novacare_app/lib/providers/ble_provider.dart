@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -48,7 +49,7 @@ class BleProvider extends ChangeNotifier {
   bool get isTcpConnected => _tcpStatus == TcpConnectionStatus.connected;
   bool get isAnyConnected => isConnected || isTcpConnected;
 
-  String _tcpHost = '127.0.0.1';
+  String _tcpHost = '10.34.19.247'; // default matches TcpProvider; override via Settings > Rover server
   int _tcpPort = 5555;
   String get tcpEndpoint => '$_tcpHost:$_tcpPort';
   String? _tcpErrorMessage;

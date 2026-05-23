@@ -114,6 +114,9 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                     setState(() => _activeDir = dir);
                     // Send a MOVE command over the available transport.
                     try {
+                      // Step-based movement + slower speed to prevent continuous motion.
+                      // First stop rover (if it is moving), then send one single step move.
+                      await ble.sendCommand('STOP');
                       await ble.sendCommand('MOVE:$dir');
                     } catch (e) {
                       // swallow – communication providers will log errors in debug

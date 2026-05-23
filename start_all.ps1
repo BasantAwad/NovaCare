@@ -22,10 +22,10 @@ function Write-Banner {
     Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host "   NovaCare - Starting All Services" -ForegroundColor White
     Write-Host "  ============================================" -ForegroundColor Cyan
-    Write-Host ""
     Write-Host "   [1] ASL Model API     " -NoNewline; Write-Host "(port 8000)" -ForegroundColor Yellow
-    Write-Host "   [2] LLM Backend       " -NoNewline; Write-Host "(port 5000)" -ForegroundColor Yellow
-    Write-Host "   [3] Frontend           " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
+    Write-Host "   [2] App Backend API   " -NoNewline; Write-Host "(port 8001)" -ForegroundColor Yellow
+    Write-Host "   [3] LLM Backend       " -NoNewline; Write-Host "(port 5000)" -ForegroundColor Yellow
+    Write-Host "   [4] Frontend          " -NoNewline; Write-Host "(port 3000)" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "  ============================================" -ForegroundColor Cyan
     Write-Host ""
@@ -68,7 +68,29 @@ if (-not (Test-Path 'venv')) {
 Start-Service -Name "ASL Model API" -WorkDir $aslDir -Command $aslCmd -Color "Magenta"
 
 # -------------------------------------------------
-# 2. LLM Backend (Flask, port 5000)
+# 2. App Backend API (FastAPI, port 8001)
+# -------------------------------------------------
+$appBackendDir = Join-Path $Root "services\app-backend"
+$appBackendCmd = @"
+Write-Host '=== NovaCare - App Backend API ===' -ForegroundColor Cyan
+if (-not (Test-Path 'venv')) {
+    Write-Host '[*] Creating venv...' -ForegroundColor Yellow
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    Write-Host '[*] Installing dependencies...' -ForegroundColor Yellow
+    pip install -r requirements.txt
+    Write-Host '[OK] Dependencies installed' -ForegroundColor Green
+} else {
+    .\venv\Scripts\Activate.ps1
+    Write-Host '[OK] App Backend venv activated' -ForegroundColor Green
+}
+Write-Host '[*] Starting FastAPI on port 8001...' -ForegroundColor Cyan
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8001
+"@
+Start-Service -Name "App Backend API" -WorkDir $appBackendDir -Command $appBackendCmd -Color "Yellow"
+
+# -------------------------------------------------
+# 3. LLM Backend (Flask, port 5000)
 # -------------------------------------------------
 $llmDir = Join-Path $Root "services\llm-backend"
 $llmCmd = @"
@@ -92,6 +114,7 @@ Write-Host '[*] Starting Flask on port 5000...' -ForegroundColor Cyan
 python start_server.py
 "@
 Start-Service -Name "LLM Backend" -WorkDir $llmDir -Command $llmCmd -Color "Blue"
+
 
 # -------------------------------------------------
 # 3. Frontend (Next.js, port 3000)
@@ -124,6 +147,7 @@ Write-Host "   All services launched!" -ForegroundColor Green
 Write-Host "  ============================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "   ASL Model API:  " -NoNewline; Write-Host "http://localhost:8000/docs" -ForegroundColor Yellow
+Write-Host "   App Backend API:" -NoNewline; Write-Host "http://localhost:8001/docs" -ForegroundColor Yellow
 Write-Host "   LLM Backend:    " -NoNewline; Write-Host "http://localhost:5000" -ForegroundColor Yellow
 Write-Host "   Frontend:       " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Yellow
 Write-Host ""

@@ -4,8 +4,10 @@ NovaCare is an AI-powered healthcare companion application with three integrated
 
 | Service | Port | Tech | Description |
 |---------|------|------|-------------|
-| 🖐️ ASL Model API | `8001` | FastAPI | Real-time ASL fingerspelling recognition |
+| 🖐️ ASL Model API | `8000` | FastAPI | Real-time ASL fingerspelling recognition |
 | 🤖 LLM Backend | `5000` | Flask | Conversational AI chatbot (NovaBot) |
+| 🗄️ App Backend API | `8001` | FastAPI | Core backend API, PostgreSQL integration, Telemetry |
+| 🔐 Auth Backend | `5001` | Flask | Authentication and User services |
 | 🖥️ Frontend | `3000` | Next.js | User interface with multiple dashboards |
 
 ---
@@ -135,8 +137,28 @@ All launchers will:
 | Service | URL | What to Expect |
 |---------|-----|----------------|
 | ASL Model API | http://localhost:8000/docs | FastAPI Swagger docs |
+| App Backend API | http://localhost:8001/docs | FastAPI Swagger docs for DB/Telemetry |
 | LLM Backend | http://localhost:5000 | Server response |
 | Frontend | http://localhost:3000 | NovaCare app loads |
+
+### 🌐 Networking & Port Usage
+
+For a successful integration between your laptop, the hardware rover, and the cloud/mobile app, multiple ports are utilized. Here is the master list of all ports in use across the system to help troubleshoot or prevent conflicts:
+
+| Port | Service Name | Component | Network Location | Description |
+|---|---|---|---|---|
+| **3000** | Next.js Web Frontend | Web | Local Laptop | User Interface |
+| **5000** | LLM Backend API | Backend | Local Laptop | Flask Server for Ollama/HF Routing |
+| **5001** | Auth Backend API | Backend | Local Laptop | Flask Server for User Authentication |
+| **5432** | PostgreSQL Database | Database | Local Laptop | Core Database |
+| **5555** | Rover Command TCP Server | Hardware | Jetson/Rover | Receives motion/logic commands from controller |
+| **5557** | Rover MJPEG Stream | Hardware | Jetson/Rover | HTTP Video Stream from rover to laptop |
+| **8000** | ASL Model API | Backend | Local Laptop | FastAPI Server for ASL inference |
+| **8001** | App Backend & Telemetry | Backend | Local Laptop | FastAPI Server for DB integration / Telemetry |
+| **9000** | Robot Service API | Hardware | Jetson/Rover | General APIs available on the Rover hardware |
+| **11434**| Ollama Local Engine | AI Engine | Local Laptop | Used locally for inference |
+
+_Note: If any conflicts occur, ensure no rogue Python or Node processes are running in the background. Use `sudo lsof -i :<PORT>` on Mac/Linux or `netstat -ano \| findstr :<PORT>` on Windows to kill overlapping processes._
 
 ### Voice / TTS (Jetson & local dev)
 

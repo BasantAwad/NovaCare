@@ -55,9 +55,6 @@ services/asl-model/data/models/
 *.log
 npm-debug.log*
 package-lock.json
-<<<<<<< HEAD
-novacare-key.pem
-=======
 
 # ---- Virtual Environments ----
 .venv/
@@ -85,4 +82,13 @@ mock_mysql.db
 # ---- Dev SQLite DB ----
 *.db
 *.sqlite3
->>>>>>> ab44522626a9c47ebbc8e036b2e54f188d77a0f4
+
+# ---- Large Datasets ----
+infrastructure/database/medication datasets/
+infrastructure/database/openfda_ndc_bulk/
+infrastructure/database/openfda_label_bulk/
+infrastructure/database/dailymed/
+*.zip
+*.xlsx
+*.csv
+novacare-key.pem
