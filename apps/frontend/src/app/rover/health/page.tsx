@@ -5,6 +5,7 @@ import { Heart, Activity, Thermometer, Moon, Droplets, Scale, ArrowLeft, Trendin
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getVitals, getSleepLogs, getHydrationLogs, getWeightLogs, logHydration, type VitalSign, type SleepLog, type HydrationLog, type WeightLog } from "@/lib/dashboard-api";
+import { useRobotVitals } from "@/hooks/useRobotVitals";
 
 interface VitalDisplay {
   id: string;
@@ -97,7 +98,8 @@ function mapApiToVitals(
   apiVitals: VitalSign[],
   sleepData?: SleepLog | null,
   hydrationData?: HydrationLog | null,
-  weightData?: WeightLog | null
+  weightData?: WeightLog | null,
+  robotHeartRate?: number | null
 ): VitalDisplay[] {
   if (!apiVitals || apiVitals.length === 0) return FALLBACK_VITALS;
 
@@ -119,12 +121,13 @@ function mapApiToVitals(
 
   const vitals: VitalDisplay[] = [];
 
-  // Heart Rate
-  if (latest.heart_rate !== undefined && latest.heart_rate !== null) {
+  // Heart Rate - prioritize real data from smart watch
+  const hrValue = robotHeartRate ?? latest.heart_rate;
+  if (hrValue !== undefined && hrValue !== null) {
     vitals.push({
-      id: "heartRate", name: "Heart Rate", value: latest.heart_rate, unit: "bpm",
-      status: determineStatus(latest.heart_rate, 60, 100),
-      trend: determineTrend(latest.heart_rate, previous?.heart_rate),
+      id: "heartRate", name: "Heart Rate", value: hrValue, unit: "bpm",
+      status: determineStatus(hrValue, 60, 100),
+      trend: determineTrend(hrValue, previous?.heart_rate),
       icon: Heart, color: "bg-accent", normalRange: "60-100",
     });
   }
@@ -221,6 +224,12 @@ export default function HealthPage() {
   const [hydrationGoal, setHydrationGoal] = useState(8);
   const [isLoggingWater, setIsLoggingWater] = useState(false);
 
+  // Fetch real heart rate from robot's smart watch
+  const { vitals: robotVitals } = useRobotVitals({
+    pollInterval: 2000,
+    fallbackToDashboard: false, // Only use robot watch, not dashboard
+  });
+
   useEffect(() => {
     async function fetchAll() {
       setIsLoading(true);
@@ -243,7 +252,8 @@ export default function HealthPage() {
         }
 
         if (apiVitals) {
-          setVitals(mapApiToVitals(apiVitals, latestSleep, todayHydration, latestWeight));
+          // Pass robot heart rate to prioritize real watch data
+          setVitals(mapApiToVitals(apiVitals, latestSleep, todayHydration, latestWeight, robotVitals?.heart_rate));
         }
       } catch (error) {
         console.error("Failed to fetch health data:", error);
@@ -254,6 +264,20 @@ export default function HealthPage() {
 
     fetchAll();
   }, []);
+
+  // Update vitals when robot heart rate changes
+  useEffect(() => {
+    if (robotVitals?.heart_rate && vitals.length > 0) {
+      // Update the heart rate vital with real watch data
+      setVitals((prevVitals) =>
+        prevVitals.map((vital) =>
+          vital.id === "heartRate"
+            ? { ...vital, value: robotVitals.heart_rate }
+            : vital
+        )
+      );
+    }
+  }, [robotVitals?.heart_rate]);
 
   const abnormalCount = vitals.filter((v) => v.status !== "normal").length;
 

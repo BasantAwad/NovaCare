@@ -27,8 +27,10 @@ LiDAR
     GET  /api/lidar/scan            → full scan data
     GET  /api/lidar/obstacle        → obstacle-ahead check
 
-System
-    GET  /health                    → service health + hardware status
+Vitals & Health
+    GET  /api/vitals/heart-rate     → latest heart rate from smart watch
+    GET  /api/vitals/current        → all current vitals (HR, steps, battery)
+    GET  /health                    → service health + hardware status + vitals
 """
 
 import os
@@ -49,6 +51,11 @@ from config import (
     DEFAULT_SPEED, OBSTACLE_STOP_DISTANCE_MM,
 )
 from robot_hal import get_robot
+from watch_integration import (
+    init_watch_integration,
+    get_watch_manager,
+    get_current_vitals,
+)
 
 app = Flask(__name__)
 CORS(app)
@@ -373,10 +380,39 @@ def lidar_obstacle():
 # Health / System
 # ============================================================================
 
+@app.get("/api/vitals/heart-rate")
+def get_heart_rate():
+    """Get latest heart rate from smart watch."""
+    vitals = get_current_vitals()
+    if vitals.heart_rate is None:
+        return jsonify({
+            "status": "unavailable",
+            "heart_rate": None,
+            "message": "Heart rate data not available"
+        }), 503
+    
+    return jsonify({
+        "status": "success",
+        "heart_rate": vitals.heart_rate,
+        "timestamp": vitals.timestamp.isoformat() if vitals.timestamp else None,
+    })
+
+
+@app.get("/api/vitals/current")
+def get_all_vitals():
+    """Get all current vitals from smart watch."""
+    vitals = get_current_vitals()
+    return jsonify({
+        "status": "success",
+        **vitals.to_dict()
+    })
+
+
 @app.get("/health")
 def health():
     """Service health check with hardware status."""
     r = robot()
+    vitals = get_current_vitals()
     return jsonify({
         "status": "healthy",
         "service": "NovaCare Robot Service",
@@ -388,6 +424,7 @@ def health():
             "lidar": r.lidar.is_available,
             "moving": r.motion.is_moving,
         },
+        "vitals": vitals.to_dict() if vitals else None,
     })
 
 
@@ -397,6 +434,9 @@ def health():
 
 def _cleanup(signum, frame):
     """Handle SIGINT/SIGTERM — stop robot gracefully."""
+    watch_mgr = get_watch_manager()
+    if watch_mgr:
+        watch_mgr.stop()
     if _robot:
         _robot.shutdown()
     sys.exit(0)
@@ -411,4 +451,18 @@ if __name__ == "__main__":
     print("  NovaCare — Robot REST Service")
     print(f"  Listening on {ROBOT_SERVICE_HOST}:{ROBOT_SERVICE_PORT}")
     print("=" * 50)
+    
+    # Initialize watch integration in simulation mode by default
+    # (set simulation_mode=False to connect to real HRYFINE watch)
+    watch_address = os.getenv("WATCH_ADDRESS", "C2:FC:28:B7:1C:1B")
+    simulation_mode = os.getenv("WATCH_SIMULATION", "true").lower() == "true"
+    
+    print(f"\n📱 Initializing watch integration (simulation={simulation_mode})...")
+    init_watch_integration(device_address=watch_address, simulation_mode=simulation_mode)
+    
+    watch_mgr = get_watch_manager()
+    if watch_mgr:
+        watch_mgr.start()
+        print("✅ Watch monitoring started\n")
+    
     app.run(host=ROBOT_SERVICE_HOST, port=ROBOT_SERVICE_PORT, threaded=True)

@@ -6,7 +6,8 @@ import { MessageCircle, Pill, Navigation, AlertTriangle, Heart, Music, Smile, Lo
 import { cn } from "@/lib/utils";
 import EmotionDetectionModal from "@/components/EmotionDetectionModal";
 import { useAuth } from "@/context/AuthContext";
-import { getVitals, getMedications, getBatteryStatus, type VitalSign, type MedicationSchedule, type BatteryStatus } from "@/lib/dashboard-api";
+import { getMedications, getBatteryStatus, type MedicationSchedule, type BatteryStatus } from "@/lib/dashboard-api";
+import { useRobotVitals } from "@/hooks/useRobotVitals";
 
 /** Per-tile accent: darker on light UI (readable on bright gradient stops), lighter on dark UI. */
 const mainFeatures = [
@@ -92,8 +93,14 @@ export default function RoverHomePage() {
   const { user } = useAuth();
   const userName = user?.first_name || "Friend";
 
+  // Fetch real vitals from robot's smart watch
+  const { vitals: robotVitals, isLoading: vitalsLoading, source: vitalsSource } = useRobotVitals({
+    pollInterval: 2000,
+    fallbackToDashboard: true,
+  });
+
   // Dynamic state from backend
-  const [heartRate, setHeartRate] = useState<number>(72);
+  const heartRate = robotVitals?.heart_rate ?? 72;
   const [medsToday, setMedsToday] = useState<number>(2);
   const [battery, setBattery] = useState<BatteryStatus | null>(null);
   const roverStatus = battery
@@ -101,20 +108,12 @@ export default function RoverHomePage() {
     : "Ready";
 
   useEffect(() => {
-    async function fetchQuickStats() {
+    async function fetchStats() {
       try {
-        const [vitalsRes, medsRes, batteryRes] = await Promise.all([
-          getVitals(),
+        const [medsRes, batteryRes] = await Promise.all([
           getMedications(),
           getBatteryStatus(),
         ]);
-
-        if (vitalsRes.status === "success" && vitalsRes.data && vitalsRes.data.length > 0) {
-          const latest = vitalsRes.data[0];
-          if (latest.heart_rate) {
-            setHeartRate(latest.heart_rate);
-          }
-        }
 
         if (medsRes.status === "success" && medsRes.data) {
           const todayMeds = medsRes.data.filter(
@@ -127,12 +126,12 @@ export default function RoverHomePage() {
           setBattery(batteryRes.data);
         }
       } catch (error) {
-        console.error("Failed to fetch rover quick stats:", error);
+        console.error("Failed to fetch rover stats:", error);
       }
     }
 
-    fetchQuickStats();
-    const interval = setInterval(fetchQuickStats, 3000);
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000); // Update meds/battery every 5 seconds
     return () => clearInterval(interval);
   }, []);
 

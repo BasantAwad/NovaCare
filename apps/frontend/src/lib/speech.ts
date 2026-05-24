@@ -137,7 +137,7 @@ export class TTSService {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
           body: body.toString(),
-          signal: AbortSignal.timeout(10000), // 10s timeout
+          signal: AbortSignal.timeout(60000), // 60s timeout
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

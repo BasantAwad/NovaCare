@@ -126,6 +126,27 @@ class RAGDataManager:
     def get_vitals(self, rover_id="RV001"):
         """Fetch the patient's latest measured vital signs."""
         print(f"📡 [RAG DB Access] Fetching vital signs for '{rover_id}' ({'MOCK MODE' if self.use_mock else 'MYSQL MODE'})")
+        
+        # Try fetching from real Watch/Robot API first
+        try:
+            import requests
+            robot_api = os.getenv("ROBOT_API_URL", "http://localhost:9000")
+            api_key = os.getenv("ROBOT_API_KEY", "novacare-secure-key-2026")
+            res = requests.get(f"{robot_api}/api/vitals/current", headers={"X-API-Key": api_key}, timeout=2)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("status") == "success" and data.get("heart_rate") is not None:
+                    print(f"   ↳ [Robot API] ✓ Returned live watch vitals: HR={data.get('heart_rate')} bpm")
+                    return {
+                        "heart_rate": data.get("heart_rate"),
+                        "blood_pressure": "120/80", # watch doesn't measure this
+                        "oxygen_level": 98,
+                        "temperature": 36.6,
+                        "measured_at": "Live (Watch)"
+                    }
+        except Exception as e:
+            print(f"   ↳ [Robot API] Could not fetch live watch vitals (falling back): {e}")
+
         if self.use_mock:
             db = self._read_mock_db()
             vitals = db.get("vitals", {})

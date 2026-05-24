@@ -1,5 +1,5 @@
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$WorkDir = Join-Path $Root "services\llm-backend"
+$WorkDir = Join-Path $Root "services\llm"
 Set-Location $WorkDir
 
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -7,16 +7,17 @@ Write-Host "   NovaCare - Starting LLM Backend" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-if (-not (Test-Path 'venv')) {
+$VenvPath = Join-Path $Root "services\llm-backend\venv"
+if (-not (Test-Path $VenvPath)) {
     Write-Host "[*] Creating virtual environment (venv)..." -ForegroundColor Yellow
-    python -m venv venv
-    .\venv\Scripts\Activate.ps1
+    python -m venv $VenvPath
+    & "$VenvPath\Scripts\Activate.ps1"
     Write-Host "[*] Installing dependencies..." -ForegroundColor Yellow
     pip install -r requirements.txt
     Write-Host "[OK] Dependencies installed" -ForegroundColor Green
 } else {
-    .\venv\Scripts\Activate.ps1
-    Write-Host "[OK] LLM Backend venv activated" -ForegroundColor Green
+    & "$VenvPath\Scripts\Activate.ps1"
+    Write-Host "[OK] LLM Backend venv (from llm-backend) activated" -ForegroundColor Green
 }
 
 if (-not (Test-Path '.env')) {
