@@ -77,6 +77,12 @@ export class STTService {
       this.recognition.stop();
     }
   }
+
+  abort() {
+    if (this.recognition) {
+      this.recognition.abort();
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

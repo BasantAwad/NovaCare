@@ -345,7 +345,13 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const pauseWakeWord = useCallback(() => {
     continuousListeningRef.current = false;
-    speechService?.stopListening();
+    // @ts-ignore - using the newly added abort method
+    if (speechService?.abort) {
+      // @ts-ignore
+      speechService.abort();
+    } else {
+      speechService?.stopListening();
+    }
   }, []);
 
   const resumeWakeWord = useCallback(() => {
