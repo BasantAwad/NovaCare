@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { aslAPI, ASLAPIError } from "@/lib/asl-api";
 import { getCameraFrame, checkRobotHealth, getCameraStreamUrl } from "@/lib/robot-api";
 import type { PredictionResponse } from "@/types/asl-types";
+import { useVoice } from "@/voice/VoiceContext";
 
 interface ASLRecognitionModalProps {
     isOpen: boolean;
@@ -33,6 +34,8 @@ export default function ASLRecognitionModal({
     const [useRobotCamera, setUseRobotCamera] = useState(false);
     const [robotCameraUrl, setRobotCameraUrl] = useState<string | null>(null);
     const [isCheckingHealth, setIsCheckingHealth] = useState(true);
+
+    const { pauseWakeWord, resumeWakeWord } = useVoice();
 
     // For auto-detection after stable recognition
     const [stableLetter, setStableLetter] = useState<string | null>(null);
@@ -323,23 +326,26 @@ export default function ASLRecognitionModal({
     // Initialize camera when modal opens
     useEffect(() => {
         if (isOpen && !isCheckingHealth) {
+            pauseWakeWord(); // Release AV stack locks
             if (!useRobotCamera) {
                 startCamera();
             }
         } else if (!isOpen) {
             stopCamera();
             stopRecognition();
+            resumeWakeWord();
             setIsCheckingHealth(true); // Reset for next open
         }
-    }, [isOpen, isCheckingHealth, startCamera, stopCamera, stopRecognition, useRobotCamera]);
+    }, [isOpen, isCheckingHealth, startCamera, stopCamera, stopRecognition, useRobotCamera, pauseWakeWord, resumeWakeWord]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
             stopCamera();
             stopRecognition();
+            resumeWakeWord(); // Safety check
         };
-    }, [stopCamera, stopRecognition]);
+    }, [stopCamera, stopRecognition, resumeWakeWord]);
 
     if (!isOpen) return null;
 
