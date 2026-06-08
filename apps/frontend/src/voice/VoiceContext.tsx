@@ -263,8 +263,10 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     speechService.onResult((text: string) => {
       const lower = text.toLowerCase();
 
-      // Wake word detection
-      if (!isActiveRef.current && (lower.includes('hey nova') || lower.includes('hi nova'))) {
+      // Wake word detection using robust phonetic regex
+      const WAKE_WORD_REGEX = /\b(?:(?:hey|hi|hello|okay|ok)\s+(?:nova|noah|noba|nava|novak|nover|lover|over|no va|mother)|inova|ainova|enova|heynova|hinova)\b/i;
+
+      if (!isActiveRef.current && WAKE_WORD_REGEX.test(lower)) {
         setIsActive(true);
         setTranscript('Hey Nova');
         setResponse("I'm listening...");
@@ -274,10 +276,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
           speechService?.startListening();
         });
 
-        const remainder = text
-          .replace(/hey nova/i, '')
-          .replace(/hi nova/i, '')
-          .trim();
+        const remainder = text.replace(WAKE_WORD_REGEX, '').trim();
         if (!remainder) return;
         setTranscript(remainder);
         processCommand(remainder);
