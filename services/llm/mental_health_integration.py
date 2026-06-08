@@ -106,11 +106,16 @@ class CameraEmotionPoller:
 
             # Fallback: local webcam
             if frame is None and not self._use_robot_camera:
-                if self._local_cap is None:
-                    self._local_cap = cv2.VideoCapture(0)
-                ret, frame = self._local_cap.read()
-                if not ret:
-                    frame = None
+                if os.getenv("ALLOW_LOCAL_WEBCAM_POLLING") == "true":
+                    if self._local_cap is None:
+                        self._local_cap = cv2.VideoCapture(0)
+                    ret, frame = self._local_cap.read()
+                    if not ret:
+                        frame = None
+                else:
+                    # Do not lock the local webcam by default, as it breaks frontend camera features like ASL
+                    time.sleep(1)
+                    continue
 
             # Run emotion detection
             if frame is not None and self.analyzer:
