@@ -24,6 +24,7 @@ export default function ASLRecognitionModal({
     const streamRef = useRef<MediaStream | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastAddedTimeRef = useRef<number>(0); // Cooldown to prevent duplicates
+    const isStartingCameraRef = useRef(false); // Concurrency lock
 
     const [isRecognizing, setIsRecognizing] = useState(false);
     const [accumulatedText, setAccumulatedText] = useState("");
@@ -88,7 +89,16 @@ export default function ASLRecognitionModal({
 
     // Initialize webcam
     const startCamera = useCallback(async () => {
+        if (isStartingCameraRef.current) return;
+        isStartingCameraRef.current = true;
+
         try {
+            // Forcefully kill any existing zombie stream before requesting a new one
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: {
                     width: { ideal: 640 },
@@ -97,18 +107,24 @@ export default function ASLRecognitionModal({
                 },
             });
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                streamRef.current = stream;
-                setCameraReady(true);
-                setError(null);
+            // Check if the user closed the modal while we were waiting for permissions
+            if (!videoRef.current) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
             }
+
+            videoRef.current.srcObject = stream;
+            streamRef.current = stream;
+            setCameraReady(true);
+            setError(null);
         } catch (err) {
             const error = err as Error;
             setError(
                 `Camera access denied. Please allow camera permissions. ${error.message}`
             );
             setCameraReady(false);
+        } finally {
+            isStartingCameraRef.current = false;
         }
     }, []);
 
