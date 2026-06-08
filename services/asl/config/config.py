@@ -11,8 +11,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
-# Checkpoints are in the old directory
-CHECKPOINT_DIR = PROJECT_ROOT.parent / "asl-model" / "checkpoints"
+# Checkpoints are in the local directory
+CHECKPOINT_DIR = PROJECT_ROOT / "checkpoints"
 
 # Ensure directories exist
 for dir_path in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, CHECKPOINT_DIR]:

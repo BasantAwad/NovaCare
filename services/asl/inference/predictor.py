@@ -90,7 +90,22 @@ class ASLPredictor:
         
         # Load model
         if model_path is None:
-            model_path = str(CHECKPOINT_DIR / "latest" / "best_model.pt")
+            best_model_path = None
+            latest_time = 0
+            
+            # Find all best_model.pt files and pick the most recently modified one
+            if CHECKPOINT_DIR.exists():
+                for p in CHECKPOINT_DIR.rglob("best_model.pt"):
+                    mtime = p.stat().st_mtime
+                    if mtime > latest_time:
+                        latest_time = mtime
+                        best_model_path = p
+            
+            if best_model_path:
+                model_path = str(best_model_path)
+            else:
+                # Absolute fallback if somehow nothing exists
+                model_path = str(CHECKPOINT_DIR / "best_model.pt")
         
         self._load_model(model_path, model_type)
         

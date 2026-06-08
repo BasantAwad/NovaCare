@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Camera, Hand, Check, Trash2, Space, Delete as DeleteIcon, Loader2, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { aslAPI, ASLAPIError } from "@/lib/asl-api";
-import { getCameraFrame, checkRobotHealth } from "@/lib/robot-api";
+import { getCameraFrame, checkRobotHealth, getCameraStreamUrl } from "@/lib/robot-api";
 import type { PredictionResponse } from "@/types/asl-types";
 
 interface ASLRecognitionModalProps {
@@ -31,6 +31,8 @@ export default function ASLRecognitionModal({
     const [apiStatus, setApiStatus] = useState<"checking" | "connected" | "error">("checking");
     const [cameraReady, setCameraReady] = useState(false);
     const [useRobotCamera, setUseRobotCamera] = useState(false);
+    const [robotCameraUrl, setRobotCameraUrl] = useState<string | null>(null);
+    const [isCheckingHealth, setIsCheckingHealth] = useState(true);
 
     // For auto-detection after stable recognition
     const [stableLetter, setStableLetter] = useState<string | null>(null);
@@ -56,11 +58,23 @@ export default function ASLRecognitionModal({
             try {
                 const robotHealth = await checkRobotHealth();
                 if (robotHealth.hardware.camera) {
-                    setUseRobotCamera(true);
-                    setCameraReady(true);
+                    // Verify the camera is actually producing frames (not just a ghost driver)
+                    try {
+                        await getCameraFrame();
+                        setUseRobotCamera(true);
+                        setRobotCameraUrl(getCameraStreamUrl());
+                        setCameraReady(true);
+                    } catch (frameErr) {
+                        console.warn("Robot camera reported healthy, but failed to produce frames. Falling back to browser camera.", frameErr);
+                        setUseRobotCamera(false);
+                    }
+                } else {
+                    setUseRobotCamera(false);
                 }
             } catch {
                 setUseRobotCamera(false);
+            } finally {
+                setIsCheckingHealth(false);
             }
         };
 
@@ -187,7 +201,7 @@ export default function ASLRecognitionModal({
                                             (async () => {
                                                 try {
                                                     const accumulator = await aslAPI.addLetter(prediction.letter);
-                                                    setAccumulatedText(accumulator.full_text);
+                                                    setAccumulatedText(accumulator.text);
                                                 } catch (err) {
                                                     console.error("Auto-add error:", err);
                                                 }
@@ -246,7 +260,7 @@ export default function ASLRecognitionModal({
 
         try {
             const accumulator = await aslAPI.addLetter(currentPrediction.letter);
-            setAccumulatedText(accumulator.full_text);
+            setAccumulatedText(accumulator.text);
         } catch (err) {
             if (err instanceof ASLAPIError) {
                 setError(err.message);
@@ -257,8 +271,8 @@ export default function ASLRecognitionModal({
     // Add space manually  
     const addSpace = useCallback(async () => {
         try {
-            const accumulator = await aslAPI.addLetter(" ");
-            setAccumulatedText(accumulator.full_text);
+            const accumulator = await aslAPI.addLetter("space");
+            setAccumulatedText(accumulator.text);
         } catch (err) {
             if (err instanceof ASLAPIError) {
                 setError(err.message);
@@ -268,7 +282,7 @@ export default function ASLRecognitionModal({
 
     // Backspace: remove last character manually
     const handleBackspace = useCallback(() => {
-        if (accumulatedText.length > 0) {
+        if (accumulatedText && accumulatedText.length > 0) {
             const newText = accumulatedText.slice(0, -1);
             setAccumulatedText(newText);
         }
@@ -288,7 +302,7 @@ export default function ASLRecognitionModal({
 
     // Confirm and send text to chat
     const handleConfirm = useCallback(() => {
-        if (accumulatedText.trim()) {
+        if (accumulatedText && accumulatedText.trim()) {
             onConfirm(accumulatedText.trim());
             stopRecognition();
             stopCamera();
@@ -308,20 +322,24 @@ export default function ASLRecognitionModal({
 
     // Initialize camera when modal opens
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && !isCheckingHealth) {
             if (!useRobotCamera) {
                 startCamera();
             }
-        } else {
+        } else if (!isOpen) {
             stopCamera();
             stopRecognition();
+            setIsCheckingHealth(true); // Reset for next open
         }
+    }, [isOpen, isCheckingHealth, startCamera, stopCamera, stopRecognition, useRobotCamera]);
 
+    // Cleanup on unmount
+    useEffect(() => {
         return () => {
             stopCamera();
             stopRecognition();
         };
-    }, [isOpen, startCamera, stopCamera, stopRecognition, useRobotCamera]);
+    }, [stopCamera, stopRecognition]);
 
     if (!isOpen) return null;
 
@@ -400,14 +418,23 @@ export default function ASLRecognitionModal({
 
                     {/* Video Feed */}
                     <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video">
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover"
-                            style={{ transform: 'scaleX(-1)' }} // Mirror the video for natural ASL signing
-                        />
+                        {useRobotCamera && robotCameraUrl ? (
+                            <img
+                                src={robotCameraUrl}
+                                alt="Robot camera feed"
+                                className="w-full h-full object-cover"
+                                style={{ transform: 'scaleX(-1)' }} // Mirror the video for natural ASL signing
+                            />
+                        ) : (
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className={cn("w-full h-full object-cover", !cameraReady && "hidden")}
+                                style={{ transform: 'scaleX(-1)' }} // Mirror the video for natural ASL signing
+                            />
+                        )}
                         <canvas ref={canvasRef} className="hidden" />
 
                         {/* Prediction Overlay */}
@@ -541,10 +568,10 @@ export default function ASLRecognitionModal({
                         {/* Confirm Button */}
                         <button
                             onClick={handleConfirm}
-                            disabled={!accumulatedText.trim()}
+                            disabled={!(accumulatedText || '').trim()}
                             className={cn(
                                 "rover-btn col-span-2 py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all",
-                                accumulatedText.trim()
+                                (accumulatedText || '').trim()
                                     ? "bg-primary text-white hover:bg-primary-600"
                                     : "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed"
                             )}

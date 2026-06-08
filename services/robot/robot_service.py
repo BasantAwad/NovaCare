@@ -1,5 +1,5 @@
-"""
-NovaCare Robot — REST Service
+﻿"""
+NovaCare Robot  REST Service
 ==============================
 Flask API exposing robot hardware capabilities over HTTP.
 
@@ -8,29 +8,29 @@ Port: 9000 (configurable via ROBOT_SERVICE_PORT)
 Endpoints
 ---------
 Camera
-    GET  /api/camera/frame          → base64 JPEG frame
-    GET  /api/camera/stream         → MJPEG stream (multipart/x-mixed-replace)
+    GET  /api/camera/frame           base64 JPEG frame
+    GET  /api/camera/stream          MJPEG stream (multipart/x-mixed-replace)
 
 Movement
-    POST /api/move                  → body: {"direction": str, "speed": int, "duration": float}
-    POST /api/move/stop             → stop all movement
-    POST /api/navigate              → body: {"destination": str}
-    POST /api/follow/start          → start follow-user mode
-    POST /api/follow/stop           → stop follow-user mode
+    POST /api/move                   body: {"direction": str, "speed": int, "duration": float}
+    POST /api/move/stop              stop all movement
+    POST /api/navigate               body: {"destination": str}
+    POST /api/follow/start           start follow-user mode
+    POST /api/follow/stop            stop follow-user mode
 
 Audio
-    POST /api/tts/speak             → body: {"text": str, "lang": str}
-    POST /api/stt/listen            → listen for speech, return text
-    GET  /api/stt/status            → check STT availability
+    POST /api/tts/speak              body: {"text": str, "lang": str}
+    POST /api/stt/listen             listen for speech, return text
+    GET  /api/stt/status             check STT availability
 
 LiDAR
-    GET  /api/lidar/scan            → full scan data
-    GET  /api/lidar/obstacle        → obstacle-ahead check
+    GET  /api/lidar/scan             full scan data
+    GET  /api/lidar/obstacle         obstacle-ahead check
 
 Vitals & Health
-    GET  /api/vitals/heart-rate     → latest heart rate from smart watch
-    GET  /api/vitals/current        → all current vitals (HR, steps, battery)
-    GET  /health                    → service health + hardware status + vitals
+    GET  /api/vitals/heart-rate      latest heart rate from smart watch
+    GET  /api/vitals/current         all current vitals (HR, steps, battery)
+    GET  /health                     service health + hardware status + vitals
 """
 
 import os
@@ -193,7 +193,7 @@ def move():
         robot().motion.stop()
         return jsonify({
             "status": "blocked",
-            "message": "Obstacle detected ahead — movement stopped for safety",
+            "message": "Obstacle detected ahead  movement stopped for safety",
         }), 200
 
     angle = DIRECTION_MAP[direction]
@@ -433,7 +433,7 @@ def health():
 # ============================================================================
 
 def _cleanup(signum, frame):
-    """Handle SIGINT/SIGTERM — stop robot gracefully."""
+    """Handle SIGINT/SIGTERM  stop robot gracefully."""
     watch_mgr = get_watch_manager()
     if watch_mgr:
         watch_mgr.stop()
@@ -448,7 +448,7 @@ signal.signal(signal.SIGTERM, _cleanup)
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  NovaCare — Robot REST Service")
+    print("  NovaCare  Robot REST Service")
     print(f"  Listening on {ROBOT_SERVICE_HOST}:{ROBOT_SERVICE_PORT}")
     print("=" * 50)
     
@@ -457,12 +457,12 @@ if __name__ == "__main__":
     watch_address = os.getenv("WATCH_ADDRESS", "C2:FC:28:B7:1C:1B")
     simulation_mode = os.getenv("WATCH_SIMULATION", "true").lower() == "true"
     
-    print(f"\n📱 Initializing watch integration (simulation={simulation_mode})...")
+    print(f"\n Initializing watch integration (simulation={simulation_mode})...")
     init_watch_integration(device_address=watch_address, simulation_mode=simulation_mode)
     
     watch_mgr = get_watch_manager()
     if watch_mgr:
         watch_mgr.start()
-        print("✅ Watch monitoring started\n")
+        print(" Watch monitoring started\n")
     
     app.run(host=ROBOT_SERVICE_HOST, port=ROBOT_SERVICE_PORT, threaded=True)

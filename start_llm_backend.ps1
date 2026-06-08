@@ -7,7 +7,7 @@ Write-Host "   NovaCare - Starting LLM Backend" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$VenvPath = Join-Path $Root "services\llm-backend\venv"
+$VenvPath = Join-Path $Root "services\llm\venv"
 if (-not (Test-Path $VenvPath)) {
     Write-Host "[*] Creating virtual environment (venv)..." -ForegroundColor Yellow
     python -m venv $VenvPath
@@ -17,7 +17,9 @@ if (-not (Test-Path $VenvPath)) {
     Write-Host "[OK] Dependencies installed" -ForegroundColor Green
 } else {
     & "$VenvPath\Scripts\Activate.ps1"
-    Write-Host "[OK] LLM Backend venv (from llm-backend) activated" -ForegroundColor Green
+    Write-Host "[OK] LLM Backend venv activated" -ForegroundColor Green
+    Write-Host "[*] Ensuring dependencies are installed..." -ForegroundColor Yellow
+    pip install -r requirements.txt
 }
 
 if (-not (Test-Path '.env')) {

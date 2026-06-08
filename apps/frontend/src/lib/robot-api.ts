@@ -82,6 +82,7 @@ async function robotFetch<T>(path: string, options: RequestInit = {}): Promise<T
   const url = `${getDynamicUrl(ROBOT_API)}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "X-API-Key": "novacare-secure-key-2026",
     ...(options.headers as Record<string, string>),
   };
 
@@ -111,7 +112,9 @@ export async function getCameraFrame(): Promise<CameraFrameResponse> {
 
 /** Get the MJPEG stream URL (use directly in <img> src) */
 export function getCameraStreamUrl(): string {
-  return `${ROBOT_API}/api/camera/stream`;
+  // Use the same API key logic as backend
+  const apiKey = "novacare-secure-key-2026";
+  return `${ROBOT_API}/api/camera/stream?api_key=${apiKey}`;
 }
 
 // ---- Movement ----

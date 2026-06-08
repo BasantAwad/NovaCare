@@ -54,12 +54,8 @@ export const aslAPI = {
    */
   async addLetter(letter: string): Promise<any> {
     try {
-      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/accumulator/add`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/accumulator/add/${encodeURIComponent(letter)}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ letter }),
       });
 
       if (!res.ok) {
@@ -78,7 +74,7 @@ export const aslAPI = {
    */
   async clearAccumulator(): Promise<void> {
     try {
-      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/accumulator/clear`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/reset`, {
         method: "POST",
       });
 

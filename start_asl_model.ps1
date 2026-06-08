@@ -7,7 +7,7 @@ Write-Host "   NovaCare - Starting ASL Model API" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
-$VenvPath = Join-Path $Root "services\asl-model\venv"
+$VenvPath = Join-Path $Root "services\asl\venv"
 if (-not (Test-Path $VenvPath)) {
     Write-Host "[!] No venv found!" -ForegroundColor Red
     Write-Host "[!] Creating virtual environment (venv)..." -ForegroundColor Yellow
@@ -18,7 +18,9 @@ if (-not (Test-Path $VenvPath)) {
     Write-Host "[OK] Dependencies installed" -ForegroundColor Green
 } else {
     & "$VenvPath\Scripts\Activate.ps1"
-    Write-Host "[OK] ASL Model venv (from asl-model) activated" -ForegroundColor Green
+    Write-Host "[OK] ASL Model venv activated" -ForegroundColor Green
+    Write-Host "[*] Ensuring dependencies are installed..." -ForegroundColor Yellow
+    pip install -r requirements.txt
 }
 
 Write-Host "[*] Starting FastAPI on port 8001..." -ForegroundColor Cyan

@@ -15,7 +15,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalVenvDir = Join-Path $ScriptDir ".venv"
 
 # Path to Math-TutorK project's virtual environment
-$MathTutorKDir = "G:\OneDrive - Alamein International University\Uni stuff\semester 8 - Spring 25-26\AIE314 AI-Based Programming\project\main project\Math-TutorK"
+$MathTutorKDir = "DISABLED_TO_FIX_OPENSSL_BUG"
 $MathTutorKVenv = Join-Path $MathTutorKDir ".tts-venv"
 $MathTutorKPocketTts = Join-Path $MathTutorKVenv "Scripts\pocket-tts.exe"
 
@@ -26,7 +26,8 @@ if (Test-Path $MathTutorKPocketTts) {
     Write-Host "[OK] Detected existing Pocket TTS venv in Math-TutorK!" -ForegroundColor Green
     Write-Host "[*] Reusing Math-TutorK's Pocket TTS installation to save space." -ForegroundColor Cyan
     Write-Host "[*] Starting Pocket TTS on http://localhost:8002..." -ForegroundColor Cyan
-    & $MathTutorKPocketTts serve --host 0.0.0.0 --port 8002 --voice alba
+    $MathTutorKPython = Join-Path $MathTutorKVenv "Scripts\python.exe"
+    & $MathTutorKPython -m pocket_tts serve --host 0.0.0.0 --port 8002
 } else {
     Write-Host "[!] Math-TutorK's Pocket TTS venv not found at: $MathTutorKPocketTts" -ForegroundColor Yellow
     Write-Host "[*] Setting up local Pocket TTS service..." -ForegroundColor Cyan
@@ -61,5 +62,5 @@ if (Test-Path $MathTutorKPocketTts) {
     
     Write-Host "[OK] Local Pocket TTS ready!" -ForegroundColor Green
     Write-Host "[*] Starting Pocket TTS on http://localhost:8002..." -ForegroundColor Cyan
-    & $LocalPocketTts serve --host 0.0.0.0 --port 8002 --voice alba
+    & $LocalPocketTts serve --host 0.0.0.0 --port 8002
 }

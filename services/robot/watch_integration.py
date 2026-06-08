@@ -1,4 +1,4 @@
-"""
+﻿"""
 Smart Watch Integration for NovaCare Robot
 ==========================================
 Real-time heart rate and vital data from HRYFINE smartwatch via BLE.
@@ -27,7 +27,7 @@ try:
     from watch_client import HRYFINEWatchClient
     WATCH_AVAILABLE = True
 except ImportError:
-    print("⚠️  Watch module not available. Running in simulation mode.")
+    print("  Watch module not available. Running in simulation mode.")
     WATCH_AVAILABLE = False
 
 
@@ -105,7 +105,7 @@ class WatchIntegration:
     async def _async_monitor_loop(self):
         """Async loop that continuously reads watch data"""
         if self.simulation_mode:
-            print("🎭 Watch in SIMULATION mode (fake data)")
+            print(" Watch in SIMULATION mode (fake data)")
             # Simulate data in polling intervals
             while self._is_monitoring:
                 vitals = self._generate_fake_data()
@@ -122,7 +122,7 @@ class WatchIntegration:
             
             # Connect
             if not await self.client.connect():
-                print(f"❌ Failed to connect to watch {self.device_address}")
+                print(f" Failed to connect to watch {self.device_address}")
                 return
             
             # Define callback
@@ -154,7 +154,7 @@ class WatchIntegration:
             asyncio.set_event_loop(loop)
             loop.run_until_complete(self._async_monitor_loop())
         except Exception as e:
-            print(f"❌ Monitor thread error: {e}")
+            print(f" Monitor thread error: {e}")
         finally:
             with self._lock:
                 self._is_monitoring = False
@@ -162,14 +162,14 @@ class WatchIntegration:
     def start(self):
         """Start background watch monitoring"""
         if self._is_monitoring:
-            print("⚠️  Watch monitoring already running")
+            print("  Watch monitoring already running")
             return
         
         with self._lock:
             self._is_monitoring = True
         
         mode_text = "SIMULATION" if self.simulation_mode else f"{self.device_address}"
-        print(f"📱 Starting watch monitoring ({mode_text})...")
+        print(f" Starting watch monitoring ({mode_text})...")
         
         self._monitor_thread = threading.Thread(
             target=self._run_monitor_thread,
@@ -177,7 +177,7 @@ class WatchIntegration:
             name="WatchMonitor"
         )
         self._monitor_thread.start()
-        print("✅ Watch monitor thread started")
+        print(" Watch monitor thread started")
     
     def stop(self):
         """Stop background watch monitoring"""
@@ -191,7 +191,7 @@ class WatchIntegration:
             # Can't await here, so disconnect synchronously if possible
             asyncio.run(self.client.disconnect())
         
-        print("🛑 Watch monitoring stopped")
+        print(" Watch monitoring stopped")
     
     def get_latest_vitals(self) -> RoverVitals:
         """Get the most recent vital signs (thread-safe)"""
@@ -230,7 +230,7 @@ def init_watch_integration(
     global _watch_manager
     
     if _watch_manager is not None:
-        print("⚠️  Watch manager already initialized")
+        print("  Watch manager already initialized")
         return _watch_manager
     
     _watch_manager = WatchIntegration(
@@ -258,11 +258,11 @@ if __name__ == "__main__":
     manager = init_watch_integration(simulation_mode=True)
     manager.start()
     
-    print("\n📊 Listening for 10 seconds...\n")
+    print("\n Listening for 10 seconds...\n")
     for i in range(10):
         vitals = manager.get_latest_vitals()
         print(f"[{i+1}] {vitals}")
         asyncio.sleep(1)
     
     manager.stop()
-    print("\n✅ Test complete")
+    print("\n Test complete")

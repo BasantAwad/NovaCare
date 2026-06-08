@@ -1,5 +1,5 @@
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$WorkDir = Join-Path $Root "services\auth-backend"
+$WorkDir = Join-Path $Root "services\auth"
 Set-Location $WorkDir
 
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -17,6 +17,8 @@ if (-not (Test-Path 'venv')) {
 } else {
     .\venv\Scripts\Activate.ps1
     Write-Host "[OK] Auth Backend venv activated" -ForegroundColor Green
+    Write-Host "[*] Ensuring dependencies are installed..." -ForegroundColor Yellow
+    pip install -r requirements.txt
 }
 
 if (-not (Test-Path '.env')) {

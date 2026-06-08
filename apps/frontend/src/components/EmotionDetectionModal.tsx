@@ -43,10 +43,16 @@ export default function EmotionDetectionModal({
       });
       // Check if robot camera is available
       checkRobotHealth()
-        .then((health) => {
+        .then(async (health) => {
           if (health.hardware.camera) {
-            setUseRobotCamera(true);
-            setRobotCameraUrl(getCameraStreamUrl());
+            try {
+              await getCameraFrame();
+              setUseRobotCamera(true);
+              setRobotCameraUrl(getCameraStreamUrl());
+            } catch (err) {
+              console.warn("Robot camera reported healthy but failed to produce frames. Falling back to browser.", err);
+              setUseRobotCamera(false);
+            }
           }
         })
         .catch(() => setUseRobotCamera(false));
