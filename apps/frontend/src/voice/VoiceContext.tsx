@@ -242,9 +242,17 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
     speechService.onStart(() => setIsListening(true));
 
+    const WAKE_WORD_REGEX = /\b(?:(?:hey|hi|hello|okay|ok)\s+(?:nova|noah|noba|nava|novak|nover|lover|over|no va|mother|now|know|noa|norva|nov))|inova|ainova|enova|heynova|hinova|hey now|hi now\b/i;
+
     // Interim results — stream partial transcript in real time
     speechService.onInterim((partial: string) => {
       setInterimTranscript(partial);
+      // Instant UI activation on wake word
+      if (!isActiveRef.current && WAKE_WORD_REGEX.test(partial)) {
+        setIsActive(true);
+        setTranscript('Hey Nova');
+        setResponse("I'm listening...");
+      }
     });
 
     // Safety: ensure isSpeaking resets if TTS stops for any reason
@@ -263,21 +271,24 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     speechService.onResult((text: string) => {
       const lower = text.toLowerCase();
 
-      // Wake word detection using robust phonetic regex
-      const WAKE_WORD_REGEX = /\b(?:(?:hey|hi|hello|okay|ok)\s+(?:nova|noah|noba|nava|novak|nover|lover|over|no va|mother)|inova|ainova|enova|heynova|hinova)\b/i;
-
-      if (!isActiveRef.current && WAKE_WORD_REGEX.test(lower)) {
+      // Wake word detection (catches if they just said it, or if it was part of a sentence)
+      if (WAKE_WORD_REGEX.test(lower)) {
         setIsActive(true);
-        setTranscript('Hey Nova');
-        setResponse("I'm listening...");
-        setIsSpeaking(true);
-        speechService?.speak('Hi, how can I help you?', () => {
-          setIsSpeaking(false);
-          speechService?.startListening();
-        });
-
         const remainder = text.replace(WAKE_WORD_REGEX, '').trim();
-        if (!remainder) return;
+
+        if (!remainder) {
+          // Just woke up, no command given yet
+          setTranscript('Hey Nova');
+          setResponse("I'm listening...");
+          setIsSpeaking(true);
+          speechService?.speak('Hi, how can I help you?', () => {
+            setIsSpeaking(false);
+            speechService?.startListening();
+          });
+          return;
+        }
+
+        // Commanded in the same breath, process immediately
         setTranscript(remainder);
         processCommand(remainder);
         return;
