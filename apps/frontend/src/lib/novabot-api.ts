@@ -12,17 +12,38 @@ export interface ChatResponse {
 }
 
 /**
+ * Options for sending a message to the NovaBot API.
+ */
+export interface SendMessageOptions extends RequestInit {
+  emotion?: string;
+  emotionConfidence?: number;
+}
+
+/**
  * Send a message to the NovaBot LLM and get a response.
  */
-export async function sendMessage(text: string, options?: RequestInit): Promise<ChatResponse> {
+export async function sendMessage(text: string, options?: SendMessageOptions): Promise<ChatResponse> {
   try {
+    const payload: any = { message: text };
+    if (options?.emotion) {
+      payload.emotion = options.emotion;
+      if (options.emotionConfidence !== undefined) {
+        payload.emotion_confidence = options.emotionConfidence;
+      }
+    }
+
+    // Extract standard fetch options
+    const fetchOptions: RequestInit = { ...options };
+    delete (fetchOptions as any).emotion;
+    delete (fetchOptions as any).emotionConfidence;
+
     const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: text }),
-      ...options,
+      body: JSON.stringify(payload),
+      ...fetchOptions,
     });
 
     if (!res.ok) {

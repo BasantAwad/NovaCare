@@ -79,12 +79,16 @@ def chat():
         else:
             llm_profile = None
         
+        # Parse optional frontend emotion context
+        frontend_emotion = data.get('emotion', 'unknown')
+        frontend_confidence = data.get('emotion_confidence', 0.0)
+        
         # Initialize AI if not already initialized
         if not ai._initialized:
             ai.initialize()
         
         # Get AI response
-        chat_data = ai.chat(user_message, profile=llm_profile)
+        chat_data = ai.chat(user_message, profile=llm_profile, emotion=frontend_emotion, confidence=frontend_confidence)
         
         print(f"📤 [API Route] POST /api/chat - Response returned. Route={ai.last_route}, Profile={ai.last_profile}")
         # Build response with mental-health metadata if available

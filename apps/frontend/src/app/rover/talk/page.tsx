@@ -13,6 +13,7 @@ import { robotSpeak, robotListen, checkRobotHealth } from "@/lib/robot-api";
 import ASLRecognitionModal from "@/components/ASLRecognitionModal";
 import { getMedicationsFromLLM, markMedicationTakenLLM, getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
 import { useVoice } from "@/voice/VoiceContext";
+import { useBackgroundEmotion } from "@/lib/useBackgroundEmotion";
 
 interface Message {
   id: number;
@@ -544,6 +545,7 @@ export default function TalkPage() {
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const backgroundEmotion = useBackgroundEmotion(5000);
   const [isListening, setIsListening] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
@@ -727,7 +729,11 @@ export default function TalkPage() {
 
     try {
       // Get response and action metadata from NovaBot LLM API
-      const result = await sendToNovaBot(userMessageContent, { signal: controller.signal });
+      const result = await sendToNovaBot(userMessageContent, { 
+        signal: controller.signal,
+        emotion: backgroundEmotion.emotion,
+        emotionConfidence: backgroundEmotion.confidence
+      });
       const botResponse = result.response;
       const actions = result.actions || [];
 

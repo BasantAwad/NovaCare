@@ -212,7 +212,7 @@ class ConversationalAI:
             return p
         return self._default_profile
 
-    def chat(self, user_message: str, profile: Optional[str] = None) -> dict:
+    def chat(self, user_message: str, profile: Optional[str] = None, emotion: str = "unknown", confidence: float = 0.0) -> dict:
         prefix_to_add = ""
         try:
             import sys
@@ -223,7 +223,7 @@ class ConversationalAI:
                 sys.path.insert(0, parent_dir)
             from mental_health_integration import get_orchestrator
             orchestrator = get_orchestrator()
-            bypass, hf_reply, prefix = orchestrator.process(user_message, conversation_history=self.history)
+            bypass, hf_reply, prefix = orchestrator.process(user_message, conversation_history=self.history, frontend_emotion=emotion, frontend_confidence=confidence)
             
             if bypass:
                 self.history.append({"user": user_message, "assistant": hf_reply})
@@ -291,6 +291,13 @@ class ConversationalAI:
                 f"Rover Status:\n"
                 f"- Battery Level: {battery.get('battery_percent')}% ({charging_str})\n"
                 f"- Estimated Runtime Remaining: {battery.get('estimated_remaining_minutes')} mins"
+            )
+            
+        # Emotion Context (Real-time Feedback from Frontend Camera)
+        if emotion and emotion.lower() != "unknown":
+            context_parts.append(
+                f"Patient's Current Facial Emotion: {emotion.capitalize()} (Confidence: {confidence:.0%})\n"
+                f"*Note: You must tailor your empathy and response tone based on this emotion if the patient seems distressed.*"
             )
             
         live_context = "=== LIVE ROVER & PATIENT SYSTEM CONTEXT ===\n" + "\n\n".join(context_parts) + "\n==========================================="
