@@ -20,16 +20,21 @@ export class STTService {
   private recognition: any = null;
   private transcriptCallback: ((text: string) => void) | null = null;
   private errorCallback: ((error: string, message: string) => void) | null = null;
-  private endCallback: (() => void) | null = null;
+  private options: STTOptions;
 
   constructor(options: STTOptions = {}) {
+    this.options = options;
+    this.initRecognition();
+  }
+
+  private initRecognition() {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         this.recognition = new SpeechRecognition();
-        this.recognition.lang = options.lang || 'en-US';
-        this.recognition.continuous = options.continuous || false;
-        this.recognition.interimResults = options.interimResults || false;
+        this.recognition.lang = this.options.lang || 'en-US';
+        this.recognition.continuous = this.options.continuous || false;
+        this.recognition.interimResults = this.options.interimResults || false;
 
         this.recognition.onresult = (event: any) => {
           const transcript = Array.from(event.results)
@@ -81,6 +86,22 @@ export class STTService {
   abort() {
     if (this.recognition) {
       this.recognition.abort();
+    }
+  }
+
+  destroy() {
+    if (this.recognition) {
+      this.recognition.abort();
+      this.recognition.onend = null;
+      this.recognition.onerror = null;
+      this.recognition.onresult = null;
+      this.recognition = null;
+    }
+  }
+
+  recreate() {
+    if (!this.recognition) {
+      this.initRecognition();
     }
   }
 }

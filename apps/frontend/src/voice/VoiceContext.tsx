@@ -345,8 +345,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const pauseWakeWord = useCallback(() => {
     continuousListeningRef.current = false;
-    // @ts-ignore - using the newly added abort method
-    if (speechService?.abort) {
+    // @ts-ignore
+    if (speechService?.destroy) {
+      // @ts-ignore
+      speechService.destroy(); // Completely destroy the instance to release AV stack
+    } else if (speechService?.abort) {
       // @ts-ignore
       speechService.abort();
     } else {
@@ -356,6 +359,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const resumeWakeWord = useCallback(() => {
     continuousListeningRef.current = true;
+    // @ts-ignore
+    if (speechService?.recreate) {
+      // @ts-ignore
+      speechService.recreate();
+    }
     speechService?.startListening();
   }, []);
 

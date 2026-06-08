@@ -353,7 +353,7 @@ export default function ASLRecognitionModal({
                 if (!useRobotCamera) {
                     startCamera();
                 }
-            }, 400);
+            }, 1000); // 1 full second for Windows to cleanly detach the microphone lock
             
             return () => clearTimeout(timer);
         } else if (!isOpen) {
