@@ -327,9 +327,16 @@ export default function ASLRecognitionModal({
     useEffect(() => {
         if (isOpen && !isCheckingHealth) {
             pauseWakeWord(); // Release AV stack locks
-            if (!useRobotCamera) {
-                startCamera();
-            }
+            
+            // We need a small delay to allow the OS to fully release the microphone
+            // hardware lock before we request the camera, otherwise Windows blocks it.
+            const timer = setTimeout(() => {
+                if (!useRobotCamera) {
+                    startCamera();
+                }
+            }, 400);
+            
+            return () => clearTimeout(timer);
         } else if (!isOpen) {
             stopCamera();
             stopRecognition();
