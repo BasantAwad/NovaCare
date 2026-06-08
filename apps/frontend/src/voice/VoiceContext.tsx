@@ -213,7 +213,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
       setResponse('Nova is thinking...');
       try {
         const llmResponse = await sendMessage(text);
-        aiResponse = llmResponse;
+        aiResponse = llmResponse.response;
       } catch (error) {
         console.warn('[VoiceContext] LLM offline, using fallback:', error);
       }
@@ -255,7 +255,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     speechService.onEnd(() => {
       setIsListening(false);
       setInterimTranscript('');
-      if (isActiveRef.current && !isSpeakingRef.current && continuousListeningRef.current) {
+      if (!isSpeakingRef.current && continuousListeningRef.current) {
         setTimeout(() => speechService?.startListening(), 100);
       }
     });
@@ -290,6 +290,9 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Start background listening on mount for wake word detection
+    speechService?.startListening();
+
     return () => {
       speechService?.stopListening();
     };
@@ -302,7 +305,7 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     if (isActive) {
       speechService?.startListening();
     } else {
-      speechService?.stopListening();
+      // Do NOT stop listening; we need it for background wake word detection
       speechService?.stopSpeaking();
     }
   }, [isActive]);
