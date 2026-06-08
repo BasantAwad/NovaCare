@@ -174,16 +174,13 @@ allowing natural language interaction and emotional intelligence.
 \begin{itemize}
 \tightlist
 \item
-  \textbf{Contextual Awareness}: The LLM module doesn't just respond to
-  text; it analyzes the sentiment and emotional tone of the user's
-  input.
+  \textbf{Background Polling Architecture}: To avoid hardware locking conflicts between backend services and the frontend ASL camera, emotion detection was shifted to a silent frontend background poller. The Next.js frontend uses a custom React hook (\texttt{useBackgroundEmotion}) to capture invisible frames every 5 seconds and evaluates them against a Hugging Face ViT model (\texttt{trpakov/vit-face-expression}).
 \item
-  \textbf{State Emitting}: Based on the conversation, the LLM emits
-  emotional states (e.g., \texttt{happy}, \texttt{concerned},
-  \texttt{thinking}, \texttt{listening}). This emotional state is then
-  broadcasted to the Robot UI to physically change the robot's animated
-  facial expressions, bridging the gap between digital AI and physical
-  empathy.
+  \textbf{Live Context Injection}: The frontend dynamically injects the latest detected emotion and confidence score directly into the \texttt{POST\ /api/chat} payload.
+\item
+  \textbf{Empathy Engine}: The \texttt{MentalHealthOrchestrator} and Conversational AI explicitly ingest this non-verbal data into the LLM's Live Context window (RAG). If a user says "I am fine" but their facial expression reads "sad", the LLM is contextually aware of the contradiction and tailors its empathy and response tone accordingly.
+\item
+  \textbf{State Emitting}: Based on the conversation and facial analysis, the LLM emits emotional states (e.g., \texttt{happy}, \texttt{concerned}, \texttt{thinking}) which are broadcasted to the Robot UI to physically change the robot's animated facial expressions, bridging the gap between digital AI and physical empathy.
 \end{itemize}
 
 \begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
