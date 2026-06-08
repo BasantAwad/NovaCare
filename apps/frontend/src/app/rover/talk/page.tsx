@@ -12,6 +12,7 @@ import { STTService, TTSService } from "@/lib/speech";
 import { robotSpeak, robotListen, checkRobotHealth } from "@/lib/robot-api";
 import ASLRecognitionModal from "@/components/ASLRecognitionModal";
 import { getMedicationsFromLLM, markMedicationTakenLLM, getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
+import { useVoice } from "@/voice/VoiceContext";
 
 interface Message {
   id: number;
@@ -557,6 +558,9 @@ export default function TalkPage() {
   const ttsRef = useRef<TTSService | null>(null);
   const messageIdRef = useRef(1);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const handleSendRef = useRef<((overrideText?: string) => void) | null>(null);
+
+  const { pauseWakeWord, resumeWakeWord } = useVoice();
 
   // 1. Load persistent chat history from localStorage on mount
   useEffect(() => {
@@ -595,10 +599,20 @@ export default function TalkPage() {
       sttRef.current = new STTService({ lang: 'en-US', continuous: false });
       ttsRef.current = new TTSService({ rate: 0.9, pitch: 1.0, volume: 1.0 });
 
-      // Set up STT callbacks
+      // When user finishes speaking, auto-send the transcript
       sttRef.current.onTranscript((text) => {
         setInputText(text);
         setIsListening(false);
+        // Auto-send if we got text
+        if (text.trim()) {
+          setTimeout(() => {
+            if (handleSendRef.current) {
+              handleSendRef.current(text);
+            }
+          }, 100);
+        }
+        // Resume wake word listener
+        resumeWakeWord();
       });
 
       sttRef.current.onEnd(() => {
@@ -608,6 +622,8 @@ export default function TalkPage() {
       sttRef.current.onError((error, message) => {
         console.error('[STT Error]', error, message);
         setIsListening(false);
+        // Resume wake word listener on error too
+        resumeWakeWord();
       });
     }
 
@@ -615,7 +631,7 @@ export default function TalkPage() {
       sttRef.current?.stop();
       ttsRef.current?.stop();
     };
-  }, []);
+  }, [resumeWakeWord]);
 
   // Check API health on mount (NovaBot + Robot)
   useEffect(() => {
@@ -671,7 +687,7 @@ export default function TalkPage() {
     }
   };
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(async (overrideText?: string) => {
     if (isTyping) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -690,9 +706,10 @@ export default function TalkPage() {
       return;
     }
 
-    if (!inputText.trim()) return;
+    const textToSend = typeof overrideText === 'string' ? overrideText : inputText;
+    if (!textToSend.trim()) return;
 
-    const userMessageContent = inputText.trim();
+    const userMessageContent = textToSend.trim();
     messageIdRef.current += 1;
     const userMessage: Message = {
       id: messageIdRef.current,
@@ -768,15 +785,27 @@ export default function TalkPage() {
     }
   }, [inputText, isTyping, isTTSEnabled]);
 
+  // Keep handleSendRef in sync
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
+
   const handleVoiceToggle = useCallback(async () => {
     if (isListening) {
       sttRef.current?.stop();
       setIsListening(false);
+      resumeWakeWord();
       return;
     }
 
     // Stop TTS if speaking
     ttsRef.current?.stop();
+
+    // Pause global wake word listener so we can use the mic
+    pauseWakeWord();
+
+    // Small delay to let the global listener release the mic
+    await new Promise(r => setTimeout(r, 200));
 
     // Try robot microphone first
     if (useRobotAudio && robotAvailable) {
@@ -785,16 +814,20 @@ export default function TalkPage() {
         const result = await robotListen(10, 5);
         if (result.status === "success" && result.text) {
           setInputText(result.text);
+          // Auto-send robot STT result
+          if (result.text.trim() && handleSendRef.current) {
+            setTimeout(() => handleSendRef.current!(result.text), 100);
+          }
         }
       } catch (err) {
         console.warn('[STT] Robot listen failed, falling back to browser:', err);
-        // Fall through to browser STT
         if (sttRef.current) {
           sttRef.current.start();
-          return; // isListening already true
+          return; // isListening already true, wake word resumes on transcript/error
         }
       } finally {
         setIsListening(false);
+        resumeWakeWord();
       }
       return;
     }
@@ -804,9 +837,14 @@ export default function TalkPage() {
       const started = sttRef.current.start();
       if (started) {
         setIsListening(true);
+      } else {
+        // Failed to start, resume wake word
+        resumeWakeWord();
       }
+    } else {
+      resumeWakeWord();
     }
-  }, [isListening, useRobotAudio, robotAvailable]);
+  }, [isListening, useRobotAudio, robotAvailable, pauseWakeWord, resumeWakeWord]);
 
   const handleTTSToggle = useCallback(() => {
     if (ttsRef.current) {

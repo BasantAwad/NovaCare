@@ -57,6 +57,8 @@ interface VoiceContextType {
   toggleAssistant: () => void;
   processTextCommand: (text: string) => void;
   clearDebugLog: () => void;
+  pauseWakeWord: () => void;
+  resumeWakeWord: () => void;
 }
 
 const VoiceContext = createContext<VoiceContextType | undefined>(undefined);
@@ -341,6 +343,16 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const clearDebugLog = useCallback(() => setDebugLog([]), []);
 
+  const pauseWakeWord = useCallback(() => {
+    continuousListeningRef.current = false;
+    speechService?.stopListening();
+  }, []);
+
+  const resumeWakeWord = useCallback(() => {
+    continuousListeningRef.current = true;
+    speechService?.startListening();
+  }, []);
+
   return (
     <VoiceContext.Provider
       value={{
@@ -355,6 +367,8 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         toggleAssistant,
         processTextCommand,
         clearDebugLog,
+        pauseWakeWord,
+        resumeWakeWord,
       }}
     >
       {children}
