@@ -16,8 +16,16 @@ import {
   signupCaregiver,
   signupDoctor,
   getReferenceData,
-  type ReferenceData,
 } from "@/lib/auth-api";
+
+export interface ReferenceData {
+  health_conditions?: Array<{ id: string; name: string }>;
+  allergies?: Array<{ id: string; name: string }>;
+  specializations?: Array<{ id: string; name: string }>;
+  countries?: Array<{ id: string; name: string }>;
+  id_types?: Array<{ id: string; name: string }>;
+  clinic_organizations?: Array<{ id: string; name: string }>;
+}
 
 type AccountType = "rover" | "caregiver" | "doctor" | null;
 

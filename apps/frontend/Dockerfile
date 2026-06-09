@@ -1,21 +1,23 @@
-# NovaCare Frontend - Dockerfile
-
-FROM node:18-slim
+# Use a lightweight Node.js 18 image (bullseye-slim is highly compatible with ARM64 edge devices)
+FROM node:18-bullseye-slim
 
 WORKDIR /app
 
-# Install dependencies first for better caching
-COPY package.json package-lock.json* ./
-RUN npm install
+# Copy dependency specifications
+COPY package*.json ./
 
-# Copy the rest of the application
+# Install dependencies cleanly
+RUN npm install --legacy-peer-deps --no-audit --no-fund
+
+# Copy all application code (including .env.local if present)
 COPY . .
 
-# Build the application
+# Build Next.js for production
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Expose the frontend port
+# Expose standard port
 EXPOSE 3000
 
-# Start in production mode
-CMD ["npm", "start"]
+# Start Next.js server
+CMD ["npm", "run", "start"]

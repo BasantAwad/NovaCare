@@ -35,6 +35,7 @@ import {
   type BatteryStatus,
   type MoodLog,
 } from "@/lib/dashboard-api";
+import { useSignaling } from "@/hooks/useSignaling";
 
 const activityColors = {
   medication: "bg-success",
@@ -100,6 +101,16 @@ export default function GuardianDashboard() {
   // Robot configuration
   const ROBOT_IP = "10.34.19.247";
   const VIDEO_FEED_URL = `http://${ROBOT_IP}:5000/video_feed`;
+
+  // Real-time signaling
+  const { navigateToPatient, lastEvent, isConnected } = useSignaling("guardian_001", "guardian");
+
+  // Auto-open modal on emergency event
+  useEffect(() => {
+    if (lastEvent?.type === "EMERGENCY_TRIGGERED") {
+      setAlertOpen(true);
+    }
+  }, [lastEvent]);
 
   // Dynamic state fetched from backend
   const [medications, setMedications] = useState<MedicationSchedule[]>(FALLBACK_MEDICATIONS);
@@ -196,16 +207,15 @@ export default function GuardianDashboard() {
             </div>
           </button>
 
-          <button 
-            onClick={() => setCameraOpen(true)}
-            className="flex items-center gap-4 p-6 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors group"
-          >
+          <button className="flex items-center gap-4 p-6 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors group">
             <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-colors">
               <Video className="w-7 h-7 text-purple-500 group-hover:text-white" />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-text-primary dark:text-white">Request Video</p>
-              <p className="text-sm text-text-muted dark:text-gray-400">Privacy-First</p>
+              <p className="font-semibold text-text-primary dark:text-white">Navigate to Patient</p>
+              <p className="text-sm text-text-muted dark:text-gray-400">
+                {isConnected ? "Robot is Online" : "Connecting..."}
+              </p>
             </div>
           </button>
         </div>
@@ -395,7 +405,7 @@ export default function GuardianDashboard() {
                         </div>
                         <div className="flex-1">
                           <p className="text-text-primary dark:text-white">{activity.description}</p>
-                          <p className="text-sm text-text-muted dark:text-gray-400">{formatTimeAgo(activity.timestamp)}</p>
+                          <p className="text-sm text-text-muted dark:text-gray-400">{formatTimeAgo(activity.timestamp || new Date().toISOString())}</p>
                         </div>
                       </div>
                     );
@@ -433,8 +443,26 @@ export default function GuardianDashboard() {
           <p className="text-text-secondary dark:text-gray-300 mb-2">
             Fall detected in the living room
           </p>
+
+          {/* Live Video Feed from Simulation */}
+          <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden mb-6 relative group">
+            <img
+              src="http://18.207.119.32:8080/stream?topic=/camera/image_raw&type=mjpeg&default_transport=raw"
+              alt="Rover Camera Feed"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800";
+              }}
+            />
+            <div className="absolute top-4 left-4 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-semibold text-white uppercase tracking-wider drop-shadow-md">Live Stream</span>
+            </div>
+          </div>
+
           <p className="text-sm text-text-muted dark:text-gray-400 mb-8">
-            January 19, 2026 at 2:35 PM
+            {new Date().toLocaleString()}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -468,9 +496,9 @@ export default function GuardianDashboard() {
         </ModalHeader>
         <ModalBody className="p-0 bg-black aspect-video flex items-center justify-center overflow-hidden">
           {cameraOpen && (
-            <img 
-              src={VIDEO_FEED_URL} 
-              alt="Robot Camera Feed" 
+            <img
+              src={VIDEO_FEED_URL}
+              alt="Robot Camera Feed"
               className="w-full h-full object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;

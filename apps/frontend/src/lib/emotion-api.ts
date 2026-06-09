@@ -1,6 +1,4 @@
-/**
- * NovaCare — Emotion Detection API Client
- */
+import { getDynamicUrl } from "./utils";
 
 const EMOTION_API_URL = process.env.NEXT_PUBLIC_NOVABOT_API_URL || "http://localhost:5000";
 
@@ -18,7 +16,7 @@ export interface EmotionResult {
  */
 export async function detectEmotion(imageBase64: string): Promise<EmotionResult> {
   try {
-    const res = await fetch(`${EMOTION_API_URL}/api/emotion/detect`, {
+    const res = await fetch(`${getDynamicUrl(EMOTION_API_URL)}/api/emotion/detect`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,7 +40,7 @@ export async function detectEmotion(imageBase64: string): Promise<EmotionResult>
  */
 export async function checkEmotionHealth(): Promise<{ status: "available" | "unavailable" }> {
   try {
-    const res = await fetch(`${EMOTION_API_URL}/api/health`, {
+    const res = await fetch(`${getDynamicUrl(EMOTION_API_URL)}/health`, {
       method: "GET",
       signal: AbortSignal.timeout(3000),
     });

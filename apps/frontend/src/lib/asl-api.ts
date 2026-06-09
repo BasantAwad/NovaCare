@@ -1,6 +1,4 @@
-/**
- * NovaCare — ASL (American Sign Language) API Client
- */
+import { getDynamicUrl } from "./utils";
 
 const ASL_API_URL = process.env.NEXT_PUBLIC_ASL_API_URL || "http://localhost:8001";
 
@@ -17,7 +15,7 @@ export const aslAPI = {
    */
   async checkHealth(): Promise<boolean> {
     try {
-      const res = await fetch(`${ASL_API_URL}/health`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/health`, {
         method: "GET",
         signal: AbortSignal.timeout(3000),
       });
@@ -32,7 +30,7 @@ export const aslAPI = {
    */
   async predict(frameBase64: string): Promise<any> {
     try {
-      const res = await fetch(`${ASL_API_URL}/predict`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,12 +54,8 @@ export const aslAPI = {
    */
   async addLetter(letter: string): Promise<any> {
     try {
-      const res = await fetch(`${ASL_API_URL}/accumulator/add`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/accumulator/add/${encodeURIComponent(letter)}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ letter }),
       });
 
       if (!res.ok) {
@@ -80,7 +74,7 @@ export const aslAPI = {
    */
   async clearAccumulator(): Promise<void> {
     try {
-      const res = await fetch(`${ASL_API_URL}/accumulator/clear`, {
+      const res = await fetch(`${getDynamicUrl(ASL_API_URL)}/reset`, {
         method: "POST",
       });
 

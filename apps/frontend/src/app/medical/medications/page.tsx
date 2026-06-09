@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Check, Clock, AlertCircle, ChevronLeft, ChevronRight, Calendar, Pill, Search, Filter, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Input, Modal, ModalHeader, ModalBody, ModalFooter, ProgressBar } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { getMedications, getMedicationStats, type MedicationSchedule, type MedicationComplianceStats } from "@/lib/dashboard-api";
+import { getMedications, getMedicationStats, getMedicationsFromLLM, type MedicationSchedule, type MedicationComplianceStats } from "@/lib/dashboard-api";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,10 +83,18 @@ export default function MedicalMedicationsPage() {
     async function fetchData() {
       setIsLoading(true);
       try {
+        // Try LLM backend first (novacare_mock_db.json — same source as chat widget)
+        const llmRes = await getMedicationsFromLLM();
+        if (llmRes.status === "success" && llmRes.data && llmRes.data.length > 0) {
+          setMedications(mapApiToMedDisplay(llmRes.data));
+          return;
+        }
+        // Fallback: auth backend (SQL DB)
         const res = await getMedications();
         if (res.status === "success" && res.data && res.data.length > 0) {
           setMedications(mapApiToMedDisplay(res.data));
         }
+        // Final fallback: FALLBACK_MEDICATIONS (already set as default state)
       } catch (error) {
         console.error("Failed to fetch medications:", error);
       } finally {

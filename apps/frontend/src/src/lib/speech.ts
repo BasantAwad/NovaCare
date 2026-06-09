@@ -29,7 +29,7 @@ export type STTErrorCallback = (error: string, message: string) => void;
 // ============================================================================
 
 class STTService {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any | null = null;
   private isListening = false;
   private onTranscriptCallback: STTCallback | null = null;
   private onErrorCallback: STTErrorCallback | null = null;
@@ -52,8 +52,8 @@ class STTService {
     if (typeof window === 'undefined') return;
 
     const SpeechRecognitionAPI =
-      (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) {
       console.warn('[STT] Speech recognition not supported in this browser');
@@ -71,7 +71,7 @@ class STTService {
       this.onStartCallback?.();
     };
 
-    this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+    this.recognition.onresult = (event: any) => {
       let transcript = '';
       let confidence = 0;
 
@@ -106,7 +106,7 @@ class STTService {
       this.onTranscriptCallback?.(transcript.trim(), confidence);
     };
 
-    this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    this.recognition.onerror = (event: any) => {
       console.error('[STT] Error:', event.error);
       this.isListening = false;
 

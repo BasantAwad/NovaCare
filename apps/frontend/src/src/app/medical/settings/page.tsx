@@ -160,7 +160,7 @@ export default function MedicalSettingsPage() {
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-text-primary dark:text-white">{setting.title}</h4>
                         {setting.required && (
-                          <Badge variant="primary" className="text-xs">Required</Badge>
+                          <Badge variant="default" className="text-xs">Required</Badge>
                         )}
                       </div>
                       <p className="text-sm text-text-muted dark:text-gray-400 mt-1">{setting.description}</p>
