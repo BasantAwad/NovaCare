@@ -243,10 +243,10 @@ class ConversationalAI:
         print(f"   User Message: '{user_message}'")
         print(f"   Requested Profile: {profile or 'None (Default)'} -> Selected Route: {route.upper()}")
 
-        # Fetch live context for RAG
+        # Fetch live context for RAG (with intelligent query routing)
         from datetime import datetime
         from utils.rag_helper import rag_manager
-        live_data = rag_manager.get_all_context(rover_id="RV001")
+        live_data, routed_sources = rag_manager.get_routed_context(user_message, rover_id="RV001")
         
         # Format live context as a string
         context_parts = [
@@ -258,10 +258,10 @@ class ConversationalAI:
         if meds:
             med_list = []
             for m in meds:
-                status_str = f"taken at {m['taken_at']}" if m['status'] == 'taken' else m['status']
-                med_list.append(f"- {m['medication_name']} ({m['dosage']}): scheduled for {m['scheduled_time']} (Status: {status_str})")
+                status_str = f"taken at {m['taken_at']}" if m.get('status') == 'taken' else m.get('status', 'pending')
+                med_list.append(f"- {m.get('medication_name', 'Unknown')} ({m.get('dosage', '')}): scheduled for {m.get('scheduled_time', '')} (Status: {status_str})")
             context_parts.append("Today's Medications:\n" + "\n".join(med_list))
-        else:
+        elif "medications" in routed_sources:
             context_parts.append("Today's Medications: None scheduled.")
             
         # Vitals
@@ -272,9 +272,74 @@ class ConversationalAI:
                 f"- Heart Rate: {vitals.get('heart_rate')} BPM\n"
                 f"- Blood Pressure: {vitals.get('blood_pressure')}\n"
                 f"- Oxygen Saturation: {vitals.get('oxygen_level')}%\n"
-                f"- Body Temperature: {vitals.get('temperature', 36.6)}°C"
+                f"- Body Temperature: {vitals.get('temperature', 36.6)}C"
             )
-            
+
+        # Vitals Trend
+        vitals_trend = live_data.get("vitals_trend", [])
+        if vitals_trend:
+            hrs = [v.get("heart_rate") for v in vitals_trend if v.get("heart_rate")]
+            if hrs:
+                avg_hr = sum(hrs) / len(hrs)
+                max_hr = max(hrs)
+                min_hr = min(hrs)
+                context_parts.append(
+                    f"Vitals Trend (past 7 days, {len(vitals_trend)} readings):\n"
+                    f"- Avg Heart Rate: {avg_hr:.0f} BPM (Min: {min_hr}, Max: {max_hr})"
+                )
+
+        # Appointments
+        appointments = live_data.get("appointments", [])
+        if appointments:
+            appt_list = []
+            for a in appointments:
+                doctor_name = f"Dr. {a.get('doctor_first_name', '')} {a.get('doctor_last_name', '')}".strip()
+                appt_list.append(f"- {a.get('appointment_type', 'Appointment')} with {doctor_name} ({a.get('specialization', '')}) on {a.get('scheduled_at', '')} - Status: {a.get('status', '')}")
+            context_parts.append("Appointments:\n" + "\n".join(appt_list))
+        elif "appointments" in routed_sources:
+            context_parts.append("Appointments: None found.")
+
+        # Health Conditions
+        conditions = live_data.get("health_conditions", [])
+        if conditions:
+            cond_list = [f"- {c.get('condition_name', '')} (Severity: {c.get('severity', 'unknown')})" for c in conditions]
+            context_parts.append("Diagnosed Health Conditions:\n" + "\n".join(cond_list))
+
+        # Allergies
+        allergies = live_data.get("allergies", [])
+        if allergies:
+            allergy_list = [f"- {a.get('allergy_name', '')} ({a.get('allergy_type', '')}) - Severity: {a.get('severity', '')}" for a in allergies]
+            context_parts.append("Known Allergies:\n" + "\n".join(allergy_list))
+
+        # Emergency Contacts
+        contacts = live_data.get("emergency_contacts", [])
+        if contacts:
+            contact_list = [f"- {c.get('name', '')} ({c.get('relationship', '')}): {c.get('phone', '')}{' [PRIMARY]' if c.get('is_primary') else ''}" for c in contacts]
+            context_parts.append("Emergency Contacts:\n" + "\n".join(contact_list))
+
+        # Medical Notes
+        notes = live_data.get("medical_notes", [])
+        if notes:
+            note_list = []
+            for n in notes:
+                doctor_name = f"Dr. {n.get('doctor_first_name', '')} {n.get('doctor_last_name', '')}".strip()
+                note_list.append(f"- [{n.get('note_type', 'Note')}] {n.get('created_at', '')}: {n.get('note_content', '')[:200]}")
+            context_parts.append("Recent Medical Notes:\n" + "\n".join(note_list))
+
+        # Emotion History
+        emotions = live_data.get("emotion_history", [])
+        if emotions:
+            emo_list = [f"- {e.get('date', '')}: {e.get('primary_emotion', '')} (sentiment: {e.get('avg_sentiment', 0):.2f}){' [DISTRESS]' if e.get('distress_detected') else ''}" for e in emotions[:5]]
+            context_parts.append("Recent Emotion History:\n" + "\n".join(emo_list))
+
+        # Notifications
+        notifs = live_data.get("notifications", [])
+        if notifs:
+            unread = [n for n in notifs if not n.get("is_read")]
+            if unread:
+                notif_list = [f"- {n.get('title', '')}: {n.get('message', '')}" for n in unread[:5]]
+                context_parts.append(f"Unread Notifications ({len(unread)}):\n" + "\n".join(notif_list))
+
         # Hydration
         hydration = live_data.get("hydration")
         if hydration:
@@ -302,20 +367,8 @@ class ConversationalAI:
             
         live_context = "=== LIVE ROVER & PATIENT SYSTEM CONTEXT ===\n" + "\n\n".join(context_parts) + "\n==========================================="
         
-        print("📝 [LLM Backend] Context Aggregated:")
-        print(f"   ↳ Medications: {len(meds)} active items found.")
-        if vitals:
-            print(f"   ↳ Vitals: HR={vitals.get('heart_rate')} BPM, BP={vitals.get('blood_pressure')}, SpO2={vitals.get('oxygen_level')}%")
-        else:
-            print("   ↳ Vitals: ⚠️ None found.")
-        if hydration:
-            print(f"   ↳ Hydration: {hydration.get('glasses')}/{hydration.get('goal_glasses')} glasses drunk.")
-        else:
-            print("   ↳ Hydration: ⚠️ None found.")
-        if battery:
-            print(f"   ↳ Battery: {battery.get('battery_percent')}% ({charging_str})")
-        else:
-            print("   ↳ Battery: ⚠️ None found.")
+        print(f"[LLM] Context built from {len(routed_sources)} sources: {routed_sources}")
+        print(f"   Medications: {len(meds)}, Vitals: {'yes' if vitals else 'no'}, Appointments: {len(appointments)}, Conditions: {len(conditions)}, Allergies: {len(allergies)}")
 
         messages = self._messages_for_chat(user_message, live_context)
 

@@ -1,0 +1,21 @@
+prompt,expected_action,param_key,param_value
+I fell down and my leg hurts badly!,trigger_emergency,,
+Please take me to the kitchen,navigate,destination,kitchen
+I want to listen to some relaxing music,play_music,mood,relaxing
+Can you call my guardian?,call_guardian,,
+When is my next medication?,show_medications,,
+I feel very dizzy and need help,trigger_emergency,,
+Move to the bedroom now,navigate,destination,bedroom
+Stop playing the music,pause_music,,
+Play upbeat music,play_music,mood,upbeat
+"Hello Nova, how are you?",,,
+Are you a real person?,,,
+Take me to the living room,navigate,destination,living room
+I need to use the bathroom,navigate,destination,bathroom
+I feel pain in my chest!,trigger_emergency,,
+What is my current heart rate?,check_health,,
+Pause the song please,pause_music,,
+I'm feeling very sad today.,,,
+Navigate to the front door,navigate,destination,front door
+Call dad,call_guardian,,
+Can you show me my pill schedule?,show_medications,,
