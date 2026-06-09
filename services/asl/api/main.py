@@ -33,23 +33,23 @@ async def lifespan(app: FastAPI):
     global predictor, accumulator
     
     # Startup
-    print("🚀 Starting ASL Recognition API...")
+    print("[*] Starting ASL Recognition API...")
     
     try:
         predictor = ASLPredictor()
         accumulator = LetterAccumulator()
         set_predictor(predictor, accumulator)
-        print("✅ Model loaded successfully")
+        print("[OK] Model loaded successfully")
     except FileNotFoundError as e:
-        print(f"⚠️ Warning: Model not found - {e}")
+        print(f"[!] Warning: Model not found - {e}")
         print("   API will start but predictions won't work until model is trained")
     except Exception as e:
-        print(f"❌ Failed to load model: {e}")
+        print(f"[X] Failed to load model: {e}")
     
     yield
     
     # Shutdown
-    print("🛑 Shutting down...")
+    print("[*] Shutting down...")
     if predictor:
         predictor.close()
 
@@ -110,13 +110,13 @@ def main():
     args = parser.parse_args()
     
     print(f"""
-    ╔═══════════════════════════════════════════╗
-    ║       ASL Recognition API Server          ║
-    ╠═══════════════════════════════════════════╣
-    ║  Host: {args.host:<35} ║
-    ║  Port: {args.port:<35} ║
-    ║  Docs: http://{args.host}:{args.port}/docs{' ' * (23 - len(str(args.port)))}║
-    ╚═══════════════════════════════════════════╝
+    +-------------------------------------------+
+    |       ASL Recognition API Server          |
+    +-------------------------------------------+
+    |  Host: {args.host:<35} |
+    |  Port: {args.port:<35} |
+    |  Docs: http://{args.host}:{args.port}/docs{' ' * (23 - len(str(args.port)))}|
+    +-------------------------------------------+
     """)
     
     uvicorn.run(

@@ -286,7 +286,7 @@ export default function SignUpPage() {
                       : undefined
                   }
                   success={
-                    formData.confirmPassword && formData.password === formData.confirmPassword
+                    !!(formData.confirmPassword && formData.password === formData.confirmPassword)
                   }
                 />
               </div>

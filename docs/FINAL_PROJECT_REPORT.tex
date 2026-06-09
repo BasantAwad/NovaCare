@@ -1,0 +1,355 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\section{NovaCare Final Project
+Report}\label{novacare-final-project-report}
+
+\subsection{1. Project Overview}\label{project-overview}
+
+NovaCare is an integrated AI-powered healthcare companion and robotic
+assistant designed to empower independence for individuals with physical
+or sensory disabilities. The system combines modern web technologies,
+machine learning, and physical robotics (SERBot) to create a seamless,
+multimodal interaction experience.
+
+The core mission of NovaCare is to bridge communication gaps (via Sign
+Language Recognition and Text-to-Speech) and provide intelligent
+assistance through Conversational AI and Emotion Detection.
+
+\subsection{2. System Architecture}\label{system-architecture}
+
+The NovaCare repository is organized into a domain-driven,
+microservice-based architecture to ensure scalability, isolated
+development, and maintainability.
+
+\subsubsection{2.1 Codebase Structure}\label{codebase-structure}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\texttt{apps/}}: End-user interfaces (Next.js Dashboard,
+  Flutter Mobile App, React Robot UI).
+\item
+  \textbf{\texttt{services/}}: Core backend microservices (ASL, LLM,
+  Robot HAL, TTS, Optimized Edge Runtime).
+\item
+  \textbf{\texttt{shared/}}: Common data models, database schemas,
+  utility functions, and configurations.
+\item
+  \textbf{\texttt{infrastructure/}}: Deployment scripts, Docker
+  orchestration (\texttt{docker-compose.yml}), and database migrations.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{3. American Sign Language (ASL) Recognition
+Subsystem}\label{american-sign-language-asl-recognition-subsystem}
+
+A major component of NovaCare is its real-time ASL recognition pipeline,
+which allows non-verbal users to communicate naturally with the robot.
+
+\subsubsection{3.1 Model Architecture}\label{model-architecture}
+
+The ASL recognition model utilizes an \textbf{Attention-based Multilayer
+Perceptron (MLP)}. - \textbf{Input}: The system uses Google MediaPipe to
+extract 21 3D hand landmarks (63 continuous numerical features) per
+video frame. - \textbf{Attention Mechanism}: The network treats each of
+the 21 landmarks as a ``token'' and applies Multi-Head Self-Attention.
+This allows the model to learn the complex spatial relationships between
+different fingers (e.g., how the thumb relates to the index finger for
+specific letters). - \textbf{Output}: The network predicts across 29
+classes (A-Z alphabet, Space, Delete, and an ``Unknown/Idle'' state).
+
+\subsubsection{3.2 Data and Training}\label{data-and-training}
+
+The model was trained on a robust dataset of \textbf{25,479 real-world
+samples}. - \textbf{Preprocessing}: Landmarks are normalized relative to
+the wrist (landmark 0) to ensure the model is invariant to where the
+hand is located in the camera frame. The coordinates are scaled by the
+distance to the middle finger (landmark 9) to account for hands being
+closer or further from the camera. - \textbf{Augmentation}: During
+training, the landmarks undergo synthetic augmentations including random
+3D rotations, scaling, translation, and Gaussian noise injection to
+prevent overfitting and improve real-world robustness. -
+\textbf{Performance}: The final trained model achieved a \textbf{91.59\%
+validation accuracy} and \textbf{91.49\% test accuracy} on held-out
+data.
+
+\subsubsection{3.3 Inference and Frontend
+Integration}\label{inference-and-frontend-integration}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Real-time Pipeline}: The Next.js frontend captures webcam
+  frames and sends base64-encoded images to the FastAPI backend.
+\item
+  \textbf{Temporal Stabilization}: To prevent noisy, flickering
+  predictions, the system requires a letter to be continuously predicted
+  with high confidence for \textbf{1.5 seconds} before it is
+  ``confirmed''.
+\item
+  \textbf{Accumulator}: Confirmed letters are added to a server-side
+  text accumulator. The user can build a full word or sentence and send
+  it to the Conversational LLM for a response.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{4. Conversational AI and Emotion Detection (LLM)
+Subsystem}\label{conversational-ai-and-emotion-detection-llm-subsystem}
+
+The Conversational AI module acts as the cognitive center of NovaCare,
+allowing natural language interaction and emotional intelligence.
+
+\subsubsection{4.1 Architecture and APIs}\label{architecture-and-apis}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Framework}: Built on Flask (port 5000), exposing RESTful
+  endpoints for chat, history management, and context updates.
+\item
+  \textbf{LLM Engine}: Integrates with Large Language Models (LLMs) to
+  process user prompts, maintain conversation history, and generate
+  context-aware responses.
+\item
+  \textbf{Prompt Engineering}: System prompts are carefully designed to
+  instruct the AI to act as a empathetic, concise, and helpful medical
+  companion.
+\end{itemize}
+
+\subsubsection{4.2 Emotion Detection}\label{emotion-detection}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Background Polling Architecture}: To avoid hardware locking conflicts between backend services and the frontend ASL camera, emotion detection was shifted to a silent frontend background poller. The Next.js frontend uses a custom React hook (\texttt{useBackgroundEmotion}) to capture invisible frames every 5 seconds and evaluates them against a Hugging Face ViT model (\texttt{trpakov/vit-face-expression}).
+\item
+  \textbf{Live Context Injection}: The frontend dynamically injects the latest detected emotion and confidence score directly into the \texttt{POST\ /api/chat} payload.
+\item
+  \textbf{Empathy Engine}: The \texttt{MentalHealthOrchestrator} and Conversational AI explicitly ingest this non-verbal data into the LLM's Live Context window (RAG). If a user says "I am fine" but their facial expression reads "sad", the LLM is contextually aware of the contradiction and tailors its empathy and response tone accordingly.
+\item
+  \textbf{State Emitting}: Based on the conversation and facial analysis, the LLM emits emotional states (e.g., \texttt{happy}, \texttt{concerned}, \texttt{thinking}) which are broadcasted to the Robot UI to physically change the robot's animated facial expressions, bridging the gap between digital AI and physical empathy.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{5. Text-to-Speech (TTS)
+Subsystem}\label{text-to-speech-tts-subsystem}
+
+To provide a voice for NovaCare, the TTS subsystem converts the LLM's
+text responses into natural-sounding audio.
+
+\subsubsection{5.1 Architecture}\label{architecture}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Framework}: A standalone proxy service running on port 8002.
+\item
+  \textbf{Edge-Optimized}: Designed to be lightweight enough to run on
+  edge hardware without requiring massive local deep learning models or
+  expensive cloud API calls.
+\item
+  \textbf{Integration}: Works asynchronously within the Optimized Edge
+  Runtime. When the LLM generates a response, it is immediately queued
+  to the TTS service, which streams audio to the robot's physical
+  speakers.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{6. Robot Hardware Abstraction Layer
+(HAL)}\label{robot-hardware-abstraction-layer-hal}
+
+The SERBot relies on the Robot HAL to abstract complex motor and
+hardware commands into simple, reliable REST APIs.
+
+\subsubsection{6.1 Architecture and
+Features}\label{architecture-and-features}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Framework}: Python-based service running on port 9000.
+\item
+  \textbf{Motor Control}: Exposes endpoints for physical navigation
+  (\texttt{move\_forward}, \texttt{turn}, \texttt{stop}), abstracting
+  away the low-level GPIO or serial commands required to drive the
+  SERBot's motors.
+\item
+  \textbf{Peripheral Management}: Handles LED controls and physical
+  speaker output.
+\item
+  \textbf{Safety}: Includes built-in safety checks to prevent hardware
+  damage, providing a safe testing environment for high-level software.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{7. The Optimized Edge
+Runtime}\label{the-optimized-edge-runtime}
+
+At the heart of the robot's physical operation is the \textbf{Optimized
+Runtime}, an asynchronous orchestrator that ties all microservices
+together on the physical robot.
+
+\subsubsection{7.1 Architecture}\label{architecture-1}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Async Orchestrator}: Built entirely around Python's
+  \texttt{asyncio}, managing concurrent tasks without blocking the main
+  thread.
+\item
+  \textbf{Task Queues}: Implements priority-based task pipelines for
+  audio capture, camera frames, and AI inference.
+\item
+  \textbf{State Management}: Maintains a thread-safe, unified state of
+  the robot's hardware (battery, CPU), current emotion, and conversation
+  context.
+\item
+  \textbf{WebSocket Communication}: Broadcasts real-time state updates
+  at 10Hz to the Robot UI.
+\item
+  \textbf{Non-Destructive Adapters}: Wraps the existing HTTP REST APIs
+  (ASL, LLM, TTS, Robot HAL) into the async pipeline, acting as thin,
+  fault-tolerant clients that do not modify the original microservices.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{8. End-User Applications}\label{end-user-applications}
+
+\subsubsection{8.1 Next.js Web Dashboard}\label{next.js-web-dashboard}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Role}: The primary control center for guardians, medical
+  professionals, and patients.
+\item
+  \textbf{Features}: Real-time ASL recognition interface, vital sign
+  monitoring, chat interface, and robot status dashboards.
+\end{itemize}
+
+\subsubsection{8.2 Flutter Mobile App}\label{flutter-mobile-app}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Role}: A companion app for on-the-go access.
+\item
+  \textbf{Features}: Push notifications, remote monitoring, and direct
+  communication with the NovaCare system.
+\end{itemize}
+
+\subsubsection{8.3 React Robot UI}\label{react-robot-ui}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Role}: The ``face'' of the SERBot, displayed on a physical
+  screen mounted on the robot.
+\item
+  \textbf{Features}: Animated eyes that change color and shape based on
+  the current emotion state (e.g., happy blink, thinking rotation). It
+  also includes audio level visualizations and connection indicators,
+  entirely driven by the WebSocket stream from the Edge Runtime.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{9. Deployment and DevOps}\label{deployment-and-devops}
+
+NovaCare is designed to be easily deployable both locally for
+development and physically onto the SERBot hardware.
+
+\subsubsection{9.1 Containerization and
+Scripts}\label{containerization-and-scripts}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Dockerization}: All microservices are containerized. There are
+  separate Docker profiles (\texttt{Dockerfile.serbot},
+  \texttt{Dockerfile.laptop}) for edge deployment (optimized for
+  Jetson/Raspberry Pi hardware constraints) and heavy laptop-based
+  inference.
+\item
+  \textbf{Unified Scripts}: The project features a unified set of
+  PowerShell and Bash scripts (\texttt{start\_all.ps1},
+  \texttt{deploy\_serbot.sh}) that handle spinning up the entire
+  microservice ecosystem, managing virtual environments, and deploying
+  code to the physical robot via SSH/SCP.
+\item
+  \textbf{Health Monitoring}: Automated scripts
+  (\texttt{health\_check.sh}) continuously verify the availability of
+  all endpoints and ports.
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{10. The Team}\label{the-team}
+
+NovaCare was brought to life by a dedicated team of engineers: -
+\textbf{Basant Awad} - \textbf{Nadira El-Sirafy} - \textbf{Noureen
+Yasser} - \textbf{Muhammad Mustafa} - \textbf{Ramez Asaad}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\emph{Generated: June 2026}
+
+\end{document}

@@ -87,7 +87,6 @@ export default function RoverMedicationsPage() {
 
   useEffect(() => {
     async function fetchMedications() {
-      setIsLoading(true);
       try {
         const res = await getMedications();
         if (res.status === "success" && res.data && res.data.length > 0) {
@@ -101,6 +100,8 @@ export default function RoverMedicationsPage() {
     }
 
     fetchMedications();
+    const interval = setInterval(fetchMedications, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleTakeMedication = (med: MedicationDisplay) => {

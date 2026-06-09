@@ -106,11 +106,16 @@ class CameraEmotionPoller:
 
             # Fallback: local webcam
             if frame is None and not self._use_robot_camera:
-                if self._local_cap is None:
-                    self._local_cap = cv2.VideoCapture(0)
-                ret, frame = self._local_cap.read()
-                if not ret:
-                    frame = None
+                if os.getenv("ALLOW_LOCAL_WEBCAM_POLLING") == "true":
+                    if self._local_cap is None:
+                        self._local_cap = cv2.VideoCapture(0)
+                    ret, frame = self._local_cap.read()
+                    if not ret:
+                        frame = None
+                else:
+                    # Do not lock the local webcam by default, as it breaks frontend camera features like ASL
+                    time.sleep(1)
+                    continue
 
             # Run emotion detection
             if frame is not None and self.analyzer:
@@ -194,15 +199,20 @@ class MentalHealthOrchestrator:
             print(f"⚠ MentalHealthOrchestrator: Pipeline unavailable ({e})")
             self._pipeline = None
 
-    def process(self, user_message: str, conversation_history=None):
+    def process(self, user_message: str, conversation_history=None, frontend_emotion: str = "unknown", frontend_confidence: float = 0.0):
         """
         Returns (bypass: bool, reply: str, prefix_to_add: str)
         - bypass=True  → use reply directly, skip standard LLM
         - bypass=False, prefix set → prepend prefix to standard LLM reply
         - bypass=False, prefix="" → no mental-health signal
         """
-        emotion = poller.latest_emotion.lower()
-        confidence = poller.latest_confidence
+        # Prioritize explicit frontend emotion, fallback to global poller
+        if frontend_emotion and frontend_emotion.lower() != "unknown":
+            emotion = frontend_emotion.lower()
+            confidence = frontend_confidence
+        else:
+            emotion = poller.latest_emotion.lower()
+            confidence = poller.latest_confidence
 
         # If the pipeline is available, use it (full multi-API flow)
         if self._pipeline and self._pipeline.is_available:

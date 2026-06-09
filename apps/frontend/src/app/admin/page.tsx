@@ -21,6 +21,7 @@ import {
     Bot,
     Hand,
     Brain,
+    Mic
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent, Badge, ProgressBar } from "@/components/ui";
@@ -214,6 +215,18 @@ export default function AdminDashboardPage() {
                         <div>
                             <p className="text-2xl font-bold text-text-primary dark:text-white">2</p>
                             <p className="text-sm text-text-muted dark:text-gray-400">Active Alerts</p>
+                        </div>
+                    </div>
+                </Card>
+                
+                <Card className="border border-gray-100 dark:border-gray-700 hover:border-purple-300 transition-colors cursor-pointer" onClick={() => window.location.href='/admin/benchmark-stt'}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center">
+                            <Mic className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-bold text-text-primary dark:text-white">STT Benchmark</p>
+                            <p className="text-sm text-text-muted dark:text-gray-400">Run Audio Tests</p>
                         </div>
                     </div>
                 </Card>

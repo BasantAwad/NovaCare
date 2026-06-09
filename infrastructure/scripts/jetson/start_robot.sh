@@ -49,9 +49,11 @@ sleep 2
 # 2. ASL Model API (FastAPI, port 8000)
 # ---------------------------------------------------------------------------
 echo "[2/4] Starting ASL Model API (port 8001)..."
-cd "$PROJECT_DIR/services/asl-model"
+cd "$PROJECT_DIR/services/asl"
 
-if [ -d "venv" ]; then
+if [ -d "../asl-model/venv" ]; then
+    source ../asl-model/venv/bin/activate
+elif [ -d "venv" ]; then
     source venv/bin/activate
 else
     echo "  [!] No venv found for ASL model — skipping"
@@ -66,9 +68,11 @@ sleep 2
 # 3. LLM Backend (Flask, port 5000)
 # ---------------------------------------------------------------------------
 echo "[3/4] Starting LLM Backend (port 5000)..."
-cd "$PROJECT_DIR/services/llm-backend"
+cd "$PROJECT_DIR/services/llm"
 
-if [ -d "venv" ]; then
+if [ -d "../llm-backend/venv" ]; then
+    source ../llm-backend/venv/bin/activate
+elif [ -d "venv" ]; then
     source venv/bin/activate
 else
     echo "  [!] No venv found for LLM backend — skipping"

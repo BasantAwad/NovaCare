@@ -13,6 +13,7 @@ import {
   stopFollow,
   type RobotHealth,
 } from "@/lib/robot-api";
+import { getNavigationStatus, updateNavigation } from "@/lib/dashboard-api";
 
 interface Destination {
   id: string;
@@ -40,6 +41,7 @@ export default function NavigatePage() {
   const [navStatus, setNavStatus] = useState<string>("");
   const [navETA, setNavETA] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // Check robot health on mount
   useEffect(() => {
@@ -73,6 +75,12 @@ export default function NavigatePage() {
       setNavStatus("Failed to start navigation. Check robot connection.");
     } finally {
       setIsLoading(false);
+      setProgress(10);
+      try {
+        await updateNavigation(selectedDest.id, 'navigating', false);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }, [selectedDest]);
 
@@ -82,6 +90,12 @@ export default function NavigatePage() {
       await stopRobot();
       setIsNavigating(false);
       setSelectedDest(null);
+      setProgress(0);
+      try {
+        await updateNavigation(null, 'idle', false);
+      } catch (e) {
+        console.error(e);
+      }
       setNavStatus("Navigation stopped.");
     } catch (err) {
       console.error("[Navigate] Stop error:", err);
@@ -215,7 +229,7 @@ export default function NavigatePage() {
 
       {/* Active Navigation */}
       {isNavigating && selectedDest && (
-        <div className="bg-primary-50 dark:bg-primary-900/30 border-2 border-primary rounded-3xl p-8">
+        <div className="bg-primary-50 dark:bg-primary-900/30 border-2 border-primary rounded-3xl p-8 animate-scale-in">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center", selectedDest.color)}>

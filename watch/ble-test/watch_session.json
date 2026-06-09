@@ -1,0 +1,470 @@
+[
+  {
+    "timestamp": "2026-05-24T13:46:24.461337",
+    "heart_rate": null,
+    "steps": 1,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:24.462224",
+    "heart_rate": 67,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:28.467482",
+    "heart_rate": null,
+    "steps": 1,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:28.468187",
+    "heart_rate": 90,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:28.468782",
+    "heart_rate": null,
+    "steps": 1,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:28.469352",
+    "heart_rate": 97,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:37.985749",
+    "heart_rate": null,
+    "steps": 141,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:37.986577",
+    "heart_rate": 186,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:38.474180",
+    "heart_rate": null,
+    "steps": 142,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:38.496425",
+    "heart_rate": 216,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:39.093529",
+    "heart_rate": null,
+    "steps": 143,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:39.115327",
+    "heart_rate": 216,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:39.891678",
+    "heart_rate": null,
+    "steps": 144,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:39.902806",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:40.398223",
+    "heart_rate": null,
+    "steps": 145,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:40.409206",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 20
+  },
+  {
+    "timestamp": "2026-05-24T13:46:40.892898",
+    "heart_rate": null,
+    "steps": 146,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:40.903785",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 20
+  },
+  {
+    "timestamp": "2026-05-24T13:46:41.388156",
+    "heart_rate": null,
+    "steps": 147,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:41.389053",
+    "heart_rate": 50,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:41.905663",
+    "heart_rate": null,
+    "steps": 148,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:41.917085",
+    "heart_rate": 50,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:42.389478",
+    "heart_rate": null,
+    "steps": 149,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:42.400313",
+    "heart_rate": 80,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:42.906938",
+    "heart_rate": null,
+    "steps": 150,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:42.917819",
+    "heart_rate": 110,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:43.390620",
+    "heart_rate": null,
+    "steps": 151,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:43.412759",
+    "heart_rate": 110,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:43.930558",
+    "heart_rate": null,
+    "steps": 152,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:43.997747",
+    "heart_rate": 140,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:44.391838",
+    "heart_rate": null,
+    "steps": 153,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:44.425297",
+    "heart_rate": 140,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:50.479103",
+    "heart_rate": null,
+    "steps": 160,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:50.479991",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:50.894589",
+    "heart_rate": null,
+    "steps": 161,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:50.916890",
+    "heart_rate": 34,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:51.389477",
+    "heart_rate": null,
+    "steps": 162,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:51.400631",
+    "heart_rate": 64,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:52.391463",
+    "heart_rate": null,
+    "steps": 163,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:52.401726",
+    "heart_rate": 64,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:52.897102",
+    "heart_rate": null,
+    "steps": 164,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:52.908121",
+    "heart_rate": 94,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:53.392013",
+    "heart_rate": null,
+    "steps": 165,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:53.403049",
+    "heart_rate": 94,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:53.886985",
+    "heart_rate": null,
+    "steps": 166,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:53.897725",
+    "heart_rate": 124,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:54.393168",
+    "heart_rate": null,
+    "steps": 167,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:54.404111",
+    "heart_rate": 154,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:54.899924",
+    "heart_rate": null,
+    "steps": 168,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:54.910851",
+    "heart_rate": 154,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:55.394686",
+    "heart_rate": null,
+    "steps": 169,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:55.405579",
+    "heart_rate": 184,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:55.900554",
+    "heart_rate": null,
+    "steps": 170,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:55.911635",
+    "heart_rate": 184,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:56.395628",
+    "heart_rate": null,
+    "steps": 171,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:56.406569",
+    "heart_rate": 214,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:56.890720",
+    "heart_rate": null,
+    "steps": 172,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:56.901869",
+    "heart_rate": 214,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:57.397138",
+    "heart_rate": null,
+    "steps": 173,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:57.407948",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:57.891845",
+    "heart_rate": null,
+    "steps": 174,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:57.902735",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 18
+  },
+  {
+    "timestamp": "2026-05-24T13:46:58.398109",
+    "heart_rate": null,
+    "steps": 175,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:58.420290",
+    "heart_rate": null,
+    "steps": null,
+    "battery": 18
+  },
+  {
+    "timestamp": "2026-05-24T13:46:58.893131",
+    "heart_rate": null,
+    "steps": 176,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:58.904079",
+    "heart_rate": 48,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:59.388203",
+    "heart_rate": null,
+    "steps": 177,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:59.399158",
+    "heart_rate": 48,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:59.894449",
+    "heart_rate": null,
+    "steps": 178,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:46:59.905346",
+    "heart_rate": 78,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:00.389566",
+    "heart_rate": null,
+    "steps": 179,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:00.400454",
+    "heart_rate": 108,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:01.390899",
+    "heart_rate": null,
+    "steps": 180,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:01.401799",
+    "heart_rate": 108,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:01.896933",
+    "heart_rate": null,
+    "steps": 181,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:01.907935",
+    "heart_rate": 138,
+    "steps": null,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:02.391987",
+    "heart_rate": null,
+    "steps": 182,
+    "battery": 31
+  },
+  {
+    "timestamp": "2026-05-24T13:47:02.392823",
+    "heart_rate": 138,
+    "steps": null,
+    "battery": 31
+  }
+]

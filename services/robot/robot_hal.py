@@ -1,5 +1,5 @@
 """
-NovaCare Robot — Hardware Abstraction Layer (HAL)
+NovaCare Robot - Hardware Abstraction Layer (HAL)
 ==================================================
 Clean abstraction over the SERBot Prime X ``pop`` library.
 
@@ -51,9 +51,9 @@ try:
     _SerBot = _SerBotClass
     _Rplidar = _RplidarClass
     _pop_Util = _pop_Util_module
-    print("✓ pop library loaded — running on SERBot hardware")
+    print("[OK] pop library loaded - running on SERBot hardware")
 except ImportError:
-    print("⚠ pop library not available — running in MOCK/DEV mode")
+    print("[WARN] pop library not available - running in MOCK/DEV mode")
 
 try:
     from pop import AudioPlay as _AudioPlayClass
@@ -67,14 +67,14 @@ try:
     _GTTS_AVAILABLE = True
 except ImportError:
     _GTTS_AVAILABLE = False
-    print("⚠ gTTS not installed (pip install gTTS)")
+    print("[WARN] gTTS not installed (pip install gTTS)")
 
 try:
     import speech_recognition as sr
     _SR_AVAILABLE = True
 except ImportError:
     _SR_AVAILABLE = False
-    print("⚠ SpeechRecognition not installed (pip install SpeechRecognition)")
+    print("[WARN] SpeechRecognition not installed (pip install SpeechRecognition)")
 
 
 # ============================================================================
@@ -97,7 +97,7 @@ class CameraHAL:
 
     def _open(self):
         if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
-            print("✓ CameraHAL in LIGHTWEIGHT mode (no hardware camera)")
+            print("[OK] CameraHAL in LIGHTWEIGHT mode (no hardware camera)")
             self._cap = None
             return
 
@@ -110,22 +110,23 @@ class CameraHAL:
                 pipeline = _pop_Util.gstrmer(CAMERA_WIDTH, CAMERA_HEIGHT)
                 self._cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
                 if self._cap.isOpened():
-                    print(f"✓ Camera opened via GStreamer pipeline ({CAMERA_WIDTH}×{CAMERA_HEIGHT})")
+                    print(f"[OK] Camera opened via GStreamer pipeline ({CAMERA_WIDTH}x{CAMERA_HEIGHT})")
                     return
                 else:
-                    print("⚠ GStreamer pipeline failed — falling back to default camera")
+                    print("[WARN] GStreamer pipeline failed - falling back to default camera")
             except Exception as e:
-                print(f"⚠ GStreamer error: {e} — falling back to default camera")
+                print(f"[WARN] GStreamer error: {e} - falling back to default camera")
 
         # Fallback: standard OpenCV VideoCapture
         self._cap = cv2.VideoCapture(CAMERA_INDEX)
+            
         if self._cap.isOpened():
             self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
             self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
             self._cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-            print(f"✓ Camera opened via VideoCapture({CAMERA_INDEX})")
+            print(f"[OK] Camera opened via VideoCapture({CAMERA_INDEX})")
         else:
-            print("✗ No camera available")
+            print("[FAIL] No camera available")
             self._cap = None
 
     @property
@@ -211,11 +212,11 @@ class MotionHAL:
         if _SerBot is not None:
             try:
                 self._bot = _SerBot()
-                print("✓ SerBot motor controller initialized")
+                print("[OK] SerBot motor controller initialized")
             except Exception as e:
-                print(f"✗ SerBot motor init failed: {e}")
+                print(f"[FAIL] SerBot motor init failed: {e}")
         else:
-            print("⚠ MotionHAL in MOCK mode (no pop.Pilot)")
+            print("[WARN] MotionHAL in MOCK mode (no pop.Pilot)")
 
     @property
     def is_available(self) -> bool:
@@ -289,7 +290,7 @@ class MotionHAL:
             self._moving = True
             if self._bot and hasattr(self._bot, "tracking"):
                 self._bot.tracking(target)
-                print(f"✓ SerBot built-in tracking started for: {target}")
+                print(f"[OK] SerBot built-in tracking started for: {target}")
             else:
                 print(f"[MOCK] start_tracking(target={target})")
 
@@ -298,7 +299,7 @@ class MotionHAL:
         with self._lock:
             if self._bot and hasattr(self._bot, "stopTracking"):
                 self._bot.stopTracking()
-                print("✓ SerBot built-in tracking stopped")
+                print("[OK] SerBot built-in tracking stopped")
             elif self._bot and hasattr(self._bot, "tracking"):
                 # some pop versions stop tracking by passing None or empty
                 try:
@@ -313,7 +314,7 @@ class MotionHAL:
             self._moving = True
             if self._bot and hasattr(self._bot, "navigation"):
                 self._bot.navigation(location_name)
-                print(f"✓ SerBot navigating to: {location_name}")
+                print(f"[OK] SerBot navigating to: {location_name}")
             else:
                 print(f"[MOCK] navigate_to(location={location_name})")
 
@@ -335,7 +336,7 @@ class AudioHAL:
         os.makedirs(TTS_TEMP_DIR, exist_ok=True)
 
         if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
-            print("✓ AudioHAL in LIGHTWEIGHT mode (no hardware AudioPlay)")
+            print("[OK] AudioHAL in LIGHTWEIGHT mode (no hardware AudioPlay)")
             return
 
         if _AudioPlay is not None:
@@ -348,14 +349,14 @@ class AudioHAL:
                     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                         tmp_name = tmp.name
                     self._audio_player = _AudioPlay(tmp_name)
-                    print("✓ AudioPlay initialized with dummy file (robot speaker)")
+                    print("[OK] AudioPlay initialized with dummy file (robot speaker)")
                 except Exception:
                     # Fallback to no-argument constructor if signature is different
                     try:
                         self._audio_player = _AudioPlay()
-                        print("✓ AudioPlay initialized empty (robot speaker)")
+                        print("[OK] AudioPlay initialized empty (robot speaker)")
                     except Exception as inner_e:
-                        print(f"⚠ AudioPlay inner init failed: {inner_e}")
+                        print(f"[WARN] AudioPlay inner init failed: {inner_e}")
                         self._audio_player = None
                 finally:
                     if tmp_name and os.path.exists(tmp_name):
@@ -364,7 +365,7 @@ class AudioHAL:
                         except Exception:
                             pass
             except Exception as e:
-                print(f"⚠ AudioPlay outer init failed: {e}")
+                print(f"[WARN] AudioPlay outer init failed: {e}")
 
     @property
     def tts_available(self) -> bool:
@@ -414,7 +415,7 @@ class AudioHAL:
                 elif sys.platform == "darwin":
                     os.system(f"afplay '{filepath}'")
                 else:
-                    # Windows or other — use pygame or system player
+                    # Windows or other - use pygame or system player
                     try:
                         import pygame
                         pygame.mixer.init()
@@ -454,7 +455,7 @@ class AudioHAL:
                 print(f"[STT] Recognised: {text}")
                 return text
         except sr.WaitTimeoutError:
-            print("[STT] Timeout — no speech detected")
+            print("[STT] Timeout - no speech detected")
             return None
         except sr.UnknownValueError:
             print("[STT] Could not understand audio")
@@ -482,7 +483,7 @@ class LidarHAL:
         self._lock = threading.Lock()
 
         if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
-            print("✓ LidarHAL in LIGHTWEIGHT mode (no hardware LiDAR)")
+            print("[OK] LidarHAL in LIGHTWEIGHT mode (no hardware LiDAR)")
             return
 
         if LIDAR_ENABLED and _Rplidar is not None:
@@ -490,12 +491,12 @@ class LidarHAL:
                 self._lidar = _Rplidar()
                 self._lidar.connect()
                 self._lidar.startMotor()
-                print("✓ RPLiDAR connected and motor started")
+                print("[OK] RPLiDAR connected and motor started")
             except Exception as e:
-                print(f"⚠ LiDAR init failed: {e}")
+                print(f"[WARN] LiDAR init failed: {e}")
                 self._lidar = None
         else:
-            print("⚠ LidarHAL disabled or pop.LiDAR not available")
+            print("[WARN] LidarHAL disabled or pop.LiDAR not available")
 
     @property
     def is_available(self) -> bool:
@@ -606,7 +607,7 @@ class RobotHAL:
 
     def __init__(self):
         print("=" * 50)
-        print("  NovaCare — SERBot Hardware Abstraction Layer")
+        print("  NovaCare - SERBot Hardware Abstraction Layer")
         print("=" * 50)
         self.camera = CameraHAL()
         self.motion = MotionHAL()
@@ -616,12 +617,12 @@ class RobotHAL:
 
     def _print_status(self):
         print("\n  Hardware Status:")
-        print(f"    Camera:   {'✓ READY' if self.camera.is_available else '✗ N/A'}")
-        print(f"    Motion:   {'✓ READY' if self.motion.is_available else '⚠ MOCK'}")
-        print(f"    TTS:      {'✓ READY' if self.audio.tts_available else '✗ N/A'}")
-        print(f"    STT:      {'✓ READY' if self.audio.stt_available else '✗ N/A'}")
-        print(f"    LiDAR:    {'✓ READY' if self.lidar.is_available else '✗ N/A'}")
-        print(f"    pop lib:  {'✓ LOADED' if _POP_AVAILABLE else '⚠ NOT AVAILABLE'}")
+        print(f"    Camera:   {'[OK] READY' if self.camera.is_available else '[FAIL] N/A'}")
+        print(f"    Motion:   {'[OK] READY' if self.motion.is_available else '[WARN] MOCK'}")
+        print(f"    TTS:      {'[OK] READY' if self.audio.tts_available else '[FAIL] N/A'}")
+        print(f"    STT:      {'[OK] READY' if self.audio.stt_available else '[FAIL] N/A'}")
+        print(f"    LiDAR:    {'[OK] READY' if self.lidar.is_available else '[FAIL] N/A'}")
+        print(f"    pop lib:  {'[OK] LOADED' if _POP_AVAILABLE else '[WARN] NOT AVAILABLE'}")
         print("=" * 50)
 
     def shutdown(self):

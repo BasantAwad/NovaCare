@@ -5,6 +5,8 @@
  * with the Flask auth-backend service.
  */
 
+import { getDynamicUrl } from "./utils";
+
 const AUTH_API = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:5001";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +45,8 @@ export interface AuthResponseData {
   refresh_token: string;
 }
 
+export type ReferenceData = Record<string, any[]>;
+
 // ---------------------------------------------------------------------------
 // Token Management
 // ---------------------------------------------------------------------------
@@ -80,7 +84,7 @@ async function authFetch<T = any>(
   path: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${AUTH_API}${path}`;
+  const url = `${getDynamicUrl(AUTH_API)}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
