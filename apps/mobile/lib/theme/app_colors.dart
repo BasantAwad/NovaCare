@@ -78,4 +78,16 @@ class AppColors {
     if (bpm < 120) return heartRateElevated;
     return heartRateCritical;
   }
+
+  // ─── Dark theme (rover controls / joystick) ──────────────────
+  static const Color roverDarkBg = Color(0xFF0B1E27);
+  static const Color roverDarkCard = Color(0x0AFFFFFF);
+  static const Color roverDarkBorder = Color(0x1AFFFFFF);
+  static const Color roverDarkText = Color(0xE6FFFFFF);
+  static const Color roverDarkMuted = Color(0x80FFFFFF);
+
+  // ─── Brand accents (for joystick gradient) ──────────────────
+  static const Color brandTeal = Color(0xFF2C5F7E);
+  static const Color brandLeaf = Color(0xFF6FAF93);
+  static const Color accent = Color(0xFFF0B82B);
 }

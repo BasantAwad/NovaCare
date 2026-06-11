@@ -21,4 +21,4 @@ if (-not (Test-Path '.env.local')) {
 }
 
 Write-Host "[*] Starting Next.js on port 3000..." -ForegroundColor Cyan
-npm run dev -- --hostname 0.0.0.0
+.\node_modules\.bin\next dev -H 0.0.0.0

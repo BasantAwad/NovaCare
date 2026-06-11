@@ -95,6 +95,9 @@ class ConversationalAI:
         self._ensure_configured()
 
     def _get_hf_client(self):
+        import sys
+        sys.stderr.write(f"[HF Client Init] API_KEY exists: {bool(API_KEY)}, MODEL_NAME: {MODEL_NAME}\n")
+        sys.stderr.flush()
         if not API_KEY:
             raise RuntimeError(
                 "HUGGINGFACE_API_KEY is not set; cloud (quality) route is unavailable."
@@ -102,9 +105,11 @@ class ConversationalAI:
         if self._hf_client is None:
             from huggingface_hub import InferenceClient
 
-            print("Initializing Hugging Face InferenceClient...")
+            sys.stderr.write("Initializing Hugging Face InferenceClient...\n")
+            sys.stderr.flush()
             self._hf_client = InferenceClient(model=MODEL_NAME, token=API_KEY)
-            print("✓ Hugging Face InferenceClient ready")
+            sys.stderr.write("✓ Hugging Face InferenceClient ready\n")
+            sys.stderr.flush()
         return self._hf_client
 
     def _messages_for_chat(self, user_message: str, live_context: str) -> List[Dict[str, str]]:
@@ -189,7 +194,10 @@ class ConversationalAI:
             reply = _extract_reply(response)
             if reply:
                 return reply
-        except Exception:
+        except Exception as e:
+            import sys
+            sys.stderr.write(f"[HF Chat Error] chat_completion failed: {e}\n")
+            sys.stderr.flush()
             pass
 
         prompt = f"{SYSTEM_PROMPT}\n\nUser: {user_message}\nAssistant:"
@@ -239,7 +247,7 @@ class ConversationalAI:
         route = self._normalize_profile(profile)
         self.last_profile = route
 
-        print(f"\n💬 [LLM Backend] --- NEW CHAT SESSION ---")
+        print(f"\n[CHAT] [LLM Backend] --- NEW CHAT SESSION ---")
         print(f"   User Message: '{user_message}'")
         print(f"   Requested Profile: {profile or 'None (Default)'} -> Selected Route: {route.upper()}")
 
@@ -378,12 +386,12 @@ class ConversationalAI:
         if route == "quality":
             self.last_route = "huggingface"
             try:
-                print("🚀 [LLM Backend] Calling Cloud Route (Hugging Face Inference API)...")
+                print("[RUN] [LLM Backend] Calling Cloud Route (Hugging Face Inference API)...")
                 reply = self._chat_hf(messages)
             except Exception as e:
                 if OLLAMA_MODEL:
                     try:
-                        print(f"⚠️ [LLM Backend] Hugging Face failed ({e}); falling back to local Ollama.")
+                        print(f"[WARN] [LLM Backend] Hugging Face failed ({e}); falling back to local Ollama.")
                         self.last_route = "ollama_fallback"
                         reply = self._chat_ollama(messages)
                     except Exception as e2:
@@ -394,11 +402,11 @@ class ConversationalAI:
             if OLLAMA_MODEL:
                 self.last_route = "ollama"
                 try:
-                    print(f"🚀 [LLM Backend] Calling Local Route (Ollama: {OLLAMA_MODEL})...")
+                    print(f"[RUN] [LLM Backend] Calling Local Route (Ollama: {OLLAMA_MODEL})...")
                     reply = self._chat_ollama(messages)
                 except Exception as e:
                     if API_KEY:
-                        print(f"⚠️ [LLM Backend] Ollama failed ({e}); falling back to Hugging Face cloud.")
+                        print(f"[WARN] [LLM Backend] Ollama failed ({e}); falling back to Hugging Face cloud.")
                         self.last_route = "huggingface_fallback"
                         try:
                             reply = self._chat_hf(messages)
@@ -409,13 +417,13 @@ class ConversationalAI:
             else:
                 self.last_route = "huggingface"
                 try:
-                    print("🚀 [LLM Backend] Calling Cloud Route (Hugging Face Inference API)...")
+                    print("[RUN] [LLM Backend] Calling Cloud Route (Hugging Face Inference API)...")
                     reply = self._chat_hf(messages)
                 except Exception as e:
                     reply = f"I'm sorry, I encountered an error: {e}"
 
         duration = time.time() - start_time
-        print(f"⏱️ [LLM Backend] LLM generation completed in {duration:.2f} seconds.")
+        print(f"[TIME] [LLM Backend] LLM generation completed in {duration:.2f} seconds.")
 
         # --- High-Reliability Tool Parsing Engine ---
         import re
@@ -483,19 +491,19 @@ class ConversationalAI:
                     if data["actions"]:
                         # If LLM generated specific actions, prioritize them!
                         parsed_response["actions"] = data["actions"]
-                        print(f"🎯 [Tool Calling] Successfully parsed valid LLM JSON action(s): {data['actions']}")
+                        print(f"[PARSED] [Tool Calling] Successfully parsed valid LLM JSON action(s): {data['actions']}")
                     else:
                         if detected_actions:
-                            print(f"🧠 [Heuristic Engine] LLM actions empty; using heuristic-detected actions: {detected_actions}")
+                            print(f"[HEURISTIC] [Engine] LLM actions empty; using heuristic-detected actions: {detected_actions}")
                         else:
-                            print("ℹ️ [Tool Calling] No action requested or detected.")
+                            print("[INFO] [Tool Calling] No action requested or detected.")
             else:
                 if detected_actions:
-                    print(f"🧠 [Heuristic Engine] Non-JSON LLM response. Fallback heuristics detected: {detected_actions}")
+                    print(f"[HEURISTIC] [Engine] Non-JSON LLM response. Fallback heuristics detected: {detected_actions}")
                 else:
-                    print("ℹ️ [Tool Calling] Non-JSON LLM response. No action requested or detected.")
+                    print("[INFO] [Tool Calling] Non-JSON LLM response. No action requested or detected.")
         except Exception as json_err:
-            print(f"⚠️ [Tool Calling] JSON parsing failed ({json_err}). Using raw text + heuristics.")
+            print(f"[WARN] [Tool Calling] JSON parsing failed ({json_err}). Using raw text + heuristics.")
             clean_reply = re.sub(r'\{.*\}', '', reply, flags=re.DOTALL).strip()
             if clean_reply:
                 parsed_response["response"] = clean_reply
@@ -516,7 +524,7 @@ class ConversationalAI:
             name = action.get("name")
             params = action.get("parameters", {})
             
-            print(f"🔧 [LLM Backend] Contradiction Overrider: Intercepted refusal. Dynamic override applied for action '{name}'.")
+            print(f"[OVERRIDE] [LLM Backend] Contradiction Overrider: Intercepted refusal. Dynamic override applied for action '{name}'.")
             
             if name == "play_music":
                 mood = params.get("mood", "relaxing")
@@ -535,9 +543,9 @@ class ConversationalAI:
             elif name == "pause_music":
                 parsed_response["response"] = "I have paused the music for you."
 
-        print(f"🤖 [Assistant Response]: '{parsed_response['response']}'")
-        print(f"📦 [Resolved Actions]: {parsed_response['actions']}")
-        print(f"💬 [LLM Backend] --- SESSION END ---\n")
+        print(f"[BOT] [Assistant Response]: '{parsed_response['response']}'")
+        print(f"[ACTIONS] [Resolved Actions]: {parsed_response['actions']}")
+        print(f"[CHAT] [LLM Backend] --- SESSION END ---\n")
 
         # Add pure text to history to maintain clean conversational context
         self.history.append({"user": user_message, "assistant": parsed_response["response"]})

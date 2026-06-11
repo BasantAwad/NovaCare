@@ -85,6 +85,13 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Move rover by a 360° angle (from the virtual joystick).
+  Future<void> moveRoverByAngle(String angleDeg, String robotIp) async {
+    _roverSpeed = 0.5;
+    await _robotService.sendAngleCommand(angleDeg, robotIp);
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _robotService.dispose();

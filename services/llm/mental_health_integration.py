@@ -17,7 +17,7 @@ import urllib.request
 import numpy as np
 
 # Robot camera REST API URL (robot_service.py on port 9000)
-ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://10.34.19.247:9000/api/camera/frame")
+ROBOT_CAMERA_URL = os.getenv("ROBOT_CAMERA_URL", "http://192.168.8.50:9000/api/camera/frame")
 
 
 # ===========================================================================

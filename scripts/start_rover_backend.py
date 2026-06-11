@@ -18,8 +18,11 @@ def main():
 
     print("1. Killing any existing rover processes...")
     ssh.exec_command("pkill -f robot_service.py")
-    ssh.exec_command("pkill -f launcher.py")
+    ssh.exec_command("pkill -f launcher")
     ssh.exec_command("pkill -f runtime_orchestrator")
+    ssh.exec_command("pkill -f tcp_command_server.py")
+    ssh.exec_command("pkill -f test_rover_server.py")
+    ssh.exec_command("pkill -f test_rover_server")
     time.sleep(2)
 
     print("2. Launching Robot Service (HAL Flask API on Port 9000)...")
@@ -30,22 +33,31 @@ def main():
     print("3. Launching Central Runtime Orchestrator (Websocket Server on Port 9999)...")
     cmd_launcher = f"export PYTHONPATH={REMOTE_DIR} && cd {REMOTE_DIR} && nohup python3 -m optimized_runtime.runtime.launcher --mode serbot > {REMOTE_DIR}/orchestrator.log 2>&1 &"
     ssh.exec_command(cmd_launcher)
+    time.sleep(3)
+
+    print("4. Launching TCP Command Server (Port 5555)...")
+    cmd_tcp = f"export PYTHONPATH={REMOTE_DIR} && cd {REMOTE_DIR} && nohup python3 services/robot/tcp_command_server.py > {REMOTE_DIR}/tcp_command_server.log 2>&1 &"
+    ssh.exec_command(cmd_tcp)
     time.sleep(5)
 
-    print("\n4. Verifying running Python processes:")
+    print("\n5. Verifying running Python processes:")
     stdin, stdout, stderr = ssh.exec_command("ps aux | grep python3")
     safe_print(stdout.read().decode('utf-8', errors='replace'))
 
-    print("5. Verifying active listening ports (9000 & 9999):")
-    stdin, stdout, stderr = ssh.exec_command("netstat -tuln | grep -E '9000|9999' || ss -tuln | grep -E '9000|9999'")
+    print("6. Verifying active listening ports (5555, 9000 & 9999):")
+    stdin, stdout, stderr = ssh.exec_command("netstat -tuln | grep -E '5555|9000|9999' || ss -tuln | grep -E '5555|9000|9999'")
     safe_print(stdout.read().decode('utf-8', errors='replace'))
 
-    print("6. Reading Robot Service Log Startup Snapshot:")
+    print("7. Reading Robot Service Log Startup Snapshot:")
     stdin, stdout, stderr = ssh.exec_command(f"tail -n 20 {REMOTE_DIR}/robot_service.log")
     safe_print(stdout.read().decode('utf-8', errors='replace'))
 
-    print("7. Reading Orchestrator Log Startup Snapshot:")
+    print("8. Reading Orchestrator Log Startup Snapshot:")
     stdin, stdout, stderr = ssh.exec_command(f"tail -n 20 {REMOTE_DIR}/orchestrator.log")
+    safe_print(stdout.read().decode('utf-8', errors='replace'))
+
+    print("9. Reading TCP Command Server Log Startup Snapshot:")
+    stdin, stdout, stderr = ssh.exec_command(f"tail -n 20 {REMOTE_DIR}/tcp_command_server.log")
     safe_print(stdout.read().decode('utf-8', errors='replace'))
 
     ssh.close()

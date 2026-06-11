@@ -7,7 +7,7 @@ import os
 # Load environment variables from .env file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 env_path = os.path.join(current_dir, '.env')
-load_dotenv(env_path)
+load_dotenv(env_path, override=True)
 
 # Add the current directory to the path (since we're now inside NovaCare)
 sys.path.insert(0, current_dir)
@@ -31,7 +31,7 @@ def get_emotion_analyzer():
         try:
             from emotion_detection import get_analyzer
             emotion_analyzer = get_analyzer()
-            print("✓ Emotion analyzer loaded successfully")
+            print("[OK] Emotion analyzer loaded successfully")
         except Exception as e:
             print(f"Warning: Could not load emotion analyzer: {e}")
     return emotion_analyzer
@@ -54,11 +54,11 @@ def health():
 def chat():
     """Chat endpoint - receives user message and returns AI response"""
     try:
-        print(f"\n📥 [API Route] POST /api/chat - Request received from {request.remote_addr}")
+        print(f"\n[IN] [API Route] POST /api/chat - Request received from {request.remote_addr}")
         data = request.json
         
         if not data:
-            print("📤 [API Route] POST /api/chat - Error 400: No data provided")
+            print("[OUT] [API Route] POST /api/chat - Error 400: No data provided")
             return jsonify({
                 'error': 'No data provided'
             }), 400
@@ -66,7 +66,7 @@ def chat():
         user_message = data.get('message', '').strip()
         
         if not user_message:
-            print("📤 [API Route] POST /api/chat - Error 400: No message provided")
+            print("[OUT] [API Route] POST /api/chat - Error 400: No message provided")
             return jsonify({
                 'error': 'No message provided'
             }), 400
@@ -90,7 +90,7 @@ def chat():
         # Get AI response
         chat_data = ai.chat(user_message, profile=llm_profile, emotion=frontend_emotion, confidence=frontend_confidence)
         
-        print(f"📤 [API Route] POST /api/chat - Response returned. Route={ai.last_route}, Profile={ai.last_profile}")
+        print(f"[OUT] [API Route] POST /api/chat - Response returned. Route={ai.last_route}, Profile={ai.last_profile}")
         # Build response with mental-health metadata if available
         resp_data = {
             'response': chat_data['response'],
@@ -108,7 +108,7 @@ def chat():
         return jsonify(resp_data)
     
     except Exception as e:
-        print(f"❌ [API Error] {str(e)}")
+        print(f"[ERROR] [API Error] {str(e)}")
         import traceback
         traceback.print_exc()
         
@@ -143,11 +143,11 @@ def detect_emotion():
     Returns: { "emotion": str, "confidence": float, "all_scores": dict, "status": str }
     """
     try:
-        print(f"\n📥 [API Route] POST /api/emotion/detect - Image payload received from {request.remote_addr}")
+        print(f"\n[IN] [API Route] POST /api/emotion/detect - Image payload received from {request.remote_addr}")
         data = request.json
         
         if not data:
-            print("📤 [API Route] POST /api/emotion/detect - Error 400: No data provided")
+            print("[OUT] [API Route] POST /api/emotion/detect - Error 400: No data provided")
             return jsonify({
                 'error': 'No data provided',
                 'status': 'error'
@@ -156,7 +156,7 @@ def detect_emotion():
         image_data = data.get('image', '').strip()
         
         if not image_data:
-            print("📤 [API Route] POST /api/emotion/detect - Error 400: No image provided")
+            print("[OUT] [API Route] POST /api/emotion/detect - Error 400: No image provided")
             return jsonify({
                 'error': 'No image provided',
                 'status': 'error'
@@ -166,7 +166,7 @@ def detect_emotion():
         analyzer = get_emotion_analyzer()
         
         if analyzer is None:
-            print("📤 [API Route] POST /api/emotion/detect - Error 500: Emotion analyzer not available")
+            print("[OUT] [API Route] POST /api/emotion/detect - Error 500: Emotion analyzer not available")
             return jsonify({
                 'error': 'Emotion analyzer not available. Please check server logs.',
                 'status': 'error'
@@ -176,7 +176,7 @@ def detect_emotion():
         result = analyzer.predict_from_base64(image_data, detect_face=True)
         
         if 'error' in result and result.get('emotion') == 'unknown':
-            print(f"📤 [API Route] POST /api/emotion/detect - Face detection failed or error occurred: {result.get('error')}")
+            print(f"[OUT] [API Route] POST /api/emotion/detect - Face detection failed or error occurred: {result.get('error')}")
             return jsonify({
                 'emotion': 'unknown',
                 'confidence': 0.0,
@@ -185,7 +185,7 @@ def detect_emotion():
                 'status': 'error'
             }), 400
         
-        print(f"📤 [API Route] POST /api/emotion/detect - Success! Detected Emotion: '{result.get('emotion')}' (Confidence: {result.get('confidence', 0.0):.2%}, FaceDetected={result.get('face_detected', False)})")
+        print(f"[OUT] [API Route] POST /api/emotion/detect - Success! Detected Emotion: '{result.get('emotion')}' (Confidence: {result.get('confidence', 0.0):.2%}, FaceDetected={result.get('face_detected', False)})")
         return jsonify({
             'emotion': result.get('emotion', 'unknown'),
             'confidence': result.get('confidence', 0.0),
@@ -195,7 +195,7 @@ def detect_emotion():
         })
         
     except Exception as e:
-        print(f"❌ [Emotion API Error] {str(e)}")
+        print(f"[ERROR] [Emotion API Error] {str(e)}")
         import traceback
         traceback.print_exc()
         

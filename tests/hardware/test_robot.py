@@ -456,7 +456,8 @@ HTML_PAGE = """
 def generate_frames():
     try:
         from pop import Util
-        Util.enable_imshow()
+        # Commented out to prevent camera popup GUI on robot screen/DISPLAY
+        # Util.enable_imshow()
         pipeline = Util.gstrmer(640, 480)
         cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
     except:

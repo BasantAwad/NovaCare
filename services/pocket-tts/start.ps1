@@ -35,14 +35,41 @@ if (Test-Path $MathTutorKPocketTts) {
     $UvBin = if ($env:UV_BIN) { $env:UV_BIN } else { "uv" }
     $HasUv = Get-Command $UvBin -ErrorAction SilentlyContinue
     
-    # Create local venv if it doesn't exist
-    if (-not (Test-Path $LocalVenvDir)) {
+    $LocalPocketTts = Join-Path $LocalVenvDir "Scripts\pocket-tts.exe"
+
+    # Create local venv if it doesn't exist or is invalid
+    if (-not (Test-Path $LocalPocketTts)) {
+        if (Test-Path $LocalVenvDir) {
+            Write-Host "[*] Cleaning old invalid venv..." -ForegroundColor Yellow
+            Remove-Item -Recurse -Force $LocalVenvDir -ErrorAction SilentlyContinue
+        }
         if ($HasUv) {
             Write-Host "[*] Creating virtual environment with uv..." -ForegroundColor Cyan
-            & $UvBin venv $LocalVenvDir --python 3.12
+            & $UvBin venv $LocalVenvDir --python 3.10
         } else {
-            Write-Host "[*] Creating virtual environment with python..." -ForegroundColor Cyan
-            python -m venv $LocalVenvDir
+            # Try to use python 3.10 or 3.12 to avoid python 3.13 PyTorch wheels issue
+            $hasPy10 = $false
+            try {
+                $py10Val = & py -3.10 -c "print('ok')" -ErrorAction SilentlyContinue
+                if ($py10Val -eq "ok") { $hasPy10 = $true }
+            } catch {}
+            
+            $hasPy12 = $false
+            try {
+                $py12Val = & py -3.12 -c "print('ok')" -ErrorAction SilentlyContinue
+                if ($py12Val -eq "ok") { $hasPy12 = $true }
+            } catch {}
+
+            if ($hasPy10) {
+                Write-Host "[*] Creating virtual environment with Python 3.10..." -ForegroundColor Cyan
+                & py -3.10 -m venv $LocalVenvDir
+            } elseif ($hasPy12) {
+                Write-Host "[*] Creating virtual environment with Python 3.12..." -ForegroundColor Cyan
+                & py -3.12 -m venv $LocalVenvDir
+            } else {
+                Write-Host "[*] Creating virtual environment with default python..." -ForegroundColor Cyan
+                python -m venv $LocalVenvDir
+            }
         }
     }
     

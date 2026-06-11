@@ -101,11 +101,27 @@ class CameraHAL:
             self._cap = None
             return
 
+        if os.environ.get("CAMERA_FORCE_V4L2") == "1":
+            print("[INFO] CAMERA_FORCE_V4L2 is set - forcing V4L2 direct capture")
+            self._cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
+            if self._cap.isOpened():
+                self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
+                self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
+                self._cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
+                print(f"[OK] Camera opened via V4L2 index {CAMERA_INDEX}")
+                return
+            else:
+                print("[FAIL] CAMERA_FORCE_V4L2 failed to open camera")
+
         if _pop_Util is not None:
-            try:
-                _pop_Util.enable_imshow()
-            except Exception:
-                pass
+            # Commented out to prevent camera popup GUI on robot screen/DISPLAY
+            # if "DISPLAY" in os.environ:
+            #     try:
+            #         _pop_Util.enable_imshow()
+            #     except Exception as e:
+            #         print(f"[WARN] enable_imshow failed: {e}")
+            # else:
+            #     print("[INFO] Headless environment detected (no DISPLAY) - skipping enable_imshow()")
             try:
                 pipeline = _pop_Util.gstrmer(CAMERA_WIDTH, CAMERA_HEIGHT)
                 self._cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)

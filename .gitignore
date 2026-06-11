@@ -5,6 +5,7 @@
 # ---- Python ----
 **/venv/
 **/env/
+**/.venv/
 **/__pycache__/
 **/*.py[cod]
 **/*$py.class
@@ -59,6 +60,8 @@ services/asl-model/data/asl_alphabet_test/
 services/asl-model/data/raw/
 services/asl-model/data/processed/
 services/asl-model/data/models/
+**/datasets/
+**/dataset/
 
 # ---- Build & Cache ----
 *.log

@@ -1,4 +1,4 @@
-﻿"""
+"""
 NovaCare Robot  REST Service
 ==============================
 Flask API exposing robot hardware capabilities over HTTP.
@@ -180,13 +180,22 @@ def move():
            "speed": int (0-80), "duration": float (seconds, 0=indefinite)}
     """
     data = request.get_json(silent=True) or {}
-    direction = data.get("direction", "").lower()
+    direction = data.get("direction")
     speed = data.get("speed", DEFAULT_SPEED)
     duration = data.get("duration", 0)
 
-    if direction not in DIRECTION_MAP:
+    angle = None
+    if isinstance(direction, int):
+        angle = direction
+    elif isinstance(direction, str) and direction.strip().isdigit():
+        angle = int(direction.strip())
+    elif isinstance(direction, str) and direction.lower() in DIRECTION_MAP:
+        angle = DIRECTION_MAP[direction.lower()]
+
+    if angle is None:
         return jsonify({"error": f"Unknown direction: {direction}",
-                        "valid": list(DIRECTION_MAP.keys())}), 400
+                        "valid": list(DIRECTION_MAP.keys()) + ["integer angle"]}), 400
+
 
     # Check for obstacles before moving forward
     if direction == "forward" and robot().camera.is_obstacle_ahead():
