@@ -39,6 +39,7 @@ import time
 import signal
 import threading
 import tempfile
+import json
 
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,8 +50,10 @@ from flask_cors import CORS
 from config import (
     ROBOT_SERVICE_HOST, ROBOT_SERVICE_PORT, DESTINATIONS,
     DEFAULT_SPEED, OBSTACLE_STOP_DISTANCE_MM,
+    STREAM_FPS,
 )
 from robot_hal import get_robot
+from camera_service import get_camera
 from watch_integration import (
     init_watch_integration,
     get_watch_manager,
@@ -138,23 +141,64 @@ def camera_frame():
 @app.get("/api/camera/stream")
 def camera_stream():
     """MJPEG streaming endpoint for live video feed."""
+    cam = robot().camera.get_lightweight_camera()
+    frame_interval = 1.0 / max(1, STREAM_FPS)
+
     def generate():
         while True:
-            jpg = robot().camera.read_frame_jpeg_bytes(quality=70)
+            jpg = cam.read_frame_jpeg()
             if jpg is None:
-                time.sleep(0.1)
+                time.sleep(0.2)
                 continue
             yield (
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" + jpg + b"\r\n"
             )
-            time.sleep(1.0 / 15)  # ~15 FPS
+            time.sleep(frame_interval)
 
     return Response(
         generate(),
         mimetype="multipart/x-mixed-replace; boundary=frame",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/camera/status")
+def camera_status():
+    """Return current camera availability and streaming state."""
+    cam = robot().camera.get_lightweight_camera()
+    return jsonify(cam.get_status())
+
+
+@app.post("/api/camera/session/start")
+def camera_session_start():
+    """Start a camera streaming session (called by mobile app on screen open)."""
+    cam = robot().camera.get_lightweight_camera()
+    if not cam.is_available:
+        return jsonify({
+            "error": "Camera not available",
+            "stream_url": None,
+        }), 503
+
+    cam.start_session()
+    # Build the stream URL with api_key for mobile auth
+    stream_url = f"http://{request.host}/api/camera/stream?api_key={API_KEY}"
+    return jsonify({
+        "status": "streaming",
+        "stream_url": stream_url,
+        "viewers": cam.viewer_count,
+    })
+
+
+@app.post("/api/camera/session/stop")
+def camera_session_stop():
+    """Stop a camera streaming session (called by mobile app on screen close)."""
+    cam = robot().camera.get_lightweight_camera()
+    cam.stop_session()
+    return jsonify({
+        "status": "stopped",
+        "viewers": cam.viewer_count,
+    })
 
 
 # ============================================================================

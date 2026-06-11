@@ -11,7 +11,7 @@ All robot-specific hardware calls are encapsulated here so that:
 
 Subsystems
 ----------
-- CameraHAL:   CSI/USB camera via GStreamer (pop.Util)
+- CameraHAL:   Lightweight V4L2 camera via camera_service (no OpenCV)
 - MotionHAL:   Omni-wheel control via pop.Pilot.SerBot
 - AudioHAL:    Speaker + Microphone via pop.AudioPlay, gTTS, SpeechRecognition
 - LidarHAL:    RPLiDAR A1 via pop.LiDAR.Rplidar
@@ -24,15 +24,16 @@ import threading
 import tempfile
 from typing import Optional, Tuple, List, Dict
 
-import cv2
-import numpy as np
-
 from config import (
     CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS, CAMERA_INDEX,
     DEFAULT_SPEED, MAX_SPEED, OBSTACLE_STOP_DISTANCE_MM,
     TTS_LANG, TTS_TEMP_DIR, STT_LANG, STT_TIMEOUT, STT_PHRASE_TIMEOUT,
     LIDAR_ENABLED,
+    STREAM_WIDTH, STREAM_HEIGHT, STREAM_FPS, STREAM_JPEG_QUALITY,
 )
+
+# Import the lightweight camera service (no OpenCV required)
+from camera_service import get_camera, LightweightCamera
 
 # ---------------------------------------------------------------------------
 # Try importing the pop library (only available on the SERBot SBC)
@@ -84,128 +85,53 @@ class CameraHAL:
     """
     Manages the robot camera.
 
-    On SERBot: uses ``pop.Util.gstrmer()`` for a GStreamer pipeline optimised
-    for the on-board CSI/USB camera.
-
-    On dev machines: falls back to ``cv2.VideoCapture(CAMERA_INDEX)``.
+    Uses the LightweightCamera (V4L2-based, no OpenCV) for frame capture.
+    Falls back gracefully to "camera not available" on dev machines.
     """
 
     def __init__(self):
-        self._cap: Optional[cv2.VideoCapture] = None
         self._lock = threading.Lock()
-        self._open()
+        self._camera: LightweightCamera = get_camera(
+            width=STREAM_WIDTH,
+            height=STREAM_HEIGHT,
+            fps=STREAM_FPS,
+            jpeg_quality=STREAM_JPEG_QUALITY,
+        )
 
-    def _open(self):
-        if os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
+        if self._camera.is_available:
+            print(f"[OK] CameraHAL ready via LightweightCamera ({STREAM_WIDTH}x{STREAM_HEIGHT})")
+        elif os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
             print("[OK] CameraHAL in LIGHTWEIGHT mode (no hardware camera)")
-            self._cap = None
-            return
-
-        if os.environ.get("CAMERA_FORCE_V4L2") == "1":
-            print("[INFO] CAMERA_FORCE_V4L2 is set - forcing V4L2 direct capture")
-            self._cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_V4L2)
-            if self._cap.isOpened():
-                self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
-                self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
-                self._cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-                print(f"[OK] Camera opened via V4L2 index {CAMERA_INDEX}")
-                return
-            else:
-                print("[FAIL] CAMERA_FORCE_V4L2 failed to open camera")
-
-        if _pop_Util is not None:
-            # Commented out to prevent camera popup GUI on robot screen/DISPLAY
-            # if "DISPLAY" in os.environ:
-            #     try:
-            #         _pop_Util.enable_imshow()
-            #     except Exception as e:
-            #         print(f"[WARN] enable_imshow failed: {e}")
-            # else:
-            #     print("[INFO] Headless environment detected (no DISPLAY) - skipping enable_imshow()")
-            try:
-                pipeline = _pop_Util.gstrmer(CAMERA_WIDTH, CAMERA_HEIGHT)
-                self._cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-                if self._cap.isOpened():
-                    print(f"[OK] Camera opened via GStreamer pipeline ({CAMERA_WIDTH}x{CAMERA_HEIGHT})")
-                    return
-                else:
-                    print("[WARN] GStreamer pipeline failed - falling back to default camera")
-            except Exception as e:
-                print(f"[WARN] GStreamer error: {e} - falling back to default camera")
-
-        # Fallback: standard OpenCV VideoCapture
-        self._cap = cv2.VideoCapture(CAMERA_INDEX)
-            
-        if self._cap.isOpened():
-            self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH)
-            self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT)
-            self._cap.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
-            print(f"[OK] Camera opened via VideoCapture({CAMERA_INDEX})")
         else:
-            print("[FAIL] No camera available")
-            self._cap = None
+            print("[WARN] CameraHAL: no camera available")
 
     @property
     def is_available(self) -> bool:
-        return self._cap is not None and self._cap.isOpened()
+        return self._camera.is_available
 
-    def read_frame(self) -> Tuple[bool, Optional[np.ndarray]]:
-        """Read a single BGR frame. Thread-safe."""
-        with self._lock:
-            if not self.is_available:
-                return False, None
-            ret, frame = self._cap.read()
-            return ret, frame
+    def get_lightweight_camera(self) -> LightweightCamera:
+        """Return the underlying LightweightCamera instance."""
+        return self._camera
 
     def read_frame_base64(self, quality: int = 80) -> Optional[str]:
         """Read a frame and return as base64-encoded JPEG string."""
-        import base64
-        ret, frame = self.read_frame()
-        if not ret or frame is None:
-            return None
-        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
-        return base64.b64encode(buf).decode("utf-8")
+        return self._camera.read_frame_base64(quality=quality)
 
     def read_frame_jpeg_bytes(self, quality: int = 80) -> Optional[bytes]:
         """Read a frame and return raw JPEG bytes (for MJPEG streaming)."""
-        ret, frame = self.read_frame()
-        if not ret or frame is None:
-            return None
-        _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, quality])
-        return buf.tobytes()
+        return self._camera.read_frame_jpeg()
 
     def is_obstacle_ahead(self) -> bool:
         """
-        Lightweight Canny-edge density heuristic for camera-based obstacle avoidance.
-        Returns True if an obstacle is detected in front of the robot.
+        Camera-based obstacle detection is disabled (no OpenCV).
+        LiDAR handles obstacle avoidance instead.
+        Returns False always.
         """
-        try:
-            ret, frame = self.read_frame()
-            if not ret or frame is None:
-                return False
-            h, w = frame.shape[:2]
-            # Lower 55% region of interest (ROI)
-            roi = frame[int(h * 0.45):, :]
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5, 5), 0)
-            edges = cv2.Canny(blur, 50, 150)
-            third = edges.shape[1] // 3
-            left_density = np.count_nonzero(edges[:, :third]) / (edges.shape[0] * max(1, third))
-            center_density = np.count_nonzero(edges[:, third:2*third]) / (edges.shape[0] * max(1, third))
-            right_density = np.count_nonzero(edges[:, 2*third:]) / (edges.shape[0] * max(1, third))
-            
-            # center_density > 0.03 or max(left, right) > 0.05 indicates an obstacle
-            obstacle = center_density > 0.03 or max(left_density, right_density) > 0.05
-            return bool(obstacle)
-        except Exception as e:
-            print(f"Error in CameraHAL.is_obstacle_ahead: {e}")
-            return False
+        return False
 
     def release(self):
         with self._lock:
-            if self._cap is not None:
-                self._cap.release()
-                self._cap = None
+            self._camera.release()
 
 
 # ============================================================================
@@ -616,7 +542,7 @@ class RobotHAL:
         from robot_hal import get_robot
         robot = get_robot()
         robot.motion.forward()
-        frame = robot.camera.read_frame()
+        frame = robot.camera.read_frame_jpeg_bytes()
         robot.audio.speak("Hello!")
         robot.motion.stop()
     """

@@ -25,6 +25,14 @@ CAMERA_FPS = int(os.getenv("CAMERA_FPS", "30"))
 CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
 
 # ---------------------------------------------------------------------------
+# Live Stream (lightweight camera service)
+# ---------------------------------------------------------------------------
+STREAM_WIDTH = int(os.getenv("STREAM_WIDTH", "320"))
+STREAM_HEIGHT = int(os.getenv("STREAM_HEIGHT", "240"))
+STREAM_FPS = int(os.getenv("STREAM_FPS", "10"))
+STREAM_JPEG_QUALITY = int(os.getenv("STREAM_JPEG_QUALITY", "60"))
+
+# ---------------------------------------------------------------------------
 # Movement
 # ---------------------------------------------------------------------------
 DEFAULT_SPEED = int(os.getenv("DEFAULT_SPEED", "30"))

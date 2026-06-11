@@ -150,6 +150,96 @@ class RobotService {
     await Future.delayed(const Duration(seconds: 1));
   }
 
+  // ─── Camera Session Management ──────────────────────────────────
+
+  /// Checks camera availability on the robot.
+  Future<Map<String, dynamic>?> getCameraStatus(String robotIp) async {
+    print('DEBUG: Checking camera status at $robotIp');
+
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 5);
+
+    try {
+      final uri = Uri.parse('http://$robotIp:9000/api/camera/status');
+      final request = await client.getUrl(uri);
+      request.headers.set('X-API-Key', _apiKey);
+
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode == 200) {
+        print('DEBUG: Camera status: $responseBody');
+        return jsonDecode(responseBody) as Map<String, dynamic>;
+      } else {
+        print('DEBUG: Camera status failed: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('DEBUG: Camera status error - $e');
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Starts a camera streaming session on the robot.
+  /// Returns the response map containing 'stream_url' on success.
+  Future<Map<String, dynamic>?> startCameraSession(String robotIp) async {
+    print('DEBUG: Starting camera session at $robotIp');
+
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 5);
+
+    try {
+      final uri = Uri.parse('http://$robotIp:9000/api/camera/session/start');
+      final request = await client.postUrl(uri);
+      request.headers.set('X-API-Key', _apiKey);
+      request.headers.set('Content-Type', 'application/json');
+
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+
+      if (response.statusCode == 200) {
+        print('DEBUG: Camera session started: $responseBody');
+        return jsonDecode(responseBody) as Map<String, dynamic>;
+      } else if (response.statusCode == 503) {
+        print('DEBUG: Camera not available (503)');
+        return jsonDecode(responseBody) as Map<String, dynamic>;
+      } else {
+        print('DEBUG: Camera session start failed: ${response.statusCode}');
+        return {'error': 'Failed to start camera (${response.statusCode})'};
+      }
+    } catch (e) {
+      print('DEBUG: Camera session start error - $e');
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  /// Stops the camera streaming session on the robot.
+  Future<void> stopCameraSession(String robotIp) async {
+    print('DEBUG: Stopping camera session at $robotIp');
+
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 3);
+
+    try {
+      final uri = Uri.parse('http://$robotIp:9000/api/camera/session/stop');
+      final request = await client.postUrl(uri);
+      request.headers.set('X-API-Key', _apiKey);
+      request.headers.set('Content-Type', 'application/json');
+
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      print('DEBUG: Camera session stopped: $responseBody');
+    } catch (e) {
+      print('DEBUG: Camera session stop error - $e');
+    } finally {
+      client.close();
+    }
+  }
+
   void dispose() {
     _statusController.close();
     _batteryController.close();

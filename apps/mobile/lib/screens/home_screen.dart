@@ -11,6 +11,7 @@ import '../widgets/audio_share_widget.dart';
 import 'sos_screen.dart';
 import 'rover_control_screen.dart';
 import 'rover_summon_screen.dart';
+import 'live_feed_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -128,6 +129,19 @@ class HomeScreen extends StatelessWidget {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const RoverControlScreen()),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  QuickActionButton(
+                    icon: Icons.videocam_rounded,
+                    label: 'VIEW LIVE FEED',
+                    subtitle: 'Watch the robot\'s camera in real-time',
+                    color: Colors.teal,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LiveFeedScreen()),
                     ),
                   ),
 
