@@ -8,7 +8,7 @@ import '../theme/app_text_styles.dart';
 /// Looks for `assets/images/logo.jpeg`. If the asset cannot be found we draw a
 /// stylized "NC" fallback so the UI still renders during early development.
 ///
-/// Corner radius is computed as `size * 0.28` per SKILL Â§3.1.
+/// Corner radius is computed as `size * 0.28` per SKILL §3.1.
 class NovaLogo extends StatelessWidget {
   final double size;
   const NovaLogo({super.key, this.size = 36});
@@ -60,8 +60,8 @@ class _LogoFallback extends StatelessWidget {
   }
 }
 
-/// Logo + "NovaCare" wordmark lockup (SKILL Â§3.2).
-/// Compact by default â€” no subtitle. Pass [showSubtitle: true] only on
+/// Logo + "NovaCare" wordmark lockup (SKILL §3.2).
+/// Compact by default — no subtitle. Pass [showSubtitle: true] only on
 /// branded surfaces like the splash screen.
 class NovaWordmark extends StatelessWidget {
   final bool showSubtitle;

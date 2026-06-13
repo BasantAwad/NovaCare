@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:camera/camera.dart';
 
 import '../providers/rover_provider.dart';
 import '../theme/app_colors.dart';
@@ -7,13 +8,13 @@ import '../theme/app_text_styles.dart';
 import '../widgets/nova_logo.dart';
 import '../widgets/nc_primitives.dart';
 
-/// CompanionScreen â€” SKILL Â§4.3.
+/// CompanionScreen — SKILL §4.3.
 ///
-/// Currently a UI stub. The real behavior wires up in three layers â€” each
+/// Currently a UI stub. The real behavior wires up in three layers — each
 /// noted with TODO(backend) below:
-///   1. Text mode â†’ stream tokens from the LLM endpoint
-///   2. Voice mode â†’ Whisper STT (or on-device) â†’ LLM â†’ TTS playback
-///   3. Sign mode â†’ MediaPipe Hands â†’ ASL/ArSL gloss â†’ LLM
+///   1. Text mode → stream tokens from the LLM endpoint
+///   2. Voice mode → Whisper STT (or on-device) → LLM → TTS playback
+///   3. Sign mode → MediaPipe Hands → ASL/ArSL gloss → LLM
 class CompanionScreen extends StatefulWidget {
   const CompanionScreen({super.key});
 
@@ -27,7 +28,7 @@ class _CompanionScreenState extends State<CompanionScreen> {
 
   // Seed conversation. TODO(backend): replace with real chat history stream.
   final List<_Msg> _messages = [
-    _Msg('Hi Amira â€” how are you feeling this afternoon?', isBot: true),
+    _Msg('Hi Amira — how are you feeling this afternoon?', isBot: true),
     _Msg('A little tired. Could you remind me about my medication?', isBot: false),
     _Msg('Of course. Your next dose is Metformin at 1:00 PM.', isBot: true),
   ];
@@ -122,7 +123,7 @@ class _CompanionScreenState extends State<CompanionScreen> {
   }
 }
 
-// â”€â”€â”€ Message model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Message model ──────────────────────────────────────────────────
 class _Msg {
   final String text;
   final bool isBot;
@@ -225,22 +226,120 @@ class _TypingDotsState extends State<_TypingDots>
   }
 }
 
-class _SignPanel extends StatelessWidget {
+class _SignPanel extends StatefulWidget {
+  @override
+  State<_SignPanel> createState() => _SignPanelState();
+}
+
+class _SignPanelState extends State<_SignPanel> {
+  CameraController? _controller;
+  List<CameraDescription> _cameras = [];
+  bool _isInitialized = false;
+  int _currentCameraIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isEmpty) return;
+      
+      // Try to find the front camera first
+      _currentCameraIndex = _cameras.indexWhere((c) => c.lensDirection == CameraLensDirection.front);
+      if (_currentCameraIndex == -1) _currentCameraIndex = 0;
+
+      await _setupController();
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+    }
+  }
+
+  Future<void> _setupController() async {
+    if (_cameras.isEmpty) return;
+    
+    final oldController = _controller;
+    if (oldController != null) {
+      _controller = null;
+      await oldController.dispose();
+    }
+
+    final newController = CameraController(
+      _cameras[_currentCameraIndex],
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
+
+    try {
+      await newController.initialize();
+      if (mounted) {
+        setState(() {
+          _controller = newController;
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error setting up camera controller: $e');
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    if (_cameras.length < 2) return;
+    
+    setState(() {
+      _isInitialized = false;
+    });
+    
+    _currentCameraIndex = (_currentCameraIndex + 1) % _cameras.length;
+    await _setupController();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 180,
+      height: 240,
       decoration: BoxDecoration(
         color: const Color(0xFF061821),
         borderRadius: BorderRadius.circular(Radii.md),
         border: Border.all(color: AppColors.line),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        // TODO(feature): live MediaPipe Hands camera preview + gloss readout.
-        'Sign capture placeholder',
-        style: AppText.mono(color: Colors.white60),
-      ),
+      clipBehavior: Clip.hardEdge,
+      child: !_isInitialized || _controller == null
+          ? const Center(child: CircularProgressIndicator(color: AppColors.brandTeal))
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _controller!.value.previewSize?.height ?? 1,
+                    height: _controller!.value.previewSize?.width ?? 1,
+                    child: CameraPreview(_controller!),
+                  ),
+                ),
+                if (_cameras.length > 1)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.flip_camera_ios_rounded, color: Colors.white),
+                      onPressed: _flipCamera,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -323,7 +422,7 @@ class _Composer extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 decoration: const InputDecoration.collapsed(
-                  hintText: 'Type a messageâ€¦',
+                  hintText: 'Type a message…',
                 ),
                 style: AppText.body(),
                 onSubmitted: onSend,

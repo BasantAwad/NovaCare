@@ -13,6 +13,10 @@ import queue
 import subprocess
 import http.server
 import socketserver
+import urllib.request
+import urllib.error
+
+from camera_pipelines import build_gstreamer_pipeline_string, run_subprocess_worker
 
 HOST = "0.0.0.0"
 PORT = 5555
@@ -252,166 +256,22 @@ def _cv_stream_loop():
         time.sleep(0.033)
     print("[CAMERA] OpenCV streaming thread stopped.")
 
-# ── helpers shared by every capture strategy ──────────────────────────────
-
-def _pump_jpeg_pipe(proc):
-    """Read JPEG frames from a subprocess stdout using select() so the thread
-    never blocks when the process produces no output (e.g. camera not found).
-    Yields raw JPEG bytes one frame at a time until the process dies or
-    _cv_stop_event is set."""
-    import select as _sel
-    JPEG_START = b"\xff\xd8"
-    JPEG_END   = b"\xff\xd9"
-    buf = b""
-    while not _cv_stop_event.is_set():
-        # Non-blocking poll – wait up to 1 s for data
-        ready, _, _ = _sel.select([proc.stdout], [], [], 1.0)
-        if not ready:
-            if proc.poll() is not None:   # process exited
-                break
-            continue
-        try:
-            chunk = proc.stdout.read(65536)
-        except Exception:
-            break
-        if not chunk:
-            break
-        buf += chunk
-        while True:
-            s = buf.find(JPEG_START)
-            if s == -1:
-                buf = b""
-                break
-            e = buf.find(JPEG_END, s + 2)
-            if e == -1:
-                buf = buf[s:]
-                break
-            yield buf[s : e + 2]
-            buf = buf[e + 2:]
-
-
-def _run_capture_strategy(label, cmd, startup_wait=2.5):
-    """Launch *cmd* as a subprocess.  Wait *startup_wait* seconds and return
-    the Popen object if the process is still alive, else return None."""
-    global _ffmpeg_proc
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,          # capture stderr for diagnostics
-            bufsize=0,
-        )
-    except FileNotFoundError:
-        print(f"[CAMERA] {label}: executable not found – skipping.")
-        return None
-    except Exception as exc:
-        print(f"[CAMERA] {label}: launch error – {exc}")
-        return None
-
-    # Give the process time to open the camera device
-    time.sleep(startup_wait)
-    if proc.poll() is not None:
-        err = proc.stderr.read(400).decode("utf-8", errors="replace").strip()
-        print(f"[CAMERA] {label}: exited early.  stderr → {err or '(empty)'}")
-        return None
-
-    _ffmpeg_proc = proc
-    print(f"[CAMERA] {label}: process running – streaming frames.")
-    return proc
-
 
 def _camera_stream_worker():
-    """Master capture worker.  Tries multiple strategies in order until one
-    produces at least one JPEG frame, then keeps streaming from it."""
+    """Master capture worker using shared pipeline strategies (no pop.Pilot)."""
     global _ffmpeg_proc
 
-    # Detect V4L2 device
-    v4l2_dev = None
-    for idx in range(4):
-        cand = f"/dev/video{idx}"
-        if os.path.exists(cand):
-            v4l2_dev = cand
-            print(f"[CAMERA] Found V4L2 device: {v4l2_dev}")
-            break
+    def on_frame(jpeg_bytes: bytes):
+        _push_frame(jpeg_bytes)
 
-    if v4l2_dev is None:
-        print("[CAMERA] No /dev/videoX found – will try GStreamer CSI path only.")
-
-    # ── Strategy list ─────────────────────────────────────────────────────
-    # Each entry: (label, command-list, startup_wait_secs)
-    strategies = []
-
-    if v4l2_dev:
-        strategies += [
-            # 1. ffmpeg – camera outputs MJPEG directly (most USB webcams)
-            ("ffmpeg-mjpeg", [
-                "ffmpeg", "-f", "v4l2", "-input_format", "mjpeg",
-                "-framerate", "15", "-video_size", "640x480",
-                "-i", v4l2_dev,
-                "-f", "image2pipe", "-vcodec", "copy", "-",
-            ], 2.0),
-            # 2. ffmpeg – camera outputs raw YUV, encode to JPEG
-            ("ffmpeg-raw", [
-                "ffmpeg", "-f", "v4l2",
-                "-framerate", "10", "-video_size", "640x480",
-                "-i", v4l2_dev,
-                "-f", "image2pipe", "-vcodec", "mjpeg", "-q:v", "7", "-",
-            ], 3.0),
-            # 4. GStreamer – USB camera via v4l2src
-            ("gst-v4l2", [
-                "gst-launch-1.0", "-q",
-                "v4l2src", f"device={v4l2_dev}",
-                "!", "videoconvert",
-                "!", "jpegenc", "quality=70",
-                "!", "fdsink", "fd=1",
-            ], 2.5),
-        ]
-
-    # 3. GStreamer – Jetson CSI camera (nvarguscamerasrc)
-    strategies += [
-        ("gst-csi", [
-            "gst-launch-1.0", "-q",
-            "nvarguscamerasrc",
-            "!", "video/x-raw(memory:NVMM),width=640,height=480,framerate=15/1",
-            "!", "nvvidconv",
-            "!", "video/x-raw,format=BGRx",
-            "!", "videoconvert",
-            "!", "jpegenc", "quality=70",
-            "!", "fdsink", "fd=1",
-        ], 3.0),
-    ]
-
-    # ── Try each strategy ─────────────────────────────────────────────────
-    for label, cmd, wait in strategies:
-        if _cv_stop_event.is_set():
-            return
-        print(f"[CAMERA] Trying strategy: {label}")
-        proc = _run_capture_strategy(label, cmd, startup_wait=wait)
-        if proc is None:
-            continue
-
-        # Verify at least one frame actually comes through
-        got_frame = False
-        for jpeg in _pump_jpeg_pipe(proc):
-            if not got_frame:
-                print(f"[CAMERA] ✓ Strategy '{label}' is producing frames.")
-                got_frame = True
-            _push_frame(jpeg)
-
-        # If we got here the process ended – clean up and try next strategy
-        if not _cv_stop_event.is_set():
-            if got_frame:
-                print(f"[CAMERA] Strategy '{label}' ended – trying next.")
-            else:
-                print(f"[CAMERA] Strategy '{label}' produced no frames – trying next.")
-            try:
-                proc.terminate()
-            except Exception:
-                pass
-            _ffmpeg_proc = None
-
-    print("[CAMERA] All camera strategies exhausted – no video available.")
-    print("[CAMERA] Check: ls /dev/video* && ffmpeg -version && gst-launch-1.0 --version")
+    run_subprocess_worker(
+        on_frame=on_frame,
+        stop_event=_cv_stop_event,
+        width=640,
+        height=480,
+        fps=15,
+        jpeg_quality=70,
+    )
     _ffmpeg_proc = None
 
 
@@ -463,7 +323,7 @@ def _start_opencv_camera():
             _start_ffmpeg_camera()
             return
 
-        # ── OpenCV last resort ────────────────────────────────────────────────
+        # ── OpenCV last resort (manual §4.1.3 — Util.gstrmer + CAP_GSTREAMER) ─
         try:
             import cv2
         except ImportError:
@@ -471,12 +331,15 @@ def _start_opencv_camera():
             print("         Install ffmpeg:  sudo apt install -y ffmpeg")
             return
 
-        cap = cv2.VideoCapture(0)
+        pipeline = build_gstreamer_pipeline_string(640, 480, fps=30, flip=0)
+        cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
         if not cap.isOpened():
-            for idx in range(1, 4):
-                cap = cv2.VideoCapture(idx)
-                if cap.isOpened():
-                    break
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                for idx in range(1, 4):
+                    cap = cv2.VideoCapture(idx)
+                    if cap.isOpened():
+                        break
 
         if not cap.isOpened():
             print("[CAMERA] WARNING – no camera device found via OpenCV.")
@@ -527,17 +390,7 @@ def _set_camera(enabled, bot):
     _camera_enabled = enabled
     print(f"[CAMERA] {'ON' if enabled else 'OFF'}")
 
-    # Try the hardware camera via pop.Pilot first
-    if bot is not None:
-        for attr in ("camera_on", "camera_enable", "set_camera", "enable_camera"):
-            if hasattr(bot, attr):
-                try:
-                    getattr(bot, attr)(enabled)
-                    break
-                except Exception as e:
-                    print(f"[WARN] Camera {attr} failed: {e}")
-
-    # OpenCV fallback – always attempt regardless of bot availability
+    # OpenCV / subprocess fallback – never uses pop.Pilot camera APIs
     if enabled:
         _start_opencv_camera()
     else:
@@ -748,9 +601,6 @@ def handle_client(client_socket, addr, bot):
     finally:
         client_socket.close()
 
-import urllib.request
-import urllib.error
-
 def _telemetry_loop():
     """Background thread to push rover telemetry to the backend database."""
     print("[TELEMETRY] Starting background sync to database.")
@@ -803,8 +653,11 @@ def main():
     # Start video streaming server so laptop vision controller can subscribe
     _start_stream_server()
 
-    # Start database telemetry worker
-    threading.Thread(target=_telemetry_loop, daemon=True, name='telemetry-sync').start()
+    # Optional telemetry sync to laptop backend (skip in minimal I/O mode)
+    if os.environ.get("NOVACARE_MINIMAL", "0").strip().lower() not in ("1", "true", "yes"):
+        threading.Thread(target=_telemetry_loop, daemon=True, name='telemetry-sync').start()
+    else:
+        print("[OK] Telemetry sync disabled (NOVACARE_MINIMAL=1)")
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

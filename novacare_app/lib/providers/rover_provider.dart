@@ -9,7 +9,7 @@ enum RoverMode { idle, followingUser, navigatingHome, deliveringMedicine, emerge
 
 /// Manages rover state, telemetry data, and command dispatch.
 class RoverProvider extends ChangeNotifier {
-  // â”€â”€â”€ Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Connection ─────────────────────────────────────────────────
   RoverConnectionState _connectionState = RoverConnectionState.disconnected;
   RoverConnectionState get connectionState => _connectionState;
 
@@ -20,7 +20,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ Rover Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Rover Mode ─────────────────────────────────────────────────
   RoverMode _currentMode = RoverMode.idle;
   RoverMode get currentMode => _currentMode;
 
@@ -29,7 +29,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ Telemetry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Telemetry ──────────────────────────────────────────────────
   int _batteryLevel = 85;
   int _heartRate = 72;
   String _roverLocation = 'Living Room';
@@ -61,7 +61,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ Commands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Commands ───────────────────────────────────────────────────
   bool _isProcessingCommand = false;
   bool get isProcessingCommand => _isProcessingCommand;
 
@@ -148,7 +148,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ Realtime Updates from API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Realtime Updates from API ─────────────────────
   void startSimulatedUpdates() {
     _connectionState = RoverConnectionState.connected;
     _isRoverOnline = true;

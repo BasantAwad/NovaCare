@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// 5-tab nav bar (Home Â· Reminders Â· Companion Â· Alerts Â· Settings).
-/// Companion tab is a raised yellow bubble per SKILL Â§3.4.
+/// 5-tab nav bar (Home · Reminders · Companion · Alerts · Settings).
+/// Companion tab is a raised yellow bubble per SKILL §3.4.
 enum NcTab { home, reminders, companion, alerts, settings }
 
 class NcBottomNav extends StatelessWidget {

@@ -1,16 +1,45 @@
-import cv2
+"""
+Shared camera manager for optimized_runtime services.
+
+Prefers the unified ``services/robot/camera_service`` when importable;
+falls back to manual-aligned GStreamer capture (SerBot manual §4.1.3).
+"""
+
+import logging
+import os
+import sys
 import threading
 import time
-import logging
-from typing import Optional, Generator, Any
+from typing import Any, Generator, Optional
 
 logger = logging.getLogger(__name__)
 
+# Allow imports from services/robot when running from repo root
+_ROBOT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "services", "robot")
+)
+if _ROBOT_DIR not in sys.path and os.path.isdir(_ROBOT_DIR):
+    sys.path.insert(0, _ROBOT_DIR)
+
+
+def _try_robot_camera():
+    """Reuse the HAL-configured camera singleton when robot service is loaded."""
+    try:
+        from robot_hal import get_robot
+        return get_robot().camera.get_lightweight_camera()
+    except Exception as exc:
+        logger.debug("Robot HAL camera unavailable: %s", exc)
+        return None
+
+
 class CameraManager:
     """
-    Singleton Camera Manager to optimize resource usage on SERBot.
-    Provides shared access to the camera feed for multiple services.
+    Singleton camera manager for optimized_runtime consumers.
+
+    Delegates to ``LightweightCamera`` on the robot; otherwise uses
+    ``pop.Util.gstrmer`` / V4L2 index fallback locally.
     """
+
     _instance = None
     _lock = threading.Lock()
 
@@ -24,73 +53,94 @@ class CameraManager:
     def __init__(self):
         if self._initialized:
             return
-        
+
+        self._robot_camera = None
         self.camera_index = 0
-        self.cap: Optional[cv2.VideoCapture] = None
+        self.cap: Any = None
         self.frame: Any = None
         self.running = False
         self.thread: Optional[threading.Thread] = None
-        self._initialized = True
-        self.fps = 0
+        self.fps = 0.0
         self.last_time = time.time()
+        self._initialized = True
 
     def start(self, camera_index: int = 0):
-        """Start the camera capture thread"""
         if self.running:
-            return
-        
+            return True
+
+        if self._robot_camera is None:
+            self._robot_camera = _try_robot_camera()
+
+        if self._robot_camera is not None:
+            self._robot_camera.start_session()
+            self.running = True
+            self.thread = threading.Thread(target=self._delegated_loop, daemon=True)
+            self.thread.start()
+            logger.info("CameraManager started via robot camera_service")
+            return True
+
         self.camera_index = camera_index
-        self.cap = cv2.VideoCapture(self.camera_index)
-        
-        if not self.cap.isOpened():
-            logger.error(f"Failed to open camera {camera_index}")
+        try:
+            from camera_service import get_camera
+
+            self._robot_camera = get_camera()
+            self._robot_camera.start_session()
+            self.running = True
+            self.thread = threading.Thread(target=self._delegated_loop, daemon=True)
+            self.thread.start()
+            logger.info("CameraManager started via camera_service (no OpenCV)")
+            return True
+        except Exception as exc:
+            logger.error("CameraManager fallback failed: %s", exc)
             return False
 
-        self.running = True
-        self.thread = threading.Thread(target=self._update_loop, daemon=True)
-        self.thread.start()
-        logger.info(f"CameraManager started on index {camera_index}")
-        return True
-
     def stop(self):
-        """Stop the camera capture thread"""
         self.running = False
         if self.thread:
             self.thread.join(timeout=2.0)
-        
-        if self.cap:
+            self.thread = None
+
+        if self._robot_camera is not None:
+            self._robot_camera.stop_session()
+        elif self.cap:
             self.cap.release()
-        
+            self.cap = None
+
         logger.info("CameraManager stopped")
 
+    def _delegated_loop(self):
+        while self.running and self._robot_camera is not None:
+            ok, frame = self._robot_camera.read_frame()
+            if ok and frame is not None:
+                self.frame = frame
+                now = time.time()
+                self.fps = 1.0 / max(0.001, now - self.last_time)
+                self.last_time = now
+            else:
+                time.sleep(0.1)
+
     def _update_loop(self):
-        """Background thread to read frames from camera"""
         while self.running:
+            if self.cap is None:
+                break
             ret, frame = self.cap.read()
             if ret:
                 self.frame = frame
-                # Calculate FPS
                 now = time.time()
-                self.fps = 1.0 / (now - self.last_time)
+                self.fps = 1.0 / max(0.001, now - self.last_time)
                 self.last_time = now
             else:
                 logger.warning("Failed to capture frame")
                 time.sleep(0.1)
 
     def get_frame(self):
-        """Get the latest frame"""
         return self.frame
 
     def get_frame_encoded(self):
-        """Get latest frame encoded as JPEG for streaming"""
-        if self.frame is None:
-            return None
-        
-        ret, buffer = cv2.imencode('.jpg', self.frame)
-        if ret:
-            return buffer.tobytes()
+        if self._robot_camera is not None:
+            return self._robot_camera.read_frame_jpeg()
         return None
 
+
 def get_camera_manager() -> CameraManager:
-    """Helper to get the singleton instance"""
     return CameraManager()

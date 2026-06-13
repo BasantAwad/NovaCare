@@ -18,10 +18,10 @@ import 'rover_controls_screen.dart';
 import 'summon_screen.dart';
 import 'main_navigation.dart';
 
-/// HomeScreen â€” top of the tab stack.
+/// HomeScreen — top of the tab stack.
 ///
 /// Driven by [RoverProvider] (mock telemetry for now; real BLE/Firebase
-/// streams wire in via TODOs below). Matches the layout in SKILL Â§4.1.
+/// streams wire in via TODOs below). Matches the layout in SKILL §4.1.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // â”€â”€â”€ Hero greeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Hero greeting ─────────────────────────────
                   Text(_greeting(), style: AppText.display1()),
                   const SizedBox(height: 4),
                   Text(
@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: AppText.body(color: AppColors.inkMuted),
                   ),
 
-                  // â”€â”€â”€ Telemetry grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Telemetry grid ────────────────────────────
                   NcSectionHead(
                     title: 'Telemetry',
                     action: GestureDetector(
@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _telemetryGrid(rover, l10n),
 
-                  // â”€â”€â”€ Quick actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Quick actions ─────────────────────────────
                   const NcSectionHead(title: 'Quick actions'),
                   NcBtnCard(
                     variant: NcBtnCardVariant.sos,
@@ -144,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
 
-                  // â”€â”€â”€ Autonomous â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Autonomous ────────────────────────────────
                   NcSectionHead(
                     title: 'Autonomous',
                     action: const NcChip(label: 'Beta', style: NcChipStyle.beta),
@@ -219,9 +219,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────────
   //  Telemetry grid
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────────
   Widget _telemetryGrid(RoverProvider rover, AppLocalizations l10n) {
     final battColor = AppColors.batteryColor(rover.batteryLevel);
     // Rough runtime estimate: assume ~7h on a full charge.
@@ -306,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   value: NcTileValue(
                     value: rover.temperature.toStringAsFixed(1),
-                    unit: 'Â°C',
+                    unit: '°C',
                   ),
                   footer: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,13 +331,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String _zoneLabel(String room) {
     switch (room.toLowerCase()) {
       case 'kitchen':
-        return 'Zone 02 Â· West';
+        return 'Zone 02 · West';
       case 'living room':
-        return 'Zone 01 Â· Main';
+        return 'Zone 01 · Main';
       case 'bedroom':
-        return 'Zone 03 Â· East';
+        return 'Zone 03 · East';
       default:
-        return 'Zone â€” Â· Home';
+        return 'Zone — · Home';
     }
   }
 
@@ -355,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppColors.danger;
   }
 
-  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ──────────────────────────────────────────────────────────────────
   String _greeting() {
     final h = DateTime.now().hour;
     if (h < 12) return 'Good morning';

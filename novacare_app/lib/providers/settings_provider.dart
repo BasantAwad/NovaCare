@@ -3,7 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// Manages app-wide settings: theme, language, and user profile.
 class SettingsProvider extends ChangeNotifier {
-  // â”€â”€â”€ Theme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Theme ──────────────────────────────────────────────────────
   ThemeMode _themeMode = ThemeMode.system;
   bool _isHighContrast = false;
 
@@ -34,7 +34,7 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  // â”€â”€â”€ Language / Locale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Language / Locale ──────────────────────────────────────────
   Locale _locale = const Locale('en', '');
   Locale get locale => _locale;
 
@@ -52,7 +52,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ User Profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── User Profile ──────────────────────────────────────────────
   String _userName = 'User';
   String _userId = '';
   String _disabilityType = 'None';
@@ -86,7 +86,7 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // â”€â”€â”€ Permissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Permissions ────────────────────────────────────────────────
   bool _cameraPermission = false;
   bool _locationPermission = false;
   bool _microphonePermission = false;

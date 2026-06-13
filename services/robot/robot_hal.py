@@ -11,7 +11,7 @@ All robot-specific hardware calls are encapsulated here so that:
 
 Subsystems
 ----------
-- CameraHAL:   Lightweight V4L2 camera via camera_service (no OpenCV)
+- CameraHAL:   GStreamer/V4L2 via camera_service (pop.Util.gstrmer, no Pilot)
 - MotionHAL:   Omni-wheel control via pop.Pilot.SerBot
 - AudioHAL:    Speaker + Microphone via pop.AudioPlay, gTTS, SpeechRecognition
 - LidarHAL:    RPLiDAR A1 via pop.LiDAR.Rplidar
@@ -22,13 +22,13 @@ import sys
 import time
 import threading
 import tempfile
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List, Dict, Any
 
 from config import (
-    CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS, CAMERA_INDEX,
+    CAMERA_WIDTH, CAMERA_HEIGHT, CAMERA_FPS, CAMERA_INDEX, CAMERA_GSTREAMER_FLIP,
     DEFAULT_SPEED, MAX_SPEED, OBSTACLE_STOP_DISTANCE_MM,
     TTS_LANG, TTS_TEMP_DIR, STT_LANG, STT_TIMEOUT, STT_PHRASE_TIMEOUT,
-    LIDAR_ENABLED,
+    LIDAR_ENABLED, MINIMAL_MODE,
     STREAM_WIDTH, STREAM_HEIGHT, STREAM_FPS, STREAM_JPEG_QUALITY,
 )
 
@@ -85,21 +85,30 @@ class CameraHAL:
     """
     Manages the robot camera.
 
-    Uses the LightweightCamera (V4L2-based, no OpenCV) for frame capture.
-    Falls back gracefully to "camera not available" on dev machines.
+    Uses LightweightCamera with manual-aligned GStreamer capture
+    (``pop.Util.gstrmer`` / ``nvarguscamerasrc``) and V4L2 fallbacks.
+    Does not use ``pop.Pilot`` or ``Pilot.Camera``.
     """
 
     def __init__(self):
         self._lock = threading.Lock()
         self._camera: LightweightCamera = get_camera(
-            width=STREAM_WIDTH,
-            height=STREAM_HEIGHT,
-            fps=STREAM_FPS,
+            capture_width=CAMERA_WIDTH,
+            capture_height=CAMERA_HEIGHT,
+            capture_fps=CAMERA_FPS,
+            stream_width=STREAM_WIDTH,
+            stream_height=STREAM_HEIGHT,
+            stream_fps=STREAM_FPS,
             jpeg_quality=STREAM_JPEG_QUALITY,
+            gstreamer_flip=CAMERA_GSTREAMER_FLIP,
+            camera_index=CAMERA_INDEX,
         )
 
         if self._camera.is_available:
-            print(f"[OK] CameraHAL ready via LightweightCamera ({STREAM_WIDTH}x{STREAM_HEIGHT})")
+            print(
+                f"[OK] CameraHAL ready "
+                f"(capture {CAMERA_WIDTH}x{CAMERA_HEIGHT}, stream {STREAM_WIDTH}x{STREAM_HEIGHT})"
+            )
         elif os.environ.get("NOVACARE_LIGHTWEIGHT") == "1":
             print("[OK] CameraHAL in LIGHTWEIGHT mode (no hardware camera)")
         else:
@@ -113,6 +122,18 @@ class CameraHAL:
         """Return the underlying LightweightCamera instance."""
         return self._camera
 
+    def start_session(self) -> bool:
+        """Begin a viewer session (mobile live feed / MJPEG stream)."""
+        return self._camera.start_session()
+
+    def stop_session(self) -> None:
+        """End a viewer session."""
+        self._camera.stop_session()
+
+    def read_frame(self) -> Tuple[bool, Optional[Any]]:
+        """Return ``(success, BGR frame)`` for OpenCV vision pipelines."""
+        return self._camera.read_frame()
+
     def read_frame_base64(self, quality: int = 80) -> Optional[str]:
         """Read a frame and return as base64-encoded JPEG string."""
         return self._camera.read_frame_base64(quality=quality)
@@ -121,13 +142,18 @@ class CameraHAL:
         """Read a frame and return raw JPEG bytes (for MJPEG streaming)."""
         return self._camera.read_frame_jpeg()
 
+    def get_status(self) -> dict:
+        return self._camera.get_status()
+
+    def detect_obstacle_ahead(self) -> bool:
+        """Disabled in minimal I/O mode (no on-robot vision logic)."""
+        if MINIMAL_MODE:
+            return False
+        return self._camera.detect_obstacle_ahead()
+
     def is_obstacle_ahead(self) -> bool:
-        """
-        Camera-based obstacle detection is disabled (no OpenCV).
-        LiDAR handles obstacle avoidance instead.
-        Returns False always.
-        """
-        return False
+        """Alias for movement safety checks."""
+        return self.detect_obstacle_ahead()
 
     def release(self):
         with self._lock:
@@ -227,7 +253,10 @@ class MotionHAL:
         self.stop()
 
     def start_tracking(self, target: str = "face"):
-        """Start built-in pop.Pilot SerBot tracking (e.g. face/color)."""
+        """Start built-in pop.Pilot SerBot tracking (disabled in minimal mode)."""
+        if MINIMAL_MODE:
+            print(f"[MINIMAL] start_tracking({target}) ignored")
+            return
         with self._lock:
             self._moving = True
             if self._bot and hasattr(self._bot, "tracking"):
@@ -252,6 +281,9 @@ class MotionHAL:
 
     def navigate_to(self, location_name: str):
         """Start built-in SerBot room navigation / SLAM mapping."""
+        if MINIMAL_MODE:
+            print(f"[MINIMAL] navigate_to({location_name}) ignored")
+            return
         with self._lock:
             self._moving = True
             if self._bot and hasattr(self._bot, "navigation"):

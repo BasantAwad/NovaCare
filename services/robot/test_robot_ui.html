@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NovaCare Robot UI - Active Face</title>
     <!-- Linking to the original production CSS -->
-    <link rel="stylesheet" href="optimized_runtime/robot_ui/RobotUI.css">
+    <link rel="stylesheet" href="/static/RobotUI.css">
     <!-- Styling is strictly managed in RobotUI.css -->
 </head>
 
@@ -194,8 +194,18 @@
             };
         }
         
-        // Start WebSocket connection
-        connectWebSocket();
+        // Minimal standalone mode (SerBot screen): face only, no AI WebSocket.
+        const MINIMAL_UI = window.location.port === '9000' || window.location.search.includes('minimal=1');
+
+        if (MINIMAL_UI) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            if (statusIndicator) {
+                statusIndicator.className = 'status-indicator connected';
+                statusIndicator.innerText = '● Ready';
+            }
+        } else {
+            connectWebSocket();
+        }
     </script>
 </body>
 </html>

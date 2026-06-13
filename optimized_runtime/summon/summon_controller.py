@@ -608,28 +608,11 @@ class SummonController:
 
     def _check_front_obstacle(self, robot) -> bool:
         """
-        Capture a single camera frame and run a lightweight, fast heuristic
-        to detect an obstacle directly in front. Returns True if obstacle
-        likely present. This should be called sparingly (triggered only).
+        Lightweight front-obstacle check via camera JPEG + Pillow.
+        No OpenCV required on the SerBot.
         """
         try:
-            ret, frame = robot.camera.read_frame()
-            if not ret or frame is None:
-                return False
-            import cv2
-            import numpy as np
-            h, w = frame.shape[:2]
-            roi = frame[int(h * 0.45):, :]
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            blur = cv2.GaussianBlur(gray, (5, 5), 0)
-            edges = cv2.Canny(blur, 50, 150)
-            third = edges.shape[1] // 3
-            left_density = np.count_nonzero(edges[:, :third]) / (edges.shape[0] * max(1, third))
-            center_density = np.count_nonzero(edges[:, third:2*third]) / (edges.shape[0] * max(1, third))
-            right_density = np.count_nonzero(edges[:, 2*third:]) / (edges.shape[0] * max(1, third))
-            # Tuneable thresholds — conservative defaults
-            obstacle = center_density > 0.03 or max(left_density, right_density) > 0.05
-            # Store last-obstacle for status reporting
+            obstacle = robot.camera.detect_obstacle_ahead()
             self._last_obstacle_detected = bool(obstacle)
             return obstacle
         except Exception:

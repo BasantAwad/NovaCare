@@ -10,8 +10,9 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 # ---------------------------------------------------------------------------
-# Network
+# Minimal robot mode (SerBot = I/O bridge only, no AI / watch / vision logic)
 # ---------------------------------------------------------------------------
+MINIMAL_MODE = os.getenv("NOVACARE_MINIMAL", "0").lower() in ("1", "true", "yes")
 ROBOT_SERVICE_HOST = os.getenv("ROBOT_SERVICE_HOST", "0.0.0.0")
 ROBOT_SERVICE_PORT = int(os.getenv("ROBOT_SERVICE_PORT", "9000"))
 
@@ -23,6 +24,8 @@ CAMERA_HEIGHT = int(os.getenv("CAMERA_HEIGHT", "480"))
 CAMERA_FPS = int(os.getenv("CAMERA_FPS", "30"))
 # Camera index fallback (used when pop.Util is unavailable)
 CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
+# Jetson CSI flip-method for Util.gstrmer / nvarguscamerasrc (manual §4.1.3.1)
+CAMERA_GSTREAMER_FLIP = int(os.getenv("CAMERA_GSTREAMER_FLIP", "0"))
 
 # ---------------------------------------------------------------------------
 # Live Stream (lightweight camera service)

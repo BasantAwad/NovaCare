@@ -56,6 +56,17 @@
 
         <!-- Emotion Text -->
         <div class="emotion-display" id="emotion-text">IDLE</div>
+        
+        <!-- Test Controls -->
+        <div style="position: absolute; bottom: 20px; display: flex; gap: 10px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;">
+            <button onclick="setEmotion('idle')">Idle</button>
+            <button onclick="setEmotion('sad')">Sad</button>
+            <button onclick="setEmotion('surprised')">Surprised</button>
+            <button onclick="setEmotion('angry')">Angry</button>
+            <button onclick="setEmotion('happy')">Happy</button>
+            <button id="speak-btn" onclick="toggleSpeaking()">Toggle Talk</button>
+            <button id="listen-btn" onclick="toggleListening()">Toggle Listen</button>
+        </div>
     </div>
 
     <script>

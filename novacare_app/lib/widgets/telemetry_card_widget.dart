@@ -3,7 +3,7 @@
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// NcTile â€” telemetry card (SKILL Â§3.6).
+/// NcTile — telemetry card (SKILL §3.6).
 ///
 /// Replaces the legacy [TelemetryCardWidget]. Re-exported with the old name
 /// so existing imports keep working during refactor; prefer `NcTile` in new
@@ -90,8 +90,8 @@ class NcTileValue extends StatelessWidget {
   }
 }
 
-/// Thin animated ECG-like waveform â€” placeholder for live heart-rate
-/// telemetry on the HeartRate tile (SKILL Â§3.6).
+/// Thin animated ECG-like waveform — placeholder for live heart-rate
+/// telemetry on the HeartRate tile (SKILL §3.6).
 class NcEcgWaveform extends StatefulWidget {
   final Color color;
   final double height;
@@ -151,7 +151,7 @@ class _EcgPainter extends CustomPainter {
     final shift = progress * size.width;
 
     for (double x = -size.width; x <= size.width * 2; x += 2) {
-      // Periodic spike pattern â€” flat with a sharp QRS every ~70px.
+      // Periodic spike pattern — flat with a sharp QRS every ~70px.
       final cycle = ((x + shift) % 70);
       double y = mid;
       if (cycle > 26 && cycle < 30) y = mid - size.height * 0.45;
@@ -174,7 +174,7 @@ class _EcgPainter extends CustomPainter {
       old.progress != progress || old.color != color;
 }
 
-/// Thin animated battery fill bar â€” SKILL Â§3.6 Battery variant.
+/// Thin animated battery fill bar — SKILL §3.6 Battery variant.
 class NcBattFillBar extends StatefulWidget {
   final double percent;
   final Color color;
@@ -228,7 +228,7 @@ class _NcBattFillBarState extends State<NcBattFillBar>
   }
 }
 
-/// Gradient temperature bar with animated marker (SKILL Â§3.6 Temperature).
+/// Gradient temperature bar with animated marker (SKILL §3.6 Temperature).
 class NcTempBar extends StatefulWidget {
   final double tempC;
   final double minC;
@@ -316,7 +316,7 @@ class _NcTempBarState extends State<NcTempBar>
   }
 }
 
-/// Radar-style pulsing dot for the Location tile (SKILL Â§3.6).
+/// Radar-style pulsing dot for the Location tile (SKILL §3.6).
 class NcRadarDot extends StatefulWidget {
   const NcRadarDot({super.key});
 
@@ -378,12 +378,12 @@ class _NcRadarDotState extends State<NcRadarDot>
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 //  Legacy compat shim
 //  Keeps the old TelemetryCardWidget API alive so existing call sites
 //  compile while we migrate. TODO(refactor): remove once all screens
 //  use NcTile directly.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 class TelemetryCardWidget extends StatelessWidget {
   final IconData icon;
   final String label;

@@ -13,7 +13,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/nc_primitives.dart';
 import '../../widgets/nova_logo.dart';
 
-/// Caregiver dashboard â€” shows live SOS alerts and patient status.
+/// Caregiver dashboard — shows live SOS alerts and patient status.
 class CaregiverHomeScreen extends StatelessWidget {
   const CaregiverHomeScreen({super.key});
 
@@ -45,18 +45,18 @@ class CaregiverHomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // â”€â”€â”€ Greeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Greeting ───────────────────────────────────────
                   Text('Hello, ${auth.name}', style: AppText.display1()),
                   const SizedBox(height: 4),
                   Text(
                     unread > 0
-                        ? '$unread unread alert${unread > 1 ? 's' : ''} â€” check below.'
+                        ? '$unread unread alert${unread > 1 ? 's' : ''} — check below.'
                         : 'All patients are safe. No active alerts.',
                     style: AppText.body(color: AppColors.inkMuted),
                   ),
                   const SizedBox(height: 20),
 
-                  // â”€â”€â”€ SOS alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── SOS alerts ────────────────────────────────────
                   if (sosAlerts.isNotEmpty) ...[
                     _SectionHead(
                       title: 'SOS Alerts',
@@ -85,7 +85,7 @@ class CaregiverHomeScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // â”€â”€â”€ Patient overview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Patient overview ──────────────────────────────
                   const NcSectionHead(title: 'Patient overview'),
                   _PatientCard(
                     rover: rover,
@@ -94,7 +94,7 @@ class CaregiverHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // â”€â”€â”€ Other alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ─── Other alerts ──────────────────────────────────
                   if (otherAlerts.isNotEmpty) ...[
                     NcSectionHead(
                       title: 'Recent activity',
@@ -111,7 +111,7 @@ class CaregiverHomeScreen extends StatelessWidget {
                           icon: Icon(a.icon, color: a.color),
                           iconBg: a.color.withOpacity(0.12),
                           title: a.title,
-                          subtitle: '$time  â€¢  ${a.body}',
+                          subtitle: '$time  •  ${a.body}',
                           trailing: a.isRead
                               ? const Icon(Icons.chevron_right_rounded, color: AppColors.inkMuted)
                               : Container(
@@ -147,9 +147,9 @@ class CaregiverHomeScreen extends StatelessWidget {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  SOS Alert Card â€” prominent red card with action buttons
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
+//  SOS Alert Card — prominent red card with action buttons
+// ════════════════════════════════════════════════════════════════════
 class _SosAlertCard extends StatelessWidget {
   final AlertModel alert;
   final VoidCallback onAcknowledge;
@@ -165,7 +165,7 @@ class _SosAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final time = DateFormat('h:mm a Â· MMM d').format(alert.timestamp);
+    final time = DateFormat('h:mm a · MMM d').format(alert.timestamp);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -272,9 +272,9 @@ class _ActionBtn extends StatelessWidget {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 //  All-clear card
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 class _AllClearCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -304,9 +304,9 @@ class _AllClearCard extends StatelessWidget {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 //  Patient overview card
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 class _PatientCard extends StatelessWidget {
   final RoverProvider rover;
   final String patientName;

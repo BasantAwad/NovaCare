@@ -10,6 +10,9 @@ Endpoints
 Camera
     GET  /api/camera/frame           base64 JPEG frame
     GET  /api/camera/stream          MJPEG stream (multipart/x-mixed-replace)
+    POST /api/camera/session/start   register viewer, warm up capture pipeline
+    POST /api/camera/session/stop    unregister viewer
+    GET  /api/camera/status          backend + session status
 
 Movement
     POST /api/move                   body: {"direction": str, "speed": int, "duration": float}
@@ -43,12 +46,13 @@ import tempfile
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 from config import (
     ROBOT_SERVICE_HOST, ROBOT_SERVICE_PORT, DESTINATIONS,
     DEFAULT_SPEED, OBSTACLE_STOP_DISTANCE_MM,
+    STREAM_FPS, MINIMAL_MODE,
 )
 from robot_hal import get_robot
 from watch_integration import (
@@ -60,6 +64,8 @@ from watch_integration import (
 app = Flask(__name__)
 CORS(app)
 
+_STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
 # ---------------------------------------------------------------------------
 # Security Configuration
 # ---------------------------------------------------------------------------
@@ -70,7 +76,7 @@ def check_api_key():
     """Ensure all API endpoints are authenticated."""
     if request.method == "OPTIONS":
         return
-    if request.path in ["/health", "/", "/ui", "/optimized_runtime/robot_ui/RobotUI.css"]:
+    if request.path in ["/health", "/", "/ui", "/static/RobotUI.css", "/optimized_runtime/robot_ui/RobotUI.css"]:
         return
         
     key = request.headers.get("X-API-Key")
@@ -91,21 +97,12 @@ def robot_ui():
     except Exception as e:
         return f"Error loading Robot UI: {e}", 500
 
+@app.get("/static/RobotUI.css")
 @app.get("/optimized_runtime/robot_ui/RobotUI.css")
 def robot_ui_css():
-    """Serve the styles for the robot face UI."""
+    """Serve robot face stylesheet (bundled under static/ for standalone deploy)."""
     try:
-        # Dynamically resolve optimized_runtime/robot_ui/RobotUI.css
-        # Works with flat 'robot/' and nested 'services/robot/' structures
-        curr_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = os.path.dirname(curr_dir)
-        css_path = os.path.join(base_dir, "optimized_runtime", "robot_ui", "RobotUI.css")
-        if not os.path.exists(css_path):
-            parent_of_parent = os.path.dirname(base_dir)
-            css_path = os.path.join(parent_of_parent, "optimized_runtime", "robot_ui", "RobotUI.css")
-            
-        with open(css_path, "r", encoding="utf-8") as f:
-            return f.read(), 200, {"Content-Type": "text/css"}
+        return send_from_directory(_STATIC_DIR, "RobotUI.css", mimetype="text/css")
     except Exception as e:
         return f"Error loading Robot UI Stylesheet: {e}", 500
 
@@ -139,6 +136,7 @@ def camera_frame():
 def camera_stream():
     """MJPEG streaming endpoint for live video feed."""
     def generate():
+        frame_interval = 1.0 / max(1, STREAM_FPS)
         while True:
             jpg = robot().camera.read_frame_jpeg_bytes(quality=70)
             if jpg is None:
@@ -148,13 +146,43 @@ def camera_stream():
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n\r\n" + jpg + b"\r\n"
             )
-            time.sleep(1.0 / 15)  # ~15 FPS
+            time.sleep(frame_interval)
 
     return Response(
         generate(),
         mimetype="multipart/x-mixed-replace; boundary=frame",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/camera/session/start")
+def camera_session_start():
+    """Register a mobile/web viewer and warm up the camera pipeline."""
+    cam = robot().camera
+    if not cam.is_available:
+        return jsonify({"error": "Camera not available"}), 503
+    if not cam.start_session():
+        return jsonify({"error": "Failed to start camera session"}), 503
+    status = cam.get_status()
+    return jsonify({
+        "status": "success",
+        "stream_url": "/api/camera/stream",
+        "resolution": status.get("stream_resolution"),
+        "backend": status.get("backend"),
+    })
+
+
+@app.post("/api/camera/session/stop")
+def camera_session_stop():
+    """Unregister a viewer session."""
+    robot().camera.stop_session()
+    return jsonify({"status": "success"})
+
+
+@app.get("/api/camera/status")
+def camera_status():
+    """Return camera backend and session status."""
+    return jsonify({"status": "success", **robot().camera.get_status()})
 
 
 # ============================================================================
@@ -188,8 +216,12 @@ def move():
         return jsonify({"error": f"Unknown direction: {direction}",
                         "valid": list(DIRECTION_MAP.keys())}), 400
 
-    # Check for obstacles before moving forward
-    if direction == "forward" and robot().camera.is_obstacle_ahead():
+    # Minimal mode: no camera-based blocking (vision runs off-robot)
+    if (
+        not MINIMAL_MODE
+        and direction == "forward"
+        and robot().camera.is_obstacle_ahead()
+    ):
         robot().motion.stop()
         return jsonify({
             "status": "blocked",
@@ -262,7 +294,9 @@ def navigate():
 
 @app.post("/api/follow/start")
 def follow_start():
-    """Start follow-user mode (using SERBot's built-in tracking)."""
+    """Start follow-user mode (disabled in minimal I/O-only deploy)."""
+    if MINIMAL_MODE:
+        return jsonify({"error": "Follow mode disabled in minimal robot mode"}), 501
     robot().motion.start_tracking("face")
     return jsonify({"status": "following", "message": "Using SERBot built-in tracking"})
 
@@ -418,6 +452,7 @@ def health():
         "service": "NovaCare Robot Service",
         "hardware": {
             "camera": r.camera.is_available,
+            "camera_status": r.camera.get_status(),
             "motion": r.motion.is_available,
             "tts": r.audio.tts_available,
             "stt": r.audio.stt_available,
@@ -450,19 +485,20 @@ if __name__ == "__main__":
     print("=" * 50)
     print("  NovaCare  Robot REST Service")
     print(f"  Listening on {ROBOT_SERVICE_HOST}:{ROBOT_SERVICE_PORT}")
+    if MINIMAL_MODE:
+        print("  Mode: MINIMAL (I/O bridge — no watch, no AI)")
     print("=" * 50)
-    
-    # Initialize watch integration in simulation mode by default
-    # (set simulation_mode=False to connect to real HRYFINE watch)
-    watch_address = os.getenv("WATCH_ADDRESS", "C2:FC:28:B7:1C:1B")
-    simulation_mode = os.getenv("WATCH_SIMULATION", "true").lower() == "true"
-    
-    print(f"\n Initializing watch integration (simulation={simulation_mode})...")
-    init_watch_integration(device_address=watch_address, simulation_mode=simulation_mode)
-    
-    watch_mgr = get_watch_manager()
-    if watch_mgr:
-        watch_mgr.start()
-        print(" Watch monitoring started\n")
+
+    if MINIMAL_MODE:
+        print("[OK] Skipping watch integration (NOVACARE_MINIMAL=1)")
+    else:
+        watch_address = os.getenv("WATCH_ADDRESS", "C2:FC:28:B7:1C:1B")
+        simulation_mode = os.getenv("WATCH_SIMULATION", "true").lower() == "true"
+        print(f"\n Initializing watch integration (simulation={simulation_mode})...")
+        init_watch_integration(device_address=watch_address, simulation_mode=simulation_mode)
+        watch_mgr = get_watch_manager()
+        if watch_mgr:
+            watch_mgr.start()
+            print(" Watch monitoring started\n")
     
     app.run(host=ROBOT_SERVICE_HOST, port=ROBOT_SERVICE_PORT, threaded=True)

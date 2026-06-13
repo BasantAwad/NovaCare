@@ -8,7 +8,7 @@ import '../widgets/nova_logo.dart';
 import '../providers/auth_provider.dart';
 import 'auth/auth_wrapper.dart';
 
-/// Branded splash screen â€” warm cream canvas, breathing NovaCare logo,
+/// Branded splash screen — warm cream canvas, breathing NovaCare logo,
 /// transitions into the main tabbed shell after 2.5s.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

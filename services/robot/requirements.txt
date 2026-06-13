@@ -3,7 +3,7 @@ flask>=3.0.0
 flask-cors>=4.0.0
 python-dotenv>=1.0.0
 
-# Image processing (lightweight JPEG encode/resize — no OpenCV)
+# Image processing (fast install — used for JPEG resize + obstacle detection)
 Pillow>=10.0.0
 
 # Text-to-Speech
@@ -16,5 +16,10 @@ PyAudio>=0.2.14
 # NOTE: The `pop` library is pre-installed on the SERBot SBC.
 # It is NOT available on PyPI — do not list it here.
 
-# NOTE: OpenCV was removed. Camera capture now uses V4L2 + Pillow.
-# Install v4l-utils on the robot: sudo apt install v4l-utils
+# NOTE: Camera capture uses system tools (no pip install needed on SerBot):
+#   sudo apt install -y v4l-utils ffmpeg gstreamer1.0-tools
+#
+# OpenCV is OPTIONAL and takes hours to pip-install on Jetson — do NOT install
+# unless you set NOVACARE_USE_OPENCV=1 and already have opencv system-wide.
+# opencv-python-headless>=4.8.0
+# numpy>=1.24.0

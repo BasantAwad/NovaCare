@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  Small reusable primitives â€” see SKILL Â§3.
+// ════════════════════════════════════════════════════════════════════
+//  Small reusable primitives — see SKILL §3.
 //  Grouped in one file for discoverability. Larger components
 //  (tile, btn_card, dpad, feed, bottom_nav) live in their own files.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════════
 
-// â”€â”€â”€ 3.3 StatusPill / BatteryPill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.3 StatusPill / BatteryPill ──────────────────────────────────
 
 enum NcConnectionStatus { online, offline, weak }
 
@@ -165,9 +165,9 @@ class NcBatteryPill extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.3 NcAppBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.3 NcAppBar ──────────────────────────────────────────────────
 
-/// Custom app bar â€” not a Material AppBar, lays out
+/// Custom app bar — not a Material AppBar, lays out
 /// `[leading + title] [spacer] [statusPill] [batteryPill] [trailing]`.
 class NcAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? leading;
@@ -236,7 +236,7 @@ class NcAppBar extends StatelessWidget implements PreferredSizeWidget {
       };
 }
 
-// â”€â”€â”€ 3.5 NcSwitch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.5 NcSwitch ──────────────────────────────────────────────────
 
 /// 48Ã—28 pill switch with spring-eased thumb and haptic on toggle.
 /// RTL-aware: thumb travels in the layout direction.
@@ -313,7 +313,7 @@ class NcSwitch extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.9 NcSectionHead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.9 NcSectionHead ─────────────────────────────────────────────
 
 class NcSectionHead extends StatelessWidget {
   final String title;
@@ -340,7 +340,7 @@ class NcSectionHead extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.10 NcGroup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.10 NcGroup ──────────────────────────────────────────────────
 
 /// White card with line border, rLG corners, children separated by 1dp dividers.
 class NcGroup extends StatelessWidget {
@@ -370,7 +370,7 @@ class NcGroup extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.8 NcRow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.8 NcRow ─────────────────────────────────────────────────────
 
 class NcRow extends StatelessWidget {
   final Widget icon;
@@ -445,7 +445,7 @@ class NcRow extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.11 NcChip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.11 NcChip ───────────────────────────────────────────────────
 
 enum NcChipStyle { normal, success, warn, danger, info, beta }
 
@@ -484,7 +484,7 @@ class NcChip extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ 3.14 NcSeg (segmented control) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3.14 NcSeg (segmented control) ────────────────────────────────
 
 class NcSeg extends StatelessWidget {
   final List<String> labels;

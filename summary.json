@@ -1,0 +1,38 @@
+{
+  "project_name": "NovaCare",
+  "current_status": "Front-end structure, styling, and core UI components established for both mobile and web applications.",
+  "next_feature_implementations": [
+    {
+      "feature": "Persistent Storage & Background Notifications",
+      "module": "Mobile: Reminders Screen",
+      "description": "Replace in-memory data lists with SQLite (e.g., using the Drift package) for local data persistence. Integrate 'flutter_local_notifications' and 'workmanager' to trigger background alerts and send BLE 'speak now' frames to the rover when reminders are due."
+    },
+    {
+      "feature": "Sign Language Processing Pipeline",
+      "module": "Mobile: Companion Screen / Web: ASL Modal",
+      "description": "Bridge the newly implemented live CameraPreview feed to the backend MediaPipe/Python services. Extract real-time sign language gloss and pipe the recognized gestures into the LLM conversational engine."
+    },
+    {
+      "feature": "Speech-to-Text (STT) & Voice Engine",
+      "module": "Mobile: Companion Screen",
+      "description": "Implement live microphone audio capture for the Voice tab. Stream audio chunks to a Whisper STT backend (or on-device alternative) to transcribe speech to text before feeding it to the AI."
+    },
+    {
+      "feature": "Live Hardware Telemetry Stream",
+      "module": "Mobile: RoverProvider / Web: Dashboards",
+      "description": "Replace the mock interval timers generating random battery/temperature data with a genuine WebSocket or BLE stream connected to the robot's hardware abstraction layer (HAL)."
+    }
+  ],
+  "codebase_compaction_and_architecture": {
+    "mobile_app_flutter": {
+      "state_management": "Centralized via Provider pattern (RoverProvider, AuthProvider) to prevent state drift.",
+      "ui_compaction": "Highly compacted UI code via 'nc_primitives.dart'. All complex UI elements (NcAppBar, NcTile, NcBtnCard, NcSwitch) are abstracted into reusable atomic components. Screens are mostly declarative layouts using these primitives rather than raw Flutter widgets."
+    },
+    "web_frontend_nextjs": {
+      "framework": "Next.js 14 App Router",
+      "routing_compaction": "Role-based segregated paths (/rover, /guardian, /medical, /admin) sharing top-level layouts.",
+      "ui_compaction": "Standardized through TailwindCSS and reusable UI components (e.g., src/components/ui/Card, Button, Alert). This prevents CSS bloat and ensures visual consistency across the 30+ web pages."
+    },
+    "overall_compaction_strategy": "The entire NovaCare codebase achieves compaction by heavily favoring shared component libraries. By keeping business logic out of the UI layer and isolating it into Providers/Contexts, new screens can be built rapidly with just a few lines of declarative component code."
+  }
+}

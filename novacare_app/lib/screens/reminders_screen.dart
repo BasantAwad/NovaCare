@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
@@ -60,7 +60,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   Text('Today', style: AppText.display1()),
                   const SizedBox(height: 4),
                   Text(
-                    '$activeCount active Â· $dueCount medication due',
+                    '$activeCount active · $dueCount medication due',
                     style: AppText.body(color: AppColors.inkMuted),
                   ),
                   NcSectionHead(
@@ -86,16 +86,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
                               );
                             });
                           },
-                          onEdit: () {
-                            // Dummy edit operation
-                            setState(() {
-                              daily[i] = _Reminder(
-                                daily[i].time,
-                                '${daily[i].title} (Edited)',
-                                daily[i].ringtone,
-                                daily[i].on,
-                              );
-                            });
+                          onEdit: () async {
+                            final edited = await _showReminderDialog(reminder: daily[i]);
+                            if (edited != null) {
+                              setState(() {
+                                daily[i] = edited;
+                              });
+                            }
                           },
                         ),
                     ],
@@ -116,18 +113,102 @@ class _RemindersScreenState extends State<RemindersScreen> {
         backgroundColor: AppColors.brandTeal,
         foregroundColor: Colors.white,
         elevation: 4,
-        onPressed: () {
-          setState(() {
-            daily.add(_Reminder('12:00', 'New Reminder', 'Default tone', true));
-          });
+        onPressed: () async {
+          final newReminder = await _showReminderDialog();
+          if (newReminder != null) {
+            setState(() {
+              daily.add(newReminder);
+            });
+          }
         },
         child: const Icon(Icons.add_rounded),
       ),
     );
   }
+
+  Future<_Reminder?> _showReminderDialog({_Reminder? reminder}) async {
+    final isEditing = reminder != null;
+    final titleController = TextEditingController(text: isEditing ? reminder.title : '');
+    TimeOfDay selectedTime = isEditing 
+        ? TimeOfDay(
+            hour: int.parse(reminder.time.split(':')[0]), 
+            minute: int.parse(reminder.time.split(':')[1])
+          )
+        : TimeOfDay.now();
+
+    return showDialog<_Reminder>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg)),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              title: Text(isEditing ? 'Edit Reminder' : 'Add Reminder', style: AppText.display3()),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      labelText: 'Title',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Time: ${selectedTime.format(context)}', style: AppText.body()),
+                      TextButton(
+                        onPressed: () async {
+                          final TimeOfDay? time = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime,
+                          );
+                          if (time != null) {
+                            setStateDialog(() => selectedTime = time);
+                          }
+                        },
+                        child: Text('Select Time', style: AppText.bodyStrong(color: AppColors.brandTeal)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Cancel', style: AppText.body(color: AppColors.inkMuted)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brandTeal,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+                  ),
+                  onPressed: () {
+                    final timeString = '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+                    Navigator.of(context).pop(_Reminder(
+                      timeString,
+                      titleController.text.trim().isEmpty ? 'New Reminder' : titleController.text.trim(),
+                      isEditing ? reminder.ringtone : 'Default tone',
+                      isEditing ? reminder.on : true,
+                    ));
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          }
+        );
+      },
+    );
+  }
 }
 
-// â”€â”€â”€ Internal placeholder types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Internal placeholder types ─────────────────────────────────────
 class _Reminder {
   final String time;
   final String title;
