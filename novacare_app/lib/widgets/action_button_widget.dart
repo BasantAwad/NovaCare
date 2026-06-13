@@ -70,11 +70,11 @@ class _NcBtnCardState extends State<NcBtnCard>
     switch (widget.variant) {
       case NcBtnCardVariant.normal:
         return (
-          bg: AppColors.paper,
-          border: AppColors.line,
-          iconBg: AppColors.brandAquaSoft,
-          iconColor: AppColors.brandTeal,
-          titleColor: AppColors.inkNavy,
+          bg: Theme.of(context).colorScheme.surface,
+          border: Theme.of(context).dividerColor,
+          iconBg: Theme.of(context).colorScheme.primaryContainer,
+          iconColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          titleColor: Theme.of(context).colorScheme.onSurface,
         );
       case NcBtnCardVariant.brand:
         return (

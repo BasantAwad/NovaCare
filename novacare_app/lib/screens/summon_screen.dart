@@ -31,7 +31,7 @@ class _SummonScreenState extends State<SummonScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -97,10 +97,10 @@ class _SummonScreenState extends State<SummonScreen>
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.person_pin_circle,
                       size: 50,
-                      color: AppColors.canvas,
+                      color: Theme.of(context).scaffoldBackgroundColor,
                     ),
                   ),
                 ],

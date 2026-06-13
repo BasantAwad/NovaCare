@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'app_colors.dart';
+
 
 /// Typography helpers — see SKILL §1.2.
 /// Display family: Baloo 2. Body family: DM Sans. Mono: JetBrains Mono.
@@ -12,7 +12,7 @@ class AppText {
   // ─── Numeric tabular features ───────────────────────────────────
   static const _tabular = [FontFeature.tabularFigures()];
 
-  static TextStyle display1({Color color = AppColors.inkNavy}) =>
+  static TextStyle display1({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w800,
         fontSize: 30,
@@ -21,7 +21,7 @@ class AppText {
         height: 1.1,
       );
 
-  static TextStyle display2({Color color = AppColors.inkNavy}) =>
+  static TextStyle display2({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w700,
         fontSize: 22,
@@ -30,14 +30,14 @@ class AppText {
         height: 1.15,
       );
 
-  static TextStyle display3({Color color = AppColors.inkNavy}) =>
+  static TextStyle display3({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w700,
         fontSize: 17,
         color: color,
       );
 
-  static TextStyle appBarTitle({Color color = AppColors.inkNavy}) =>
+  static TextStyle appBarTitle({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w700,
         fontSize: 19,
@@ -45,7 +45,7 @@ class AppText {
         color: color,
       );
 
-  static TextStyle tileValue({Color color = AppColors.inkNavy}) =>
+  static TextStyle tileValue({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w800,
         fontSize: 30,
@@ -54,14 +54,14 @@ class AppText {
         height: 1.0,
       );
 
-  static TextStyle tileUnit({Color color = AppColors.inkMuted}) =>
+  static TextStyle tileUnit({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w600,
         fontSize: 16,
         color: color,
       );
 
-  static TextStyle body({Color color = AppColors.inkNavy}) =>
+  static TextStyle body({Color? color}) =>
       GoogleFonts.dmSans(
         fontWeight: FontWeight.w400,
         fontSize: 14,
@@ -69,7 +69,7 @@ class AppText {
         height: 1.5,
       );
 
-  static TextStyle bodyStrong({Color color = AppColors.inkNavy}) =>
+  static TextStyle bodyStrong({Color? color}) =>
       GoogleFonts.dmSans(
         fontWeight: FontWeight.w600,
         fontSize: 15,
@@ -77,7 +77,7 @@ class AppText {
         height: 1.45,
       );
 
-  static TextStyle caption({Color color = AppColors.inkMuted}) =>
+  static TextStyle caption({Color? color}) =>
       GoogleFonts.dmSans(
         fontWeight: FontWeight.w500,
         fontSize: 12.5,
@@ -85,7 +85,7 @@ class AppText {
       );
 
   /// Uppercase eyebrow / section-head label.
-  static TextStyle eyebrow({Color color = AppColors.inkMuted}) =>
+  static TextStyle eyebrow({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w700,
         fontSize: 11,
@@ -94,7 +94,7 @@ class AppText {
       );
 
   /// Slightly larger section-head used in SKILL §3.9.
-  static TextStyle sectionHead({Color color = AppColors.inkMuted}) =>
+  static TextStyle sectionHead({Color? color}) =>
       GoogleFonts.baloo2(
         fontWeight: FontWeight.w700,
         fontSize: 13,

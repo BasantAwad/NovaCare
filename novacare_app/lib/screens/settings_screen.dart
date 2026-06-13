@@ -12,9 +12,9 @@ import '../l10n/app_localizations.dart';
 import '../widgets/nova_logo.dart';
 import '../widgets/nc_primitives.dart';
 
-/// SettingsScreen — SKILL §4.6.
+/// SettingsScreen â€” SKILL Â§4.6.
 ///
-/// Sections: Profile · Account · Accessibility · Preferences · Robot.
+/// Sections: Profile Â· Account Â· Accessibility Â· Preferences Â· Robot.
 /// Logic preserved from previous implementation
 /// (provider-backed user profile, locale, theme, permissions, BLE).
 class SettingsScreen extends StatelessWidget {
@@ -28,7 +28,7 @@ class SettingsScreen extends StatelessWidget {
     final rover = context.watch<RoverProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           NcAppBar(
@@ -46,14 +46,14 @@ class SettingsScreen extends StatelessWidget {
                   Text(l10n.translate('settings'), style: AppText.display1()),
                   const SizedBox(height: 16),
 
-                  // ─── Profile card ──────────────────────────────
+                  // â”€â”€â”€ Profile card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _ProfileCard(
                     settings: settings,
                     l10n: l10n,
                     onEditProfile: () => _editProfile(context, settings, l10n),
                   ),
 
-                  // ─── Account ───────────────────────────────────
+                  // â”€â”€â”€ Account â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Account'),
                   NcGroup(
                     children: [
@@ -67,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         onTap: () {
                           // TODO(feature): caregiver/guardian management screen
-                          // — list, add (QR pairing), revoke. Backed by
+                          // â€” list, add (QR pairing), revoke. Backed by
                           // Firebase Auth + Firestore caregiver collection.
                         },
                       ),
@@ -86,7 +86,7 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // ─── Accessibility ─────────────────────────────
+                  // â”€â”€â”€ Accessibility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Accessibility'),
                   NcGroup(
                     children: [
@@ -141,7 +141,7 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // ─── Preferences ───────────────────────────────
+                  // â”€â”€â”€ Preferences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Preferences'),
                   NcGroup(
                     children: [
@@ -173,7 +173,7 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // ─── Privacy ───────────────────────────────────
+                  // â”€â”€â”€ Privacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Privacy & permissions'),
                   NcGroup(
                     children: [
@@ -207,7 +207,7 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // ─── Robot ─────────────────────────────────────
+                  // â”€â”€â”€ Robot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Robot'),
                   NcGroup(
                     children: [
@@ -215,7 +215,7 @@ class SettingsScreen extends StatelessWidget {
                         icon: const Icon(Icons.smart_toy_rounded),
                         title: ble.connectedDeviceName ?? 'SERBOT-NC-001',
                         subtitle: ble.isConnected
-                            ? '${l10n.translate('connected')} · ${ble.signalStrength}'
+                            ? '${l10n.translate('connected')} Â· ${ble.signalStrength}'
                             : l10n.translate('disconnected'),
                         trailing: ble.status == BleConnectionStatus.scanning
                             ? const SizedBox(
@@ -235,9 +235,9 @@ class SettingsScreen extends StatelessWidget {
                         icon: const Icon(Icons.cloud_rounded),
                         title: 'Rover server',
                         subtitle: ble.isTcpConnected
-                            ? '${ble.tcpEndpoint} · Connected'
+                            ? '${ble.tcpEndpoint} Â· Connected'
                             : ble.tcpErrorMessage != null
-                                ? '${ble.tcpEndpoint} · Error'
+                                ? '${ble.tcpEndpoint} Â· Error'
                                 : ble.tcpEndpoint,
                         trailing: ble.tcpStatus == TcpConnectionStatus.connecting
                             ? const SizedBox(
@@ -270,11 +270,11 @@ class SettingsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  // ─── Footer ────────────────────────────────────
+                  // â”€â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const SizedBox(height: 32),
                   Center(
                     child: Text(
-                      'NovaCare · ${l10n.translate('version')}',
+                      'NovaCare Â· ${l10n.translate('version')}',
                       style: AppText.caption(),
                     ),
                   ),
@@ -287,7 +287,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _editProfile(
     BuildContext context,
     SettingsProvider settings,
@@ -299,7 +299,7 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.paper,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Radii.lg),
         ),
@@ -390,15 +390,17 @@ class SettingsScreen extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.paper,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
             Container(
               width: 40,
               height: 4,
@@ -432,6 +434,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
           ],
         ),
+        ),
       ),
     );
   }
@@ -443,7 +446,7 @@ class SettingsScreen extends StatelessWidget {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.paper,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -464,7 +467,7 @@ class SettingsScreen extends StatelessWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.paper,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -576,7 +579,7 @@ class SettingsScreen extends StatelessWidget {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.paper,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -630,9 +633,9 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Profile card
-// ════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _ProfileCard extends StatelessWidget {
   final SettingsProvider settings;
   final AppLocalizations l10n;
@@ -660,7 +663,7 @@ class _ProfileCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsetsDirectional.all(16),
         decoration: BoxDecoration(
-          color: AppColors.paper,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(Radii.lg),
           border: Border.all(color: AppColors.line),
         ),
@@ -720,11 +723,11 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  BLE device picker bottom sheet
 //  Re-implements the discovered-devices list from the previous Settings
 //  screen, restyled with NovaCare tokens.
-// ════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _BleSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -833,7 +836,7 @@ class _LangChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.canvas2,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(Radii.pill),
           border: Border.all(color: AppColors.line),
         ),

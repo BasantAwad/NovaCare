@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../services/robot_service.dart';
 
 /// Represents the current state of the NovaCare rover.
 enum RoverConnectionState { disconnected, connecting, connected, error }
@@ -10,7 +9,7 @@ enum RoverMode { idle, followingUser, navigatingHome, deliveringMedicine, emerge
 
 /// Manages rover state, telemetry data, and command dispatch.
 class RoverProvider extends ChangeNotifier {
-  // ─── Connection ─────────────────────────────────────────────────
+  // â”€â”€â”€ Connection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   RoverConnectionState _connectionState = RoverConnectionState.disconnected;
   RoverConnectionState get connectionState => _connectionState;
 
@@ -21,7 +20,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Rover Mode ─────────────────────────────────────────────────
+  // â”€â”€â”€ Rover Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   RoverMode _currentMode = RoverMode.idle;
   RoverMode get currentMode => _currentMode;
 
@@ -30,7 +29,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Telemetry ──────────────────────────────────────────────────
+  // â”€â”€â”€ Telemetry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   int _batteryLevel = 85;
   int _heartRate = 72;
   String _roverLocation = 'Living Room';
@@ -62,7 +61,7 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Commands ───────────────────────────────────────────────────
+  // â”€â”€â”€ Commands â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   bool _isProcessingCommand = false;
   bool get isProcessingCommand => _isProcessingCommand;
 
@@ -110,9 +109,18 @@ class RoverProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Command rover to return home / dock — now delegates to the new
-  /// goHome(robotIp) below; kept as a convenience overload.
+  /// Command rover to return home / dock
+  Future<void> goHome() async {
+    _isProcessingCommand = true;
+    _currentMode = RoverMode.navigatingHome;
+    notifyListeners();
 
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    _lastCommandStatus = 'Rover returning to dock';
+    _isProcessingCommand = false;
+    notifyListeners();
+  }
 
   /// Toggle follow-me mode
   Future<void> toggleFollowMe() async {
@@ -134,49 +142,13 @@ class RoverProvider extends ChangeNotifier {
   }
 
   /// Cancel current mode and return to idle
-  void cancelCurrentMode([String? robotIp]) async {
+  void cancelCurrentMode() {
     _currentMode = RoverMode.idle;
     _lastCommandStatus = 'Mode cancelled';
-    _roverSpeed = 0.0;
-    if (robotIp != null) {
-      await _robotService.sendMovementCommand(RobotMovement.stop, robotIp);
-    }
     notifyListeners();
   }
 
-  // ─── Robot Service for movement commands ─────────────────────
-  final RobotService _robotService = RobotService();
-
-  /// Move rover using legacy cardinal direction enum.
-  Future<void> moveRover(RobotMovement direction, String robotIp) async {
-    _roverSpeed = direction == RobotMovement.stop ? 0.0 : 0.5;
-    await _robotService.sendMovementCommand(direction, robotIp);
-    notifyListeners();
-  }
-
-  /// Move rover by a 360° angle (from the virtual joystick).
-  Future<void> moveRoverByAngle(String angleDeg, String robotIp) async {
-    _roverSpeed = 0.5;
-    await _robotService.sendAngleCommand(angleDeg, robotIp);
-    notifyListeners();
-  }
-
-  /// Navigate rover to home dock.
-  Future<void> goHome([String? robotIp]) async {
-    _isProcessingCommand = true;
-    _currentMode = RoverMode.navigatingHome;
-    notifyListeners();
-    if (robotIp != null) {
-      await _robotService.returnToDock(robotIp);
-    } else {
-      await Future.delayed(const Duration(milliseconds: 500));
-    }
-    _lastCommandStatus = 'Rover returning to dock';
-    _isProcessingCommand = false;
-    notifyListeners();
-  }
-
-  // ─── Realtime Updates from API ─────────────────────
+  // â”€â”€â”€ Realtime Updates from API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void startSimulatedUpdates() {
     _connectionState = RoverConnectionState.connected;
     _isRoverOnline = true;

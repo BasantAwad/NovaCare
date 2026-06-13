@@ -7,13 +7,13 @@ import '../theme/app_text_styles.dart';
 import '../widgets/nova_logo.dart';
 import '../widgets/nc_primitives.dart';
 
-/// CompanionScreen — SKILL §4.3.
+/// CompanionScreen â€” SKILL Â§4.3.
 ///
-/// Currently a UI stub. The real behavior wires up in three layers — each
+/// Currently a UI stub. The real behavior wires up in three layers â€” each
 /// noted with TODO(backend) below:
-///   1. Text mode → stream tokens from the LLM endpoint
-///   2. Voice mode → Whisper STT (or on-device) → LLM → TTS playback
-///   3. Sign mode → MediaPipe Hands → ASL/ArSL gloss → LLM
+///   1. Text mode â†’ stream tokens from the LLM endpoint
+///   2. Voice mode â†’ Whisper STT (or on-device) â†’ LLM â†’ TTS playback
+///   3. Sign mode â†’ MediaPipe Hands â†’ ASL/ArSL gloss â†’ LLM
 class CompanionScreen extends StatefulWidget {
   const CompanionScreen({super.key});
 
@@ -27,7 +27,7 @@ class _CompanionScreenState extends State<CompanionScreen> {
 
   // Seed conversation. TODO(backend): replace with real chat history stream.
   final List<_Msg> _messages = [
-    _Msg('Hi Amira — how are you feeling this afternoon?', isBot: true),
+    _Msg('Hi Amira â€” how are you feeling this afternoon?', isBot: true),
     _Msg('A little tired. Could you remind me about my medication?', isBot: false),
     _Msg('Of course. Your next dose is Metformin at 1:00 PM.', isBot: true),
   ];
@@ -43,7 +43,7 @@ class _CompanionScreenState extends State<CompanionScreen> {
     final rover = context.watch<RoverProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           NcAppBar(
@@ -122,7 +122,7 @@ class _CompanionScreenState extends State<CompanionScreen> {
   }
 }
 
-// ─── Message model ──────────────────────────────────────────────────
+// â”€â”€â”€ Message model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _Msg {
   final String text;
   final bool isBot;
@@ -153,7 +153,7 @@ class _Bubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isBot ? AppColors.paper : AppColors.brandTeal,
+                color: isBot ? Theme.of(context).colorScheme.surface : AppColors.brandTeal,
                 border: isBot ? Border.all(color: AppColors.line) : null,
                 borderRadius: radius.resolve(Directionality.of(context)),
               ),
@@ -296,9 +296,9 @@ class _Composer extends StatelessWidget {
         top: 10,
         bottom: 10 + bottomInset,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.paper,
-        border: Border(top: BorderSide(color: AppColors.line)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: const Border(top: BorderSide(color: AppColors.line)),
       ),
       child: Row(
         children: [
@@ -312,7 +312,7 @@ class _Composer extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.canvas,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 border: Border.all(color: AppColors.line),
                 borderRadius: BorderRadius.circular(Radii.pill),
               ),
@@ -323,7 +323,7 @@ class _Composer extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 decoration: const InputDecoration.collapsed(
-                  hintText: 'Type a message…',
+                  hintText: 'Type a messageâ€¦',
                 ),
                 style: AppText.body(),
                 onSubmitted: onSend,
@@ -360,7 +360,7 @@ class _IconBtn extends StatelessWidget {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: primary ? AppColors.brandTeal : AppColors.canvas2,
+          color: primary ? AppColors.brandTeal : Theme.of(context).colorScheme.surface,
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.line),
         ),

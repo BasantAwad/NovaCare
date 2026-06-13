@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
@@ -24,16 +24,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _Alert(
       sev: _Sev.high,
       title: 'Heart-rate spike detected',
-      meta: '12:42 · Kitchen',
+      meta: '12:42 Â· Kitchen',
       unread: true,
     ),
   ];
   
   final List<_Alert> earlier = [
-    _Alert(sev: _Sev.med, title: 'Fall risk — slow motion', meta: 'Yesterday · 19:08'),
-    _Alert(sev: _Sev.low, title: 'Battery below 30%', meta: 'Yesterday · 16:22'),
-    _Alert(sev: _Sev.low, title: 'Door left open', meta: '2 days ago · 22:10'),
-    _Alert(sev: _Sev.med, title: 'Medication missed', meta: '3 days ago · 13:05'),
+    _Alert(sev: _Sev.med, title: 'Fall risk â€” slow motion', meta: 'Yesterday Â· 19:08'),
+    _Alert(sev: _Sev.low, title: 'Battery below 30%', meta: 'Yesterday Â· 16:22'),
+    _Alert(sev: _Sev.low, title: 'Door left open', meta: '2 days ago Â· 22:10'),
+    _Alert(sev: _Sev.med, title: 'Medication missed', meta: '3 days ago Â· 13:05'),
   ];
 
   @override
@@ -45,7 +45,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
         earlier.where((a) => a.unread).length;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           NcAppBar(
@@ -123,7 +123,7 @@ class _EmptyState extends StatelessWidget {
           Text('All clear', style: AppText.display2()),
           const SizedBox(height: 4),
           Text(
-            'No alerts right now — you and SERBOT are fine.',
+            'No alerts right now â€” you and SERBOT are fine.',
             style: AppText.body(color: AppColors.inkMuted),
             textAlign: TextAlign.center,
           ),
@@ -133,7 +133,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─── Internal types ─────────────────────────────────────────────────
+// â”€â”€â”€ Internal types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 enum _Sev { high, med, low }
 
 class _Alert {

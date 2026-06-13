@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-// ════════════════════════════════════════════════════════════════════
-//  Small reusable primitives — see SKILL §3.
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  Small reusable primitives â€” see SKILL Â§3.
 //  Grouped in one file for discoverability. Larger components
 //  (tile, btn_card, dpad, feed, bottom_nav) live in their own files.
-// ════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// ─── 3.3 StatusPill / BatteryPill ──────────────────────────────────
+// â”€â”€â”€ 3.3 StatusPill / BatteryPill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 enum NcConnectionStatus { online, offline, weak }
 
@@ -38,10 +38,10 @@ class NcStatusPill extends StatelessWidget {
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: dark ? AppColors.roverDarkCard : AppColors.canvas2,
+        color: dark ? AppColors.roverDarkCard : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(Radii.pill),
         border: Border.all(
-          color: dark ? AppColors.roverDarkBorder : AppColors.line,
+          color: dark ? AppColors.roverDarkBorder : Theme.of(context).dividerColor,
         ),
       ),
       child: Row(
@@ -134,7 +134,7 @@ class NcBatteryPill extends StatelessWidget {
       height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        color: dark ? AppColors.roverDarkCard : AppColors.canvas2,
+        color: dark ? AppColors.roverDarkCard : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(Radii.pill),
         border: Border.all(
           color: dark ? AppColors.roverDarkBorder : AppColors.line,
@@ -165,9 +165,9 @@ class NcBatteryPill extends StatelessWidget {
   }
 }
 
-// ─── 3.3 NcAppBar ──────────────────────────────────────────────────
+// â”€â”€â”€ 3.3 NcAppBar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/// Custom app bar — not a Material AppBar, lays out
+/// Custom app bar â€” not a Material AppBar, lays out
 /// `[leading + title] [spacer] [statusPill] [batteryPill] [trailing]`.
 class NcAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? leading;
@@ -196,7 +196,7 @@ class NcAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final padding = MediaQuery.of(context).padding.top;
     return Container(
-      color: dark ? AppColors.roverDarkBg : AppColors.canvas,
+      color: dark ? AppColors.roverDarkBg : Theme.of(context).scaffoldBackgroundColor,
       padding: EdgeInsetsDirectional.only(
         start: 20,
         end: 20,
@@ -236,9 +236,9 @@ class NcAppBar extends StatelessWidget implements PreferredSizeWidget {
       };
 }
 
-// ─── 3.5 NcSwitch ──────────────────────────────────────────────────
+// â”€â”€â”€ 3.5 NcSwitch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-/// 48×28 pill switch with spring-eased thumb and haptic on toggle.
+/// 48Ã—28 pill switch with spring-eased thumb and haptic on toggle.
 /// RTL-aware: thumb travels in the layout direction.
 class NcSwitch extends StatelessWidget {
   final bool value;
@@ -313,7 +313,7 @@ class NcSwitch extends StatelessWidget {
   }
 }
 
-// ─── 3.9 NcSectionHead ─────────────────────────────────────────────
+// â”€â”€â”€ 3.9 NcSectionHead â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class NcSectionHead extends StatelessWidget {
   final String title;
@@ -340,7 +340,7 @@ class NcSectionHead extends StatelessWidget {
   }
 }
 
-// ─── 3.10 NcGroup ──────────────────────────────────────────────────
+// â”€â”€â”€ 3.10 NcGroup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /// White card with line border, rLG corners, children separated by 1dp dividers.
 class NcGroup extends StatelessWidget {
@@ -352,9 +352,9 @@ class NcGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.paper,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: AppColors.line),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       padding: padding,
       clipBehavior: Clip.antiAlias,
@@ -370,7 +370,7 @@ class NcGroup extends StatelessWidget {
   }
 }
 
-// ─── 3.8 NcRow ─────────────────────────────────────────────────────
+// â”€â”€â”€ 3.8 NcRow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class NcRow extends StatelessWidget {
   final Widget icon;
@@ -407,12 +407,12 @@ class NcRow extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconBg ?? AppColors.brandAquaSoft,
+                  color: iconBg ?? Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
                 child: IconTheme(
-                  data: const IconThemeData(color: AppColors.inkTeal, size: 20),
+                  data: IconThemeData(color: Theme.of(context).colorScheme.onPrimaryContainer, size: 20),
                   child: icon,
                 ),
               ),
@@ -445,7 +445,7 @@ class NcRow extends StatelessWidget {
   }
 }
 
-// ─── 3.11 NcChip ───────────────────────────────────────────────────
+// â”€â”€â”€ 3.11 NcChip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 enum NcChipStyle { normal, success, warn, danger, info, beta }
 
@@ -461,12 +461,12 @@ class NcChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg) = switch (style) {
-      NcChipStyle.normal => (AppColors.canvas2, AppColors.inkNavy),
+      NcChipStyle.normal => (Theme.of(context).colorScheme.surfaceContainerHighest, Theme.of(context).colorScheme.onSurface),
       NcChipStyle.success => (AppColors.success2, AppColors.success),
       NcChipStyle.warn => (AppColors.accent3, const Color(0xFF8A6913)),
       NcChipStyle.danger => (AppColors.danger2, AppColors.danger),
       NcChipStyle.info => (AppColors.info2, AppColors.info),
-      NcChipStyle.beta => (AppColors.canvas2, AppColors.inkMuted),
+      NcChipStyle.beta => (Theme.of(context).colorScheme.surfaceContainerHighest, Theme.of(context).colorScheme.onSurfaceVariant),
     };
 
     return Container(
@@ -484,7 +484,7 @@ class NcChip extends StatelessWidget {
   }
 }
 
-// ─── 3.14 NcSeg (segmented control) ────────────────────────────────
+// â”€â”€â”€ 3.14 NcSeg (segmented control) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class NcSeg extends StatelessWidget {
   final List<String> labels;
@@ -502,9 +502,9 @@ class NcSeg extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.canvas2,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(Radii.pill),
-        border: Border.all(color: AppColors.line),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -516,7 +516,7 @@ class NcSeg extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   height: 40,
                   decoration: BoxDecoration(
-                    color: i == selected ? AppColors.paper : Colors.transparent,
+                    color: i == selected ? Theme.of(context).colorScheme.surface : Colors.transparent,
                     borderRadius: BorderRadius.circular(Radii.pill),
                     boxShadow: i == selected ? Elevations.e1 : null,
                   ),

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/summon_service.dart';
 
@@ -24,7 +24,7 @@ enum SummonPhase {
 class SummonProvider extends ChangeNotifier {
   final SummonService _service = SummonService();
 
-  // ─── State ──────────────────────────────────────────────────────
+  // â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   SummonPhase _phase = SummonPhase.idle;
   int _rssiCurrent = -100;
   String _rssiTrend = 'unknown';
@@ -42,7 +42,7 @@ class SummonProvider extends ChangeNotifier {
   StreamSubscription? _failedSub;
   StreamSubscription? _connectionSub;
 
-  // ─── Getters ────────────────────────────────────────────────────
+  // â”€â”€â”€ Getters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   SummonPhase get phase => _phase;
   int get rssiCurrent => _rssiCurrent;
   String get rssiTrend => _rssiTrend;
@@ -83,7 +83,7 @@ class SummonProvider extends ChangeNotifier {
     _connectionSub = _service.connectionStream.listen(_onConnection);
   }
 
-  // ─── Actions ────────────────────────────────────────────────────
+  // â”€â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Configure and connect to the robot
   Future<bool> connectToRobot({required String robotHost, int port = 9999}) async {
@@ -144,7 +144,7 @@ class SummonProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── Stream Handlers ───────────────────────────────────────────
+  // â”€â”€â”€ Stream Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _onStatus(Map<String, dynamic> data) {
     _phase = _parsePhase(data['state'] as String? ?? 'idle');

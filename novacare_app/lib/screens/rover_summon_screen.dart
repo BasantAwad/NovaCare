@@ -161,7 +161,7 @@ class _RoverSummonScreenState extends State<RoverSummonScreen> with SingleTicker
                   if (summon.isActive) {
                     summon.cancelSummon(userId: 'user_123');
                   }
-                  rover.cancelCurrentMode(context.read<SettingsProvider>().robotIp);
+                  rover.cancelCurrentMode();
                   // Stop listening
                   context.read<BleProvider>().removeListener(_onBleUpdate);
                   summon.resetToIdle();

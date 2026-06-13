@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import 'providers/rover_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ble_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/alert_provider.dart';
+import 'providers/reminder_provider.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 import 'l10n/app_localizations.dart';
@@ -42,6 +45,9 @@ class NovaCareApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => RoverProvider()),
         ChangeNotifierProvider(create: (_) => BleProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => AlertProvider()),
+        ChangeNotifierProvider(create: (_) => ReminderProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {

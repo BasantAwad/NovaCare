@@ -103,41 +103,6 @@ class RobotService {
     }
   }
 
-  /// Sends a 360° angle-based movement command to the robot.
-  /// [angleDeg] is a string like "0"–"359" representing the heading.
-  Future<void> sendAngleCommand(String angleDeg, String robotIp) async {
-    print('DEBUG: Sending angle command: $angleDeg° to $robotIp');
-
-    final client = HttpClient();
-    client.connectionTimeout = const Duration(seconds: 3);
-
-    try {
-      final uri = Uri.parse('http://$robotIp:9000/api/move');
-      final request = await client.postUrl(uri);
-      request.headers.set('X-API-Key', _apiKey);
-      request.headers.set('Content-Type', 'application/json');
-
-      final body = jsonEncode({
-        'direction': angleDeg,
-        'speed': 35,
-        'duration': 0.5,
-      });
-
-      request.write(body);
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      if (response.statusCode == 200) {
-        print('DEBUG: Angle move $angleDeg° sent successfully: $responseBody');
-      } else {
-        print('DEBUG: Angle move failed with status ${response.statusCode}: $responseBody');
-      }
-    } catch (e) {
-      print('DEBUG: Failed to send angle command - $e');
-    } finally {
-      client.close();
-    }
-  }
-
   /// Requests the robot to return to the charging dock (stops everything)
   Future<void> returnToDock(String robotIp) async {
     print('DEBUG: Requesting Return to Dock');
@@ -148,6 +113,39 @@ class RobotService {
   Future<void> summonRobot() async {
     print('DEBUG: Requesting Robot Summon (legacy REST call stub)');
     await Future.delayed(const Duration(seconds: 1));
+  }
+
+  Future<Map<String, dynamic>?> startCameraSession(String robotIp) async {
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 3);
+    try {
+      final uri = Uri.parse('http://$robotIp:9000/api/camera/session/start');
+      final request = await client.postUrl(uri);
+      request.headers.set('X-API-Key', _apiKey);
+      final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
+      if (response.statusCode == 200) {
+        return jsonDecode(body);
+      }
+      return {'error': 'Failed with status ${response.statusCode}'};
+    } catch (e) {
+      return {'error': e.toString()};
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<void> stopCameraSession(String robotIp) async {
+    final client = HttpClient();
+    client.connectionTimeout = const Duration(seconds: 2);
+    try {
+      final uri = Uri.parse('http://$robotIp:9000/api/camera/session/stop');
+      final request = await client.postUrl(uri);
+      request.headers.set('X-API-Key', _apiKey);
+      await request.close();
+    } catch (_) {} finally {
+      client.close();
+    }
   }
 
   void dispose() {

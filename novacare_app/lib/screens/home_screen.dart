@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
 import '../providers/ble_provider.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../l10n/app_localizations.dart';
@@ -17,10 +18,10 @@ import 'rover_controls_screen.dart';
 import 'summon_screen.dart';
 import 'main_navigation.dart';
 
-/// HomeScreen — top of the tab stack.
+/// HomeScreen â€” top of the tab stack.
 ///
 /// Driven by [RoverProvider] (mock telemetry for now; real BLE/Firebase
-/// streams wire in via TODOs below). Matches the layout in SKILL §4.1.
+/// streams wire in via TODOs below). Matches the layout in SKILL Â§4.1.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final rover = context.watch<RoverProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           NcAppBar(
@@ -55,6 +56,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 : NcConnectionStatus.offline,
             statusLabel: rover.isRoverOnline ? 'Live' : 'Offline',
             battery: rover.batteryLevel,
+            trailing: [
+              IconButton(
+                icon: const Icon(Icons.logout_rounded, color: AppColors.danger, size: 22),
+                tooltip: 'Logout',
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  context.read<AuthProvider>().logout();
+                },
+              ),
+            ],
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -63,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ─── Hero greeting ─────────────────────────────
+                  // â”€â”€â”€ Hero greeting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   Text(_greeting(), style: AppText.display1()),
                   const SizedBox(height: 4),
                   Text(
@@ -71,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: AppText.body(color: AppColors.inkMuted),
                   ),
 
-                  // ─── Telemetry grid ────────────────────────────
+                  // â”€â”€â”€ Telemetry grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   NcSectionHead(
                     title: 'Telemetry',
                     action: GestureDetector(
@@ -88,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   _telemetryGrid(rover, l10n),
 
-                  // ─── Quick actions ─────────────────────────────
+                  // â”€â”€â”€ Quick actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   const NcSectionHead(title: 'Quick actions'),
                   NcBtnCard(
                     variant: NcBtnCardVariant.sos,
@@ -133,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
 
-                  // ─── Autonomous ────────────────────────────────
+                  // â”€â”€â”€ Autonomous â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   NcSectionHead(
                     title: 'Autonomous',
                     action: const NcChip(label: 'Beta', style: NcChipStyle.beta),
@@ -208,9 +219,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   //  Telemetry grid
-  // ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _telemetryGrid(RoverProvider rover, AppLocalizations l10n) {
     final battColor = AppColors.batteryColor(rover.batteryLevel);
     // Rough runtime estimate: assume ~7h on a full charge.
@@ -295,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   value: NcTileValue(
                     value: rover.temperature.toStringAsFixed(1),
-                    unit: '°C',
+                    unit: 'Â°C',
                   ),
                   footer: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,13 +331,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String _zoneLabel(String room) {
     switch (room.toLowerCase()) {
       case 'kitchen':
-        return 'Zone 02 · West';
+        return 'Zone 02 Â· West';
       case 'living room':
-        return 'Zone 01 · Main';
+        return 'Zone 01 Â· Main';
       case 'bedroom':
-        return 'Zone 03 · East';
+        return 'Zone 03 Â· East';
       default:
-        return 'Zone — · Home';
+        return 'Zone â€” Â· Home';
     }
   }
 
@@ -344,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return AppColors.danger;
   }
 
-  // ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String _greeting() {
     final h = DateTime.now().hour;
     if (h < 12) return 'Good morning';
@@ -360,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Radii.lg),
         ),
-        backgroundColor: AppColors.paper,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title: Row(
           children: [
             const Icon(Icons.emergency_rounded, color: AppColors.danger),

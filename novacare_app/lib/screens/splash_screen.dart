@@ -1,11 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+
+import 'package:provider/provider.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/nova_logo.dart';
-import 'main_navigation.dart';
+import '../providers/auth_provider.dart';
+import 'auth/auth_wrapper.dart';
 
-/// Branded splash screen — warm cream canvas, breathing NovaCare logo,
+/// Branded splash screen â€” warm cream canvas, breathing NovaCare logo,
 /// transitions into the main tabbed shell after 2.5s.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,9 +32,12 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    // TODO(backend): wait for Firebase.initializeApp() + BLE permissions
-    // resolution here instead of a fixed timer.
-    Future.delayed(const Duration(milliseconds: 2500), _goHome);
+    
+    // Wait for minimum splash time AND auth load
+    Future.wait([
+      Future.delayed(const Duration(milliseconds: 2500)),
+      context.read<AuthProvider>().load(),
+    ]).then((_) => _goHome());
   }
 
   void _goHome() {
@@ -41,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen>
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (_, a, __) => FadeTransition(
           opacity: a,
-          child: const MainNavigation(),
+          child: const AuthWrapper(),
         ),
       ),
     );
@@ -57,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: Listenable.merge([_intro, _breathe]),
@@ -78,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
                         width: 168,
                         height: 168,
                         decoration: BoxDecoration(
-                          color: AppColors.paper,
+                          color: Theme.of(context).colorScheme.surface,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppColors.line,

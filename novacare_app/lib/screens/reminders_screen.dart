@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/rover_provider.dart';
@@ -43,7 +43,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
     final activeCount = daily.where((d) => d.on).length;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           NcAppBar(
@@ -60,7 +60,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   Text('Today', style: AppText.display1()),
                   const SizedBox(height: 4),
                   Text(
-                    '$activeCount active · $dueCount medication due',
+                    '$activeCount active Â· $dueCount medication due',
                     style: AppText.body(color: AppColors.inkMuted),
                   ),
                   NcSectionHead(
@@ -127,7 +127,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
   }
 }
 
-// ─── Internal placeholder types ─────────────────────────────────────
+// â”€â”€â”€ Internal placeholder types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _Reminder {
   final String time;
   final String title;
