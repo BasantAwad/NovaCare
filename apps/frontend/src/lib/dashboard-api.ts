@@ -151,10 +151,20 @@ async function dashboardFetch<T = unknown>(
   const token = getAccessToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  } else {
+    // Fail fast to prevent network spam if the user is not authenticated
+    // The rover and guardian pages aggressively poll dashboard APIs
+    return { status: "error", error: "Unauthorized: No token available" };
   }
 
   try {
     const res = await fetch(url, { ...options, headers });
+    
+    if (res.status === 401) {
+      // If the token is invalid or expired, return an error immediately
+      return { status: "error", error: "Unauthorized: Token expired or invalid" };
+    }
+    
     const json = await res.json();
     return json as ApiResponse<T>;
   } catch {

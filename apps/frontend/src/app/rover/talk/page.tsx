@@ -779,7 +779,7 @@ export default function TalkPage() {
       const errorMessage: Message = {
         id: messageIdRef.current,
         type: "nova",
-        content: "I'm sorry, I'm having trouble connecting right now. Please check if the NovaBot server is running and try again.",
+        content: `I'm sorry, I'm having trouble connecting right now. Please check if the NovaBot server is running and try again. (Error: ${error.message || 'Network Timeout'})`,
         timestamp: new Date(),
       };
 

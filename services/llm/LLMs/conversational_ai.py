@@ -237,7 +237,10 @@ class ConversationalAI:
                 self.history.append({"user": user_message, "assistant": hf_reply})
                 self.last_profile = "quality"
                 self.last_route = "huggingface_mental_health"
-                return hf_reply
+                return {
+                    "response": hf_reply,
+                    "actions": []
+                }
             elif prefix:
                 prefix_to_add = prefix
         except Exception as e:

@@ -14,6 +14,7 @@ export function useBackgroundEmotion(intervalMs: number = 5000) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isPolling = useRef<boolean>(false);
+  const fetchInProgress = useRef<boolean>(false);
 
   useEffect(() => {
     // Initialize hidden video and canvas elements for silent frame extraction
@@ -41,7 +42,7 @@ export function useBackgroundEmotion(intervalMs: number = 5000) {
     startCamera();
 
     const pollEmotion = async () => {
-      if (!isPolling.current || !videoRef.current || !canvasRef.current) return;
+      if (!isPolling.current || !videoRef.current || !canvasRef.current || fetchInProgress.current) return;
       
       const ctx = canvasRef.current.getContext("2d");
       if (!ctx) return;
@@ -52,6 +53,7 @@ export function useBackgroundEmotion(intervalMs: number = 5000) {
       ctx.drawImage(videoRef.current, 0, 0, 224, 224);
       const base64Image = canvasRef.current.toDataURL("image/jpeg", 0.8).split(",")[1];
 
+      fetchInProgress.current = true;
       try {
         const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/api/emotion/detect`, {
           method: "POST",
@@ -68,6 +70,8 @@ export function useBackgroundEmotion(intervalMs: number = 5000) {
         }
       } catch (err) {
         // Silently ignore network errors to prevent console spam
+      } finally {
+        fetchInProgress.current = false;
       }
     };
 

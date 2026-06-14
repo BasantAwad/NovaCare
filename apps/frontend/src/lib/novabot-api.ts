@@ -47,7 +47,13 @@ export async function sendMessage(text: string, options?: SendMessageOptions): P
     });
 
     if (!res.ok) {
-      throw new Error("Failed to communicate with NovaBot");
+      let errorText = "";
+      try {
+        errorText = await res.text();
+      } catch (e) {
+        errorText = "Unknown error text";
+      }
+      throw new Error(`Failed to communicate with NovaBot (Status ${res.status}): ${errorText}`);
     }
 
     const data = await res.json();
@@ -68,8 +74,8 @@ export async function checkHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${getDynamicUrl(NOVABOT_API)}/health`, {
       method: "GET",
-      // Set a short timeout for health check
-      signal: AbortSignal.timeout(3000),
+      // Increase timeout to 15s because local LLM inference can block the single-threaded Flask dev server for several seconds
+      signal: AbortSignal.timeout(15000),
     });
     return res.ok;
   } catch {
