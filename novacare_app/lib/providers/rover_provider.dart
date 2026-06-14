@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -160,19 +160,23 @@ class RoverProvider extends ChangeNotifier {
       if (_connectionState != RoverConnectionState.connected) return false;
 
       try {
-        final uri = Uri.parse("http://192.168.8.50:8001/api/telemetry/vitals/RV001");
-        final response = await http.get(uri).timeout(const Duration(seconds: 3));
+        final vitalsUri = Uri.parse("http://192.168.8.50:9000/api/vitals/current");
+        final response = await http.get(vitalsUri).timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final json = jsonDecode(response.body);
-          if (json['success'] == true) {
-            _heartRate = json['data']['heart_rate'] ?? _heartRate;
-            _temperature = (json['data']['temperature'] ?? _temperature).toDouble();
+          if (json['status'] == 'success') {
+            _heartRate = json['heart_rate'] ?? _heartRate;
+            if (json['battery'] != null) {
+              _batteryLevel = json['battery'];
+            }
           }
         }
         
-        final batteryUri = Uri.parse("http://192.168.8.50:8001/api/telemetry/battery/RV001");
-        // We haven't implemented GET /battery/RV001 in backend, so we skip it or assume constant
-        // _batteryLevel = 85; 
+        final healthUri = Uri.parse("http://192.168.8.50:9000/health");
+        final healthResponse = await http.get(healthUri).timeout(const Duration(seconds: 3));
+        if (healthResponse.statusCode == 200) {
+           _isRoverOnline = true;
+        } 
       } catch (e) {
         debugPrint("Failed to fetch telemetry: $e");
       }

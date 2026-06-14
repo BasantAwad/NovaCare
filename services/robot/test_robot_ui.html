@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NovaCare Robot UI - Active Face</title>
     <!-- Linking to the original production CSS -->
-    <link rel="stylesheet" href="/static/RobotUI.css">
+    <link rel="stylesheet" href="RobotUI.css">
     <!-- Styling is strictly managed in RobotUI.css -->
 </head>
 
@@ -31,13 +31,19 @@
 
         <!-- Eyes Container -->
         <div class="eyes-container">
-            <div class="eye eye-left">
-                <div class="eyebrow"></div>
-                <div class="pupil"></div>
+            <div class="eye-wrapper">
+                <div class="true-eyebrow eyebrow-left"></div>
+                <div class="eye eye-left">
+                    <div class="eyebrow"></div>
+                    <div class="pupil"></div>
+                </div>
             </div>
-            <div class="eye eye-right">
-                <div class="eyebrow"></div>
-                <div class="pupil"></div>
+            <div class="eye-wrapper">
+                <div class="true-eyebrow eyebrow-right"></div>
+                <div class="eye eye-right">
+                    <div class="eyebrow"></div>
+                    <div class="pupil"></div>
+                </div>
             </div>
         </div>
 
@@ -56,6 +62,17 @@
 
         <!-- Emotion Text -->
         <div class="emotion-display" id="emotion-text">IDLE</div>
+        
+        <!-- Test Controls -->
+        <div style="position: absolute; bottom: 20px; display: flex; gap: 10px; z-index: 1000; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;">
+            <button onclick="setEmotion('idle')">Idle</button>
+            <button onclick="setEmotion('sad')">Sad</button>
+            <button onclick="setEmotion('surprised')">Surprised</button>
+            <button onclick="setEmotion('angry')">Angry</button>
+            <button onclick="setEmotion('happy')">Happy</button>
+            <button id="speak-btn" onclick="toggleSpeaking()">Toggle Talk</button>
+            <button id="listen-btn" onclick="toggleListening()">Toggle Listen</button>
+        </div>
     </div>
 
     <script>
@@ -194,18 +211,8 @@
             };
         }
         
-        // Minimal standalone mode (SerBot screen): face only, no AI WebSocket.
-        const MINIMAL_UI = window.location.port === '9000' || window.location.search.includes('minimal=1');
-
-        if (MINIMAL_UI) {
-            const statusIndicator = document.querySelector('.status-indicator');
-            if (statusIndicator) {
-                statusIndicator.className = 'status-indicator connected';
-                statusIndicator.innerText = '● Ready';
-            }
-        } else {
-            connectWebSocket();
-        }
+        // Start WebSocket connection
+        connectWebSocket();
     </script>
 </body>
 </html>

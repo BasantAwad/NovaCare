@@ -49,16 +49,17 @@ log() {
 
 activate_venv() {
   cd "$ROBOT_DIR" || exit 1
-  if [ ! -d "$VENV" ]; then
+  if [ ! -f "$VENV/bin/activate" ]; then
     log "Creating Python venv..."
-    python3 -m venv "$VENV" || return 1
+    rm -rf "$VENV"
+    python3 -m venv --system-site-packages "$VENV" || return 1
     # shellcheck disable=SC1091
-    source "$VENV/bin/activate"
+    source "$VENV/bin/activate" || return 1
     pip install --upgrade pip wheel setuptools >/dev/null 2>&1 || true
     pip install -r requirements.txt >> "${LOG_DIR}/setup.log" 2>&1 || true
   else
     # shellcheck disable=SC1091
-    source "$VENV/bin/activate"
+    source "$VENV/bin/activate" || return 1
   fi
   if [ ! -f "${ROBOT_DIR}/.env" ] && [ -f "${ROBOT_DIR}/.env.example" ]; then
     cp "${ROBOT_DIR}/.env.example" "${ROBOT_DIR}/.env"
@@ -143,6 +144,7 @@ main() {
 
   run_supervised tcp bash -c "cd '${ROBOT_DIR}' && source '${VENV}/bin/activate' && exec python3 tcp_command_server.py"
   run_supervised rest bash -c "cd '${ROBOT_DIR}' && source '${VENV}/bin/activate' && exec python3 robot_service.py"
+  run_supervised watch bash -c "cd '${ROBOT_DIR}' && source '${VENV}/bin/activate' && exec python3 watch_integration.py"
   run_supervised kiosk bash "${ROBOT_DIR}/launch_kiosk.sh"
 
   log "All supervisors started. Logs: ${LOG_DIR}/"

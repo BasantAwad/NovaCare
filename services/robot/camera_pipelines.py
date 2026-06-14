@@ -9,8 +9,6 @@ Derived from the SerBot Prime X manual (§4.1.3 Camera Utilizing):
 Does NOT use ``pop.Pilot`` or ``Pilot.Camera``.
 """
 
-from __future__ import annotations
-
 import os
 import select
 import subprocess

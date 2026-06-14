@@ -16,8 +16,6 @@ Manual-derived: ``pop.Util.gstrmer``, ``nvarguscamerasrc`` pipeline (§4.1.3).
 Forbidden: ``pop.Pilot``, ``Pilot.Camera``.
 """
 
-from __future__ import annotations
-
 import base64
 import io
 import os
