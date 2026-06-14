@@ -160,7 +160,7 @@ class RoverProvider extends ChangeNotifier {
       if (_connectionState != RoverConnectionState.connected) return false;
 
       try {
-        final vitalsUri = Uri.parse("http://192.168.8.50:9000/api/vitals/current");
+        final vitalsUri = Uri.parse("http://10.174.134.247:9000/api/vitals/current");
         final response = await http.get(vitalsUri).timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) {
           final json = jsonDecode(response.body);
@@ -172,7 +172,7 @@ class RoverProvider extends ChangeNotifier {
           }
         }
         
-        final healthUri = Uri.parse("http://192.168.8.50:9000/health");
+        final healthUri = Uri.parse("http://10.174.134.247:9000/health");
         final healthResponse = await http.get(healthUri).timeout(const Duration(seconds: 3));
         if (healthResponse.statusCode == 200) {
            _isRoverOnline = true;

@@ -27,7 +27,7 @@ mkdir -p "$LOG_DIR" "$PID_DIR"
 # Minimal I/O mode — SerBot as input/output bridge only
 # ---------------------------------------------------------------------------
 export NOVACARE_MINIMAL=1
-export NOVACARE_LIGHTWEIGHT=1
+export NOVACARE_LIGHTWEIGHT=0
 export NOVACARE_USE_OPENCV=0
 export LIDAR_ENABLED=false
 export DISPLAY="${DISPLAY:-:0}"

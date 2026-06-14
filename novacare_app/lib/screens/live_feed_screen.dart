@@ -28,7 +28,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen> {
   _FeedState _feedState = _FeedState.connecting;
   String? _streamUrl;
   String _errorMessage = '';
-  String _robotIp = '192.168.8.50';
+  String _robotIp = '10.174.134.247';
 
   // Unique key to force Image.network reload on retry
   int _imageKey = 0;

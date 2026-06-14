@@ -9,6 +9,9 @@ export DISPLAY="${DISPLAY:-:0}"
 export ROBOT_SERVICE_PORT="${ROBOT_SERVICE_PORT:-9000}"
 export UI_URL="${UI_URL:-http://127.0.0.1:${ROBOT_SERVICE_PORT}/ui?minimal=1}"
 
+# Force kill any lingering browsers to ensure new flags (camera/mic permissions) are applied
+killall -9 chromium-browser chromium google-chrome chrome 2>/dev/null || true
+
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] [kiosk] $*"
 }
@@ -51,6 +54,11 @@ while true; do
     --disable-session-crashed-bubble \
     --check-for-update-interval=31536000 \
     --no-sandbox \
+    --user-data-dir=/tmp/chromium_kiosk \
+    --unsafely-treat-insecure-origin-as-secure=http://10.174.134.241:3000 \
+    --use-fake-ui-for-media-stream \
+    --allow-running-insecure-content \
+    --autoplay-policy=no-user-gesture-required \
     "${UI_URL}" >> "${LOG_DIR}/kiosk.log" 2>&1 || true
   log "Browser closed — relaunch in 5s"
   sleep 5

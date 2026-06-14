@@ -99,7 +99,7 @@ export default function GuardianDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Robot configuration
-  const ROBOT_IP = "192.168.8.50";
+  const ROBOT_IP = "10.174.134.247";
   const VIDEO_FEED_URL = `http://${ROBOT_IP}:5000/video_feed`;
 
   // Real-time signaling

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +25,14 @@ class RoverControlsScreen extends StatefulWidget {
 class _RoverControlsScreenState extends State<RoverControlsScreen> {
   bool _autoAvoid = true;
   bool _autonomous = false;
+  Timer? _moveTimer;
+  String? _currentDir;
+
+  @override
+  void dispose() {
+    _moveTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -112,12 +121,30 @@ class _RoverControlsScreenState extends State<RoverControlsScreen> {
                     VirtualJoystick(
                       onDirectionChanged: (dir) async {
                         try {
+                          _currentDir = dir;
                           if (dir == null) {
+                            _moveTimer?.cancel();
+                            _moveTimer = null;
                             await ble.sendCommand('STOP');
                           } else {
-                            final rawDegree = int.parse(dir);
-                            final tcpDegree = (rawDegree + 270) % 360;
-                            await ble.sendCommand('MOVE:$tcpDegree');
+                            if (_moveTimer == null) {
+                              // Send the first command immediately
+                              final rawDegree = int.parse(dir);
+                              final tcpDegree = (rawDegree + 270) % 360;
+                              await ble.sendCommand('MOVE:$tcpDegree');
+                              
+                              // Keep sending periodically to prevent server timeout
+                              _moveTimer = Timer.periodic(const Duration(milliseconds: 200), (t) {
+                                if (_currentDir == null) {
+                                  t.cancel();
+                                  _moveTimer = null;
+                                  return;
+                                }
+                                final currentRaw = int.parse(_currentDir!);
+                                final currentTcp = (currentRaw + 270) % 360;
+                                ble.sendCommand('MOVE:$currentTcp');
+                              });
+                            }
                           }
                         } catch (_) {
                           // swallow communication errors

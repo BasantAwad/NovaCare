@@ -11,7 +11,7 @@ enum TcpConnectionStatus { disconnected, connecting, connected, error }
 
 class TcpProvider extends ChangeNotifier {
   TcpConnectionStatus _status = TcpConnectionStatus.disconnected;
-  String _host = '192.168.8.50';
+  String _host = '10.174.134.247';
   int _port = 5555;
   String? _lastResponse;
   String? _errorMessage;

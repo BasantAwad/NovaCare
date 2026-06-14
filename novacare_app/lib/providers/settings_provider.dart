@@ -59,7 +59,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _voiceFeedbackEnabled = false;
   bool _largeTextEnabled = false;
   String _profileImagePath = '';
-  String _robotIp = '192.168.8.50';
+  String _robotIp = '10.174.134.247';
 
   String get userName => _userName;
   String get userId => _userId;

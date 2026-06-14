@@ -272,7 +272,7 @@ export default function HealthPage() {
       setVitals((prevVitals) =>
         prevVitals.map((vital) =>
           vital.id === "heartRate"
-            ? { ...vital, value: robotVitals.heart_rate }
+            ? { ...vital, value: robotVitals.heart_rate as number }
             : vital
         )
       );

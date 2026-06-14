@@ -581,21 +581,27 @@ def _dispatch_command(bot, cmd):
 
 def handle_client(client_socket, addr, bot):
     print(f"[+] Client connected {addr}")
+    buffer = ""
     try:
         while True:
             data = client_socket.recv(BUFFER_SIZE)
             if not data:
                 break
-            decoded = data.decode("utf-8", errors="replace").strip()
-            print(f"[CMD] {decoded}")
-            response = None
-            try:
-                response = _dispatch_command(bot, decoded)
-            except Exception as e:
-                print(f"[ERROR] {e}")
-            # Use command-specific response if provided, else generic ACK
-            reply = (response if response else f"OK: {decoded}") + "\n"
-            client_socket.sendall(reply.encode())
+            buffer += data.decode("utf-8", errors="replace")
+            while "\n" in buffer:
+                line, buffer = buffer.split("\n", 1)
+                line = line.strip()
+                if not line:
+                    continue
+                print(f"[CMD] {line}")
+                response = None
+                try:
+                    response = _dispatch_command(bot, line)
+                except Exception as e:
+                    print(f"[ERROR] {e}")
+                # Use command-specific response if provided, else generic ACK
+                reply = (response if response else f"OK: {line}") + "\n"
+                client_socket.sendall(reply.encode())
     except Exception as e:
         print(f"[ERROR] {addr}: {e}")
     finally:

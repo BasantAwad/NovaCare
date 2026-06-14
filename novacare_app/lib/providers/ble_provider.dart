@@ -49,7 +49,7 @@ class BleProvider extends ChangeNotifier {
   bool get isTcpConnected => _tcpStatus == TcpConnectionStatus.connected;
   bool get isAnyConnected => isConnected || isTcpConnected;
 
-  String _tcpHost = '192.168.8.50'; // default matches TcpProvider; override via Settings > Rover server
+  String _tcpHost = '10.174.134.247'; // default matches TcpProvider; override via Settings > Rover server
   int _tcpPort = 5555;
   String get tcpEndpoint => '$_tcpHost:$_tcpPort';
   String? _tcpErrorMessage;

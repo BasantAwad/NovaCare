@@ -76,7 +76,7 @@ def check_api_key():
     """Ensure all API endpoints are authenticated."""
     if request.method == "OPTIONS":
         return
-    if request.path in ["/health", "/", "/ui", "/static/RobotUI.css", "/optimized_runtime/robot_ui/RobotUI.css"]:
+    if request.path in ["/health", "/", "/ui", "/RobotUI.css", "/static/RobotUI.css", "/optimized_runtime/robot_ui/RobotUI.css"]:
         return
         
     key = request.headers.get("X-API-Key")
@@ -97,12 +97,14 @@ def robot_ui():
     except Exception as e:
         return f"Error loading Robot UI: {e}", 500
 
+@app.get("/RobotUI.css")
 @app.get("/static/RobotUI.css")
 @app.get("/optimized_runtime/robot_ui/RobotUI.css")
 def robot_ui_css():
-    """Serve robot face stylesheet (bundled under static/ for standalone deploy)."""
+    """Serve robot face stylesheet (using the root RobotUI.css)."""
     try:
-        return send_from_directory(_STATIC_DIR, "RobotUI.css", mimetype="text/css")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        return send_from_directory(base_dir, "RobotUI.css", mimetype="text/css")
     except Exception as e:
         return f"Error loading Robot UI Stylesheet: {e}", 500
 
