@@ -109,4 +109,43 @@ class FirebaseService {
       'type': type,
     });
   }
+
+  /// Record an SOS emergency event in Firebase Realtime Database.
+  Future<bool> recordSOSEvent({
+    required String userId,
+    required String location,
+    int? heartRate,
+    bool robotAlarmActive = false,
+  }) async {
+    return sendCommand('SOS_EVENT', data: {
+      'userId': userId,
+      'location': location,
+      'heartRate': heartRate,
+      'robotAlarmActive': robotAlarmActive,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Send a local push notification for SOS (on-device fallback).
+  Future<void> sendLocalSOSNotification({
+    required String title,
+    required String body,
+  }) async {
+    // Uses the notification_service for local display
+    debugPrint('FirebaseService: Local SOS notification - $title: $body');
+    // In production, use flutter_local_notifications package:
+    // await NotificationService().showNotification(title: title, body: body);
+  }
+
+  /// Send a message to a specific caregiver.
+  Future<bool> sendCaregiverMessage({
+    required String message,
+    String? caregiverId,
+  }) async {
+    return sendCommand('CAREGIVER_MESSAGE', data: {
+      'caregiverId': caregiverId ?? 'all',
+      'message': message,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
 }

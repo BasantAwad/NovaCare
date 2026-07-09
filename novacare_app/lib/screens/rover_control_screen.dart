@@ -42,6 +42,54 @@ class RoverControlScreen extends StatelessWidget {
 
                       const SizedBox(height: 48),
 
+                      // Gesture Toggle
+                      SwitchListTile(
+                        title: const Text('AI Gesture Control', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Control robot using hand gestures via camera'),
+                        value: rover.gestureModeActive,
+                        activeColor: theme.colorScheme.primary,
+                        onChanged: (val) {
+                          rover.toggleGestureMode(settings.robotIp);
+                        },
+                        secondary: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: rover.gestureModeActive ? theme.colorScheme.primary.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.pan_tool_alt_rounded,
+                            color: rover.gestureModeActive ? theme.colorScheme.primary : Colors.grey,
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+
+                      // Lidar Guarding Toggle
+                      SwitchListTile(
+                        title: const Text('Lidar Guarding Mode', style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text('Robot automatically faces you when you move'),
+                        value: rover.guardingModeActive,
+                        activeColor: theme.colorScheme.primary,
+                        onChanged: (val) {
+                          rover.toggleGuardingMode();
+                        },
+                        secondary: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: rover.guardingModeActive ? theme.colorScheme.primary.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.radar_rounded,
+                            color: rover.guardingModeActive ? theme.colorScheme.primary : Colors.grey,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Action Buttons
                       Row(
                         children: [

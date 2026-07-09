@@ -30,56 +30,22 @@ STREAM_PORT = 5556    # kept for reference; no longer used
 MJPEG_PORT  = 5557    # HTTP MJPEG stream – cv2.VideoCapture reads this directly
 
 # ------------------------------------------------------------
-# SMART SERBOT LOADER – tries different import methods
+# JetAuto Robot HAL (replaces old pop.Pilot.SerBot)
 # ------------------------------------------------------------
-def _get_serbot():
-    if os.environ.get("NOVA_SerBOT_STUB", "0").strip() in ("1", "true", "TRUE", "yes", "YES"):
-        print("[SERBOT] STUB mode – no movement.")
-        return None
+_hal_robot = None
 
-    # Try multiple import paths
-    import_attempts = [
-        ("from pop import Pilot", lambda: __import__("pop").Pilot),
-        ("from pop.pilot import SerBot", lambda: __import__("pop.pilot").SerBot),
-        ("import pop.Pilot as Pilot", lambda: __import__("pop.Pilot")),
-        ("from pop import pilot", lambda: __import__("pop").pilot),
-    ]
-
-    pilot_module = None
-    serbot_class = None
-
-    for desc, loader in import_attempts:
-        try:
-            loaded = loader()
-            # If we got a module, try to find SerBot inside
-            if hasattr(loaded, "SerBot"):
-                serbot_class = loaded.SerBot
-                print(f"[SERBOT] Found SerBot via: {desc}")
-                break
-            elif hasattr(loaded, "Pilot") and hasattr(loaded.Pilot, "SerBot"):
-                serbot_class = loaded.Pilot.SerBot
-                print(f"[SERBOT] Found SerBot via: {desc}.Pilot")
-                break
-            elif loaded is not None and callable(loaded):
-                # Maybe loader directly returns SerBot class?
-                serbot_class = loaded
-                print(f"[SERBOT] Loaded SerBot directly via: {desc}")
-                break
-        except Exception as e:
-            print(f"[SERBOT] Import attempt '{desc}' failed: {e}")
-
-    if serbot_class is None:
-        print("[ERROR] Could not load SerBot class. Rover will NOT move.")
-        print("        Try reinstalling pop-pilot: pip3 install --upgrade pop-pilot")
-        print("        Or set NOVA_SerBOT_STUB=1 to suppress this error.")
-        return None
-
+def _get_robot_hal():
+    """Get the JetAuto robot HAL instance (ROS2-based)."""
+    global _hal_robot
+    if _hal_robot is not None:
+        return _hal_robot
     try:
-        bot = serbot_class()
-        print("[SERBOT] Real SerBot initialized – rover ready to move.")
-        return bot
+        from robot_hal import get_robot
+        _hal_robot = get_robot()
+        print("[JETAUTO] Robot HAL initialized — using ROS2 cmd_vel + Nav2")
+        return _hal_robot
     except Exception as e:
-        print(f"[ERROR] Creating SerBot instance failed: {e}")
+        print(f"[ERROR] Robot HAL init failed: {e}")
         traceback.print_exc()
         return None
 
@@ -135,15 +101,15 @@ def _save_map():
     except Exception as e:
         print(f"[ERROR] Save map: {e}")
 
-def _read_ultrasonic(bot):
-    if bot is None:
+def _read_obstacle_distance(hal):
+    """Read the closest obstacle distance from LiDAR via HAL."""
+    if hal is None:
         return None
-    for attr in ("readUltrasonic", "ultrasonic", "get_ultrasonic", "read_ultrasonic"):
-        if hasattr(bot, attr):
-            try:
-                return getattr(bot, attr)() if callable(getattr(bot, attr)) else getattr(bot, attr)
-            except Exception as e:
-                print(f"[WARN] Ultrasonic via {attr} failed: {e}")
+    try:
+        _, dist = hal.lidar.get_closest_obstacle()
+        return dist if dist != float('inf') else None
+    except Exception as e:
+        print(f"[WARN] Obstacle distance read failed: {e}")
     return None
 
 
@@ -411,47 +377,38 @@ def _set_obstacle_avoidance(enabled, bot):
             print(f"[WARN] setObstacleAvoidance: {e}")
     _save_map()
 
-def _set_autonomy(enabled, bot):
+def _set_autonomy(enabled, hal):
     global _autonomous_enabled
     _autonomous_enabled = enabled
     print(f"[AUTONOMY] {'ON' if enabled else 'OFF'}")
-    _set_camera(enabled, bot)
-    if bot and hasattr(bot, "setAutonomy"):
-        try:
-            bot.setAutonomy(enabled)
-        except Exception as e:
-            print(f"[WARN] setAutonomy: {e}")
+    _set_camera(enabled, hal)
+    # On JetAuto, autonomy is handled by Nav2 — no direct HAL call needed
     _save_map()
 
-def _set_follow(enabled, bot):
+def _set_follow(enabled, hal):
     global _follow_enabled
     _follow_enabled = enabled
     print(f"[FOLLOW] {'ON' if enabled else 'OFF'}")
-    _set_camera(enabled, bot)
-    if bot and hasattr(bot, "setFollow"):
+    _set_camera(enabled, hal)
+    if hal:
         try:
-            bot.setFollow(enabled)
+            if enabled:
+                hal.motion.start_tracking("person")
+            else:
+                hal.motion.stop_tracking()
         except Exception as e:
             print(f"[WARN] setFollow: {e}")
     _save_map()
 
-def _return_home(bot):
-    print(f"[NAV] Return home → {_home_position}")
-    if bot:
-        bot.stop()
-        dx = _home_position[0] - _current_position[0]
-        dy = _home_position[1] - _current_position[1]
-        if dx or dy:
-            degree = 0 if abs(dx) >= abs(dy) else (90 if dy > 0 else 270)
-            if dx > 0 and abs(dx) >= abs(dy):
-                degree = 0
-            elif dx < 0 and abs(dx) >= abs(dy):
-                degree = 180
-            try:
-                bot.setSpeed(70)
-                bot.move(degree, 70)
-            except Exception as e:
-                print(f"[WARN] Move home: {e}")
+def _return_home(hal):
+    print(f"[NAV] Return home via Nav2")
+    if hal:
+        hal.motion.stop()
+        # Use Nav2 autonomous navigation to dock/home
+        try:
+            hal.motion.navigate_to(destination="dock")
+        except Exception as e:
+            print(f"[WARN] Navigate home: {e}")
     _current_position[:] = _home_position
     if list(_current_position) not in _visited_positions:
         _visited_positions.append(list(_current_position))
@@ -470,15 +427,18 @@ def _record_move(direction):
         _visited_positions.append(list(_current_position))
     _save_map()
 
-def _should_block_move(bot):
+def _should_block_move(hal):
     if not _obstacle_avoidance_enabled:
         return False
-    dist = _read_ultrasonic(bot)
-    if dist is not None and isinstance(dist, (int, float)) and dist <= 50:
-        print(f"[SAFETY] Obstacle {dist}cm – blocking move")
-        if bot:
-            bot.stop()
-        return True
+    if hal:
+        try:
+            blocked = hal.lidar.is_obstacle_ahead()
+            if blocked:
+                print(f"[SAFETY] LiDAR obstacle detected – blocking move")
+                hal.motion.stop()
+                return True
+        except Exception:
+            pass
     return False
 
 
@@ -518,9 +478,9 @@ def _reset_move_timer(bot):
 # ------------------------------------------------------------
 # Command dispatcher
 # ------------------------------------------------------------
-def _dispatch_command(bot, cmd):
-    """Dispatch one command.  Returns a response string to send back to the
-    client, or None to use the default 'OK: <cmd>' acknowledgement."""
+def _dispatch_command(hal, cmd):
+    """Dispatch one command using the JetAuto HAL.
+    Returns a response string, or None for default 'OK: <cmd>' ack."""
     if not cmd:
         return None
     cmd = cmd.strip()
@@ -530,48 +490,106 @@ def _dispatch_command(bot, cmd):
         degree = _dir_to_degree(direction)
         if degree is None:
             return None
-        if _should_block_move(bot):
+        if _should_block_move(hal):
             _cancel_move_timer()
             return "BLOCKED: obstacle detected"
-        if bot:
-            bot.setSpeed(35)
-            bot.move(degree, 60)
-        # Reset the auto-stop countdown on every MOVE command
-        _reset_move_timer(bot)
+        if hal:
+            hal.motion.move(degree, 35)
+        _reset_move_timer(hal)
         _record_move(direction)
         return None
 
     if cmd in ("STOP", "EMERGENCY"):
-        _cancel_move_timer()        # user explicitly stopped – cancel pending timer
-        if bot:
-            bot.stop()
+        _cancel_move_timer()
+        if hal:
+            hal.motion.stop()
+        if cmd == "EMERGENCY" and hal:
+            hal.audio.play_alarm(880, 10)
         return None
 
     if cmd in ("DOCK", "RETURN_HOME"):
         _cancel_move_timer()
-        _return_home(bot)
+        _return_home(hal)
         return None
+
+    # ── Navigation (Nav2) ─────────────────────────────────────────────
+    if cmd.startswith("NAVIGATE:"):
+        parts = cmd.split(":", 1)[1].split(",")
+        if len(parts) == 3:
+            try:
+                x, y, theta = float(parts[0]), float(parts[1]), float(parts[2])
+                if hal:
+                    hal.motion.navigate_to(x=x, y=y, theta=theta)
+                return "NAV:STARTED"
+            except ValueError:
+                return "NAV:INVALID_COORDS"
+        elif len(parts) == 1:
+            dest = parts[0].strip()
+            if hal:
+                hal.motion.navigate_to(destination=dest)
+            return f"NAV:STARTED:{dest}"
+        return "NAV:INVALID"
+
+    if cmd == "NAV_STATUS":
+        if hal:
+            status = hal.get_navigation_status()
+            return "NAV_STATUS:" + json.dumps(status)
+        return "NAV_STATUS:unavailable"
+
+    if cmd == "NAV_CANCEL":
+        if hal:
+            hal.motion.cancel_navigation()
+        return "NAV:CANCELLED"
+
+    if cmd == "SOS_TRIGGER":
+        if hal:
+            hal.audio.play_alarm(880, 30)
+            hal.audio.speak("Emergency alert activated!", block=False)
+        return "SOS:ACTIVE"
+
+    if cmd == "SOS_CANCEL":
+        if hal:
+            hal.audio.stop_alarm()
+        return "SOS:CANCELLED"
 
     if cmd.startswith("AUTONOMOUS:"):
-        _set_autonomy(cmd.split(":", 1)[1].upper() == "ON", bot)
+        _set_autonomy(cmd.split(":", 1)[1].upper() == "ON", hal)
         return None
     if cmd.startswith("FOLLOW_USER:"):
-        _set_follow(cmd.split(":", 1)[1].upper() == "ON", bot)
+        _set_follow(cmd.split(":", 1)[1].upper() == "ON", hal)
         return None
     if cmd.startswith("OBSTACLE_AVOIDANCE:"):
-        _set_obstacle_avoidance(cmd.split(":", 1)[1].upper() == "ON", bot)
+        _set_obstacle_avoidance(cmd.split(":", 1)[1].upper() == "ON", hal)
         return None
     if cmd.startswith("CAMERA:"):
-        _set_camera(cmd.split(":", 1)[1].upper() == "ON", bot)
+        _set_camera(cmd.split(":", 1)[1].upper() == "ON", hal)
         return None
 
-    # ── Query commands (laptop vision controller reads these) ──────────────
-    if cmd == "GET_ULTRASONIC":
-        dist = _read_ultrasonic(bot)
-        return f"ULTRASONIC:{dist if dist is not None else 'NONE'}"
+    # ── Query commands ────────────────────────────────────────────────
+    if cmd == "GET_LIDAR" or cmd == "GET_ULTRASONIC":
+        dist = _read_obstacle_distance(hal)
+        return f"LIDAR:{dist if dist is not None else 'NONE'}"
 
     if cmd == "GET_STATE":
-        return "STATE:" + json.dumps(_current_map_state())
+        state = _current_map_state()
+        if hal:
+            pose = hal.get_current_pose()
+            if pose:
+                state["pose"] = pose
+        return "STATE:" + json.dumps(state)
+
+    if cmd == "GET_POSE":
+        if hal:
+            pose = hal.get_current_pose()
+            return "POSE:" + json.dumps(pose or {})
+        return "POSE:{}"
+
+    if cmd.startswith("MAP_SAVE"):
+        return "MAP:SAVED"
+
+    if cmd.startswith("MAP_LOAD:"):
+        name = cmd.split(":", 1)[1].strip()
+        return f"MAP:LOADED:{name}"
 
     # Ignore these commands
     if cmd.startswith("INPUT_MODE:") or cmd.startswith("SENSOR_SET:"):
@@ -648,13 +666,13 @@ def _telemetry_loop():
         time.sleep(10)
 
 def main():
-    print("[*] NovaCare SerBot Rover Server")
+    print("[*] NovaCare JetAuto Rover Server")
     print(f"[*] Listening on {HOST}:{PORT}")
-    bot = _get_serbot()
+    bot = _get_robot_hal()
     if bot is None:
-        print("[!] SerBot unavailable – movement disabled (map updates only).")
+        print("[!] JetAuto HAL unavailable – movement disabled (map updates only).")
     else:
-        print("[*] SerBot ready – rover will move.")
+        print("[*] JetAuto HAL ready – rover will move via ROS2.")
 
     # Start video streaming server so laptop vision controller can subscribe
     _start_stream_server()

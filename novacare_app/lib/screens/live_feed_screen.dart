@@ -60,8 +60,7 @@ class _LiveFeedScreenState extends State<LiveFeedScreen> {
       if (result != null && result.containsKey('stream_url')) {
         setState(() {
           // Build direct stream URL using the robot IP and API key
-          _streamUrl =
-              'http://$_robotIp:9000/api/camera/stream?api_key=novacare-secure-key-2026';
+          _streamUrl = _robotService.getStreamUrl(_robotIp);
           _feedState = _FeedState.live;
           _imageKey++;
         });

@@ -101,6 +101,7 @@ class StatusBarWidget extends StatelessWidget {
         RoverMode.idle => l10n.translate('idle'),
         RoverMode.followingUser => l10n.translate('following'),
         RoverMode.navigatingHome => l10n.translate('navigating_home'),
+        RoverMode.navigating => l10n.translate('navigating'),
         RoverMode.deliveringMedicine => l10n.translate('delivering'),
         RoverMode.emergency => l10n.translate('emergency_mode'),
       };
@@ -109,6 +110,7 @@ class StatusBarWidget extends StatelessWidget {
         RoverMode.idle => AppColors.inkMuted,
         RoverMode.followingUser => AppColors.brandTeal,
         RoverMode.navigatingHome => AppColors.brandLeaf,
+        RoverMode.navigating => AppColors.brandAqua,
         RoverMode.deliveringMedicine => AppColors.accent,
         RoverMode.emergency => AppColors.danger,
       };
@@ -117,6 +119,7 @@ class StatusBarWidget extends StatelessWidget {
         RoverMode.idle => Icons.pause_circle_rounded,
         RoverMode.followingUser => Icons.directions_walk_rounded,
         RoverMode.navigatingHome => Icons.home_rounded,
+        RoverMode.navigating => Icons.navigation_rounded,
         RoverMode.deliveringMedicine => Icons.medication_rounded,
         RoverMode.emergency => Icons.emergency_rounded,
       };
