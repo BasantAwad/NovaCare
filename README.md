@@ -1,4 +1,13 @@
-<p align="center"><img src="https://raw.githubusercontent.com/BasantAwad/BasantAwad/main/assets/profile-terminal.svg" alt="Animated terminal profile for Basant Awad Mohamed" width="100%" /></p>
+<p align="center"><img src="https://raw.githubusercontent.com/BasantAwad/BasantAwad/main/assets/introduction-banner.svg" alt="Terminal-inspired project banner" width="100%" /></p>
+
+<!-- terminal-badges -->
+<p align="center">
+  <img src="https://img.shields.io/badge/AI%20+%20Robotics-8B5CF6?style=flat-square&logo=robotframework&logoColor=white" alt="AI + Robotics" />
+  <img src="https://img.shields.io/badge/WebSockets-06B6D4?style=flat-square&logo=socketdotio&logoColor=white" alt="WebSockets" />
+  <img src="https://img.shields.io/badge/BLE-22C55E?style=flat-square&logo=bluetooth&logoColor=111827" alt="BLE" />
+</p>
+
+<p align="center"><img src="https://raw.githubusercontent.com/BasantAwad/BasantAwad/main/assets/introduction-banner.svg" alt="Animated terminal profile for Basant Awad Mohamed" width="100%" /></p>
 
 # NovaCare — Intelligent Care Rover System
 
