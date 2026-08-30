@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/BasantAwad/BasantAwad/main/assets/basant-terminal-banner.png" alt="Terminal-inspired project banner" width="100%" />
+</p>
+
 # NovaCare — Intelligent Care Rover System
 
 NovaCare is an AI-powered assistive rover ecosystem for accessible care, combining conversational assistance, emotion-aware interactions, sign-language recognition, real-time telemetry, and hardware control.
